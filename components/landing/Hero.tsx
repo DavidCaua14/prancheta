@@ -77,7 +77,7 @@ export function Hero() {
           </p>
 
           <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:justify-center lg:justify-start">
-            <a href="#comecar" className="btn btn-green btn-lg">
+            <a href="/entrar" className="btn btn-green btn-lg">
               Criar meu clube grátis
             </a>
             <a href="#ao-vivo" className="btn btn-ghost btn-lg">

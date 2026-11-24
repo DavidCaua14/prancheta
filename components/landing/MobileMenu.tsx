@@ -62,10 +62,10 @@ export function MobileMenu() {
           ))}
         </ul>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          <a href="#comecar" onClick={close} className="btn btn-green w-full">
+          <a href="/entrar" onClick={close} className="btn btn-green w-full">
             Jogar grátis
           </a>
-          <a href="#comecar" onClick={close} className="btn btn-ghost w-full">
+          <a href="/entrar" onClick={close} className="btn btn-ghost w-full">
             Entrar
           </a>
         </div>

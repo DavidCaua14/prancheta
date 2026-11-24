@@ -275,7 +275,7 @@ export function Auction() {
               </li>
             ))}
           </ol>
-          <a href="#comecar" className="btn btn-green mt-6 w-full sm:w-auto">
+          <a href="/entrar" className="btn btn-green mt-6 w-full sm:w-auto">
             Quero dar um lance
           </a>
         </div>

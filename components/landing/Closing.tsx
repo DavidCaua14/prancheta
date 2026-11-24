@@ -76,10 +76,10 @@ export function FinalCta() {
         <p className="mt-4 max-w-lg text-lg leading-relaxed opacity-80">
           Crie seu clube e entre na próxima rodada da Várzea. É grátis e leva menos de um minuto.
         </p>
-        <a href="#comecar" className="btn btn-green btn-lg mt-8 w-full sm:w-auto" aria-disabled="true">
+        <a href="/entrar" className="btn btn-green btn-lg mt-8 w-full sm:w-auto">
           Criar meu clube
         </a>
-        <p className="mt-3 text-xs font-extrabold uppercase tracking-[0.15em] opacity-50">Cadastro abre em breve</p>
+        <p className="mt-3 text-xs font-extrabold uppercase tracking-[0.15em] opacity-50">Entre com sua conta Google</p>
       </div>
     </section>
   );

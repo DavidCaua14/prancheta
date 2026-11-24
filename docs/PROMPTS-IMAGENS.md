@@ -130,3 +130,39 @@ O nome "PRANCHETA" continua sendo escrito pelo site (fonte Bungee), então a ima
 
 Ele aparece com transparência por trás do título, então pode ser bem detalhado sem
 atrapalhar a leitura.
+
+---
+
+## 9. Telas do jogo (login, criação de clube, sede)
+
+Use o mesmo **estilo base** da seção 1.
+
+### Mascote — a assistente técnica
+
+Aparece em todas as telas do jogo, falando com o jogador num balão. No desktop ela fica grande no canto direito;
+no celular, pequena ao lado do balão.
+
+| Arquivo | Tamanho | Prompt (depois do estilo base) |
+| --- | --- | --- |
+| `mascote.png` | 640 × 800 | `Friendly Brazilian female assistant football coach mascot, young woman with big curly dark hair in a ponytail, warm brown skin, confident friendly smile, wearing a dark green tracksuit jacket with yellow stripes on the sleeves and a small gold crown logo on the chest, a whistle on a cord around her neck, holding a small tactics clipboard in one hand and pointing to the left with the other, waist-up view, body slightly turned to the left, full figure cut at the hips at the bottom edge.` |
+
+Para manter a mesma personagem em outras poses no futuro (comemorando, pensando, apontando para cima), gere a
+partir desta imagem como referência.
+
+### Faixas no topo dos painéis — 1200 × 400, **sem** transparência (WebP ou PNG)
+
+Ficam atrás de uma borda grossa e, na criação do clube, os botões dos passos aparecem por cima da parte de
+**baixo** da imagem — deixe a faixa inferior mais simples.
+
+| Arquivo | Onde aparece | Prompt (depois do estilo base, **sem** "isolated on a transparent background") |
+| --- | --- | --- |
+| `banner-login.png` | Tela de login ("Entre em campo") | `Wide horizontal banner illustration of a cozy football locker room: wooden benches, colorful jerseys hanging on hooks (green, yellow, blue, pink), a tactics chalkboard with X and O marks, a ball and cleats on the floor, warm light. No people, no text. Simple and calm lower third.` |
+| `banner-clube.png` | Tela de fundar o clube | `Wide horizontal banner illustration of a Brazilian várzea dirt football pitch at sunset, colorful small houses on a hill behind, a fence with a hand-painted empty sign board (no text), kids' kites in the orange-purple sky, a wooden goal with a torn net on the right, a few kids playing in the distance. No text. Simple and calm lower third.` |
+
+### Fundo das telas do jogo (opcional) — 1920 × 1080, WebP
+
+Hoje as telas do jogo usam o mesmo estádio da página inicial (`hero-stadium`). Se quiser um fundo próprio:
+
+| Arquivo | Prompt (depois do estilo base, **sem** a parte de transparência) |
+| --- | --- |
+| `bg-jogo.webp` | `Wide background illustration of a Brazilian football stadium at night seen from the pitch level, green and yellow crowd with flags, big floodlights, empty center area with only soft blurred grass and sky, dark and calm, low contrast so panels on top stay readable. No text.` |

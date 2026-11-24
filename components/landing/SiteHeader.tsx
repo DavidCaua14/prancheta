@@ -24,10 +24,10 @@ export function SiteHeader() {
           </ul>
         </nav>
         <div className="flex items-center gap-2">
-          <a href="#comecar" className="btn btn-ghost btn-sm hidden sm:inline-flex">
+          <a href="/entrar" className="btn btn-ghost btn-sm hidden sm:inline-flex">
             Entrar
           </a>
-          <a href="#comecar" className="btn btn-green btn-sm hidden min-[430px]:inline-flex">
+          <a href="/entrar" className="btn btn-green btn-sm hidden min-[430px]:inline-flex">
             Jogar grátis
           </a>
           <MobileMenu />

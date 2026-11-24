@@ -21,6 +21,8 @@ Abra http://localhost:3000.
 - `components/system/UpdateWatcher.tsx` — aviso de atualização obrigatória.
 - `lib/game-config.ts` — regras do jogo (raridades, divisões, copas).
 - `docs/ARQUITETURA.md` — decisões de arquitetura e próximos passos.
+- `docs/LOGIN-GOOGLE.md` — como criar as chaves do Google e ligar o login.
+- `supabase/migrations/` — SQL do banco (aplicado no projeto Supabase).
 - `docs/PROMPTS-IMAGENS.md` — prompts para gerar a arte final. Salve as imagens em
   `public/art/` com o nome indicado e elas substituem os desenhos provisórios.
 

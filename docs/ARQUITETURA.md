@@ -61,6 +61,23 @@ Várzea → Série D → Série C → Série B → Série A → Liga das Lendas.
 Todo clube novo entra numa liga da Várzea com vaga aberta (ligas são criadas
 sob demanda quando as existentes enchem). Copas liberadas por divisão.
 
+## Login e clube (implementado)
+
+- **Login só com Google**, feito pelo navegador com o Supabase Auth (fluxo PKCE).
+  A sessão fica salva no aparelho; não há servidor nosso no meio. Passo a passo das chaves: `docs/LOGIN-GOOGLE.md`.
+- **Páginas estáticas** (`/entrar`, `/auth/callback`, `/clube/novo`, `/jogo`): saem da CDN da Vercel e
+  conversam direto com o Supabase. Zero função de servidor por acesso.
+- **Tabela `clubs`** (`supabase/migrations/0001_clubs.sql`): uma linha por usuário, ~100 bytes.
+  `id` = id do usuário (garante 1 clube por conta), nome único (sem diferenciar maiúsculas), sigla, e escudo/camisa
+  como **códigos curtos** (`lib/club/identity.ts`) desenhados em SVG no navegador.
+- **Segurança no banco (RLS)**: só logados leem; cada um cria apenas o próprio clube; nome não pode ser trocado;
+  escudo e camisa só pelo dono. Regras de formato também ficam no banco (CHECK).
+- **Cache local**: depois do primeiro acesso, o clube vem do `localStorage` — abrir o jogo não lê o banco.
+- **Rascunho local**: o que o jogador montou na criação do clube fica salvo no aparelho até ele fundar.
+
+Estimativa no plano grátis (500 MB): o próprio Supabase guarda ~1–2 KB por usuário em `auth.users`;
+a tabela `clubs` soma ~0,1 KB. Ou seja, dezenas de milhares de técnicos cabem com folga.
+
 ## Esboço do banco (Postgres)
 
 ```
@@ -79,7 +96,7 @@ friendlies(id, codigo, casa_id, fora_id, inicio_em, match_id)
 
 ## Próximos passos
 
-1. Autenticação e criação de clube (elenco inicial de cartas Base).
+1. ~~Autenticação e criação de clube~~ ✅ (falta o elenco inicial de cartas Base, gerado por seed).
 2. Motor de simulação completo (`lib/sim/`) com testes de determinismo.
 3. Tela de escalação/prancheta.
 4. Ligas da Várzea + job de rodadas.
