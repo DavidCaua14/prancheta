@@ -39,11 +39,11 @@ export function Hero() {
     <section id="topo" className="relative overflow-hidden border-b-[3px] border-[var(--ink)]">
       <Art
         name="hero-stadium"
-        width={1920}
-        height={1080}
+        width={1672}
+        height={941}
         eager
         sizes="100vw"
-        className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-35"
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right opacity-90"
         fallback={
           <div
             aria-hidden
@@ -52,6 +52,11 @@ export function Hero() {
         }
       />
 
+      {/* escurece a esquerda (texto) e a base para manter a leitura */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,var(--night)_0%,rgba(29,22,80,0.85)_40%,rgba(29,22,80,0.35)_75%,rgba(29,22,80,0.2)_100%)] max-lg:bg-[linear-gradient(180deg,rgba(29,22,80,0.55)_0%,rgba(29,22,80,0.9)_55%,var(--night)_100%)]"
+      />
       <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 pb-14 pt-10 sm:px-6 md:pt-16 lg:grid-cols-[1.05fr_1fr] lg:gap-6 lg:pb-20">
         <div className="text-center lg:text-left">
           <span className="tag">
@@ -79,7 +84,7 @@ export function Hero() {
               <svg viewBox="0 0 20 20" className="h-4 w-4" aria-hidden>
                 <path d="M5 3l12 7-12 7z" fill="currentColor" />
               </svg>
-              Ver uma partida
+              Como é uma partida
             </a>
           </div>
 

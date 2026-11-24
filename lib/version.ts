@@ -6,9 +6,9 @@ export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
  * de atualização obrigatória que os jogadores veem.
  */
 export const RELEASE_NOTES: string[] = [
-  "Tela inicial redesenhada: novas cartas, fontes e ícones",
-  "Partida de demonstração agora começa quando você quiser",
-  "Melhor visual no celular e no tablet",
+  "Nova arte: troféus, escudos, ícones e estádio",
+  "Menu do celular corrigido",
+  "Tela inicial mais leve e organizada",
 ];
 
 export type VersionPayload = {

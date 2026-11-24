@@ -6,7 +6,7 @@ import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
 import { PlayerCard } from "@/components/ui/PlayerCard";
 import { TierGem } from "@/components/ui/TierGem";
 import { DivisionBadge, TrophyIcon } from "@/components/ui/ToonIcons";
-import { MatchDemo } from "./MatchDemo";
+import { MatchShowcase } from "./MatchShowcase";
 import { SAMPLE_CARDS } from "./sample-cards";
 
 /* ------------------------------------------------------------------ */
@@ -47,13 +47,10 @@ function SectionTitle({ kicker, title, children }: { kicker: string; title: Reac
   );
 }
 
-function IconTile({ name, bg }: { name: GameIconName; bg: string }) {
+function IconTile({ name }: { name: GameIconName }) {
   return (
-    <span
-      className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border-[3px] border-[var(--ink)] shadow-[0_3px_0_var(--ink)]"
-      style={{ background: bg }}
-    >
-      <GameIcon name={name} className="h-11 w-11" />
+    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border-[3px] border-[var(--ink)] bg-[var(--cream)] shadow-[0_3px_0_var(--ink)]">
+      <GameIcon name={name} className="h-[52px] w-[52px]" />
     </span>
   );
 }
@@ -61,17 +58,17 @@ function IconTile({ name, bg }: { name: GameIconName; bg: string }) {
 /* ------------------------------------------------------------------ */
 
 export function Perks() {
-  const perks: { icon: GameIconName; bg: string; title: string; text: string }[] = [
-    { icon: "gratis", bg: "var(--hot)", title: "Grátis pra começar", text: "Clube, cartas Base, ligas e copas sem gastar nada." },
-    { icon: "celular", bg: "var(--sky)", title: "Roda no celular", text: "Leve, abre no navegador e gasta pouca internet." },
-    { icon: "pvp", bg: "var(--sun)", title: "Técnicos de verdade", text: "Todo adversário é outra pessoa, não um robô." },
+  const perks: { icon: GameIconName; title: string; text: string }[] = [
+    { icon: "gratis", title: "Grátis pra começar", text: "Clube, cartas Base, ligas e copas sem gastar nada." },
+    { icon: "celular", title: "Roda no celular", text: "Leve, abre no navegador e gasta pouca internet." },
+    { icon: "pvp", title: "Técnicos de verdade", text: "Todo adversário é outra pessoa, não um robô." },
   ];
   return (
     <Section compact>
       <ul className="grid gap-4 lg:grid-cols-3 lg:gap-6">
         {perks.map((p) => (
           <li key={p.title} className="panel flex h-full items-center gap-4 p-4 sm:p-5">
-            <IconTile name={p.icon} bg={p.bg} />
+            <IconTile name={p.icon} />
             <div>
               <h3 className="t-heading text-lg">{p.title}</h3>
               <p className="mt-1 leading-snug opacity-75">{p.text}</p>
@@ -89,10 +86,9 @@ export function LiveMatch() {
   return (
     <Section id="ao-vivo" tone="band">
       <SectionTitle kicker="Partida ao vivo" title={<>Cada lance na sua <span className="text-[var(--grass)]">tela</span></>}>
-        O jogo é simulado como uma partida de verdade: elenco, tática e mando de campo fazem diferença. Assista ao vivo e
-        mexa no time durante o jogo — ou feche o app e veja o resultado depois.
+        Cada jogo é simulado como uma partida de verdade: elenco, tática, mando de campo e até o cansaço fazem diferença.
       </SectionTitle>
-      <MatchDemo />
+      <MatchShowcase />
     </Section>
   );
 }
@@ -100,11 +96,11 @@ export function LiveMatch() {
 /* ------------------------------------------------------------------ */
 
 export function HowItWorks() {
-  const steps: { icon: GameIconName; bg: string; title: string; text: string }[] = [
-    { icon: "clube", bg: "var(--sky)", title: "Funde seu clube", text: "Escolha nome, escudo e cores. Você recebe um elenco de cartas Base e entra numa liga na hora." },
-    { icon: "tatica", bg: "var(--sun)", title: "Arme a prancheta", text: "Escale os titulares, escolha o esquema e o estilo de jogo: retranca, toque de bola ou pressão." },
-    { icon: "ao-vivo", bg: "var(--hot)", title: "A rodada acontece", text: "Os jogos têm hora marcada. Acompanhe ao vivo e faça mudanças, ou deixe o time jogar sozinho." },
-    { icon: "acesso", bg: "var(--grass)", title: "Suba de divisão", text: "Vença, evolua suas cartas e suba da Várzea até a Liga das Lendas, liberando copas e prêmios." },
+  const steps: { icon: GameIconName; title: string; text: string }[] = [
+    { icon: "clube", title: "Funde seu clube", text: "Escolha nome, escudo e cores. Você recebe um elenco de cartas Base e entra numa liga na hora." },
+    { icon: "tatica", title: "Arme a prancheta", text: "Escale os titulares, escolha o esquema e o estilo de jogo: retranca, toque de bola ou pressão." },
+    { icon: "ao-vivo", title: "A rodada acontece", text: "Os jogos têm hora marcada. Acompanhe ao vivo e faça mudanças, ou deixe o time jogar sozinho." },
+    { icon: "acesso", title: "Suba de divisão", text: "Vença, evolua suas cartas e suba da Várzea até a Liga das Lendas, liberando copas e prêmios." },
   ];
   return (
     <Section id="como-funciona">
@@ -112,7 +108,7 @@ export function HowItWorks() {
       <ol className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {steps.map((s, i) => (
           <li key={s.title} className="panel halftone relative flex h-full gap-4 p-4 sm:flex-col sm:gap-0 sm:p-5">
-            <IconTile name={s.icon} bg={s.bg} />
+            <IconTile name={s.icon} />
             <span className="t-num absolute right-4 top-3 text-2xl text-[var(--ink)]/15 sm:top-4 sm:text-4xl">0{i + 1}</span>
             <div className="min-w-0 sm:mt-5">
               <h3 className="t-heading pr-10 text-lg sm:pr-0 sm:text-xl">{s.title}</h3>
@@ -191,9 +187,9 @@ export function LeaguesAndCups() {
               <span className="t-num absolute left-3 top-2.5 text-xs opacity-35">{i + 1}</span>
               <Art
                 name={`div-${d.id}`}
-                width={256}
-                height={288}
-                className="h-16 w-14 object-contain"
+                width={384}
+                height={432}
+                className="h-24 w-[86px] object-contain"
                 fallback={<DivisionBadge id={d.id} label={d.short} className="h-16 w-14" />}
               />
               <h4 className="t-heading mt-3 text-base leading-tight">{d.name}</h4>
@@ -208,11 +204,11 @@ export function LeaguesAndCups() {
       <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {CUPS.map((c) => (
           <li key={c.id} className="panel flex h-full flex-col items-center p-4 text-center sm:p-6">
-            <div className="flex h-24 w-24 items-center justify-center sm:h-28 sm:w-28">
+            <div className="flex h-28 w-28 items-center justify-center sm:h-36 sm:w-36">
               <Art
                 name={`trophy-${c.id}`}
-                width={512}
-                height={512}
+                width={480}
+                height={528}
                 className="h-full w-full object-contain"
                 fallback={<TrophyIcon className="h-20 w-20 sm:h-24 sm:w-24" color={c.color} />}
               />
@@ -257,7 +253,7 @@ export function Auction() {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="tag bg-[var(--red)] text-white">
-              <span className="anim-blink h-2 w-2 rounded-full bg-white" /> Ao vivo
+              <span className="h-2 w-2 rounded-full bg-white" /> Ao vivo
             </span>
             <span className="tag bg-white">Termina em 02:14:07</span>
           </div>

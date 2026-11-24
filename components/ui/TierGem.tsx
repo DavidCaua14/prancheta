@@ -51,8 +51,8 @@ export function TierGem({ tier, className }: { tier: CardTier; className?: strin
   return (
     <Art
       name={`gem-${tier}`}
-      width={256}
-      height={256}
+      width={192}
+      height={192}
       className={`object-contain ${className ?? ""}`}
       fallback={<GemSvg tier={tier} className={className} />}
     />

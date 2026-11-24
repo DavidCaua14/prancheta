@@ -92,6 +92,9 @@ Aparecem dentro de quadrados coloridos (o quadrado é desenhado pelo site, entã
 
 ## 6. Retratos dos jogadores das cartas — 1024 × 1024, fundo transparente
 
+> **Não usado por enquanto:** os retratos serão gerados automaticamente pelo jogo.
+> As cartas da tela inicial usam os avatares em SVG.
+
 Aparecem no centro das cartas. **Enquadramento igual para todos:** busto de frente,
 topo da cabeça a ~8% da borda de cima, ombros encostando na borda de baixo,
 rosto centralizado, olhando para a frente com expressão confiante.

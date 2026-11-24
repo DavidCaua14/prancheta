@@ -20,7 +20,6 @@ Abra http://localhost:3000.
 - `components/ui/` — peças visuais cartoon (cartas, avatares, ícones, logo).
 - `components/system/UpdateWatcher.tsx` — aviso de atualização obrigatória.
 - `lib/game-config.ts` — regras do jogo (raridades, divisões, copas).
-- `lib/mini-sim.ts` — simulador determinístico da vitrine.
 - `docs/ARQUITETURA.md` — decisões de arquitetura e próximos passos.
 - `docs/PROMPTS-IMAGENS.md` — prompts para gerar a arte final. Salve as imagens em
   `public/art/` com o nome indicado e elas substituem os desenhos provisórios.

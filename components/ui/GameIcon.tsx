@@ -34,8 +34,8 @@ export function GameIcon({ name, className = "h-12 w-12" }: { name: GameIconName
   return (
     <Art
       name={`icon-${name}`}
-      width={256}
-      height={256}
+      width={384}
+      height={384}
       className={`object-contain ${className}`}
       fallback={FALLBACKS[name](className)}
     />

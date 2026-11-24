@@ -24,7 +24,21 @@ function resolveAppVersion(): string {
 
 const APP_VERSION = resolveAppVersion();
 
+/**
+ * Em desenvolvimento, o Next só libera os scripts para "localhost". Para testar
+ * no celular pelo IP da rede (ex.: http://192.168.0.10:3000) liberamos as faixas
+ * de rede local. Outras origens: DEV_ORIGINS="meu-tunel.dev,outro.host".
+ */
+const DEV_ORIGINS = [
+  "192.168.*.*",
+  "10.*.*.*",
+  "172.*.*.*",
+  "*.local",
+  ...(process.env.DEV_ORIGINS?.split(",").map((o) => o.trim()).filter(Boolean) ?? []),
+];
+
 const nextConfig: NextConfig = {
+  allowedDevOrigins: DEV_ORIGINS,
   experimental: {
     agentFeedback: true,
   },
