@@ -1,26 +1,297 @@
 @import "tailwindcss";
 
+/* ============================================================
+   PRANCHETA — tema cartoon anos 90
+   Contorno grosso, sombra "chapada" deslocada, cores saturadas
+   e retícula (halftone) de gibi.
+   ============================================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --toon-ink: #1b1038;
+  --toon-night: #231a5c;
+  --toon-night-2: #2f2378;
+  --toon-grass: #34c759;
+  --toon-grass-dark: #1f9a45;
+  --toon-grass-deep: #137a34;
+  --toon-sun: #ffd23f;
+  --toon-orange: #ff8a1f;
+  --toon-hot: #ff4f8b;
+  --toon-sky: #3ec5ff;
+  --toon-purple: #8b5cf6;
+  --toon-cream: #fff4d6;
+  --toon-paper: #fffaf0;
+  --toon-red: #ff4040;
+
+  --tier-base: #c9895a;
+  --tier-base-2: #8f5a35;
+  --tier-destaque: #6fd3ff;
+  --tier-destaque-2: #2b8fd6;
+  --tier-epica: #b57bff;
+  --tier-epica-2: #6b2fd1;
+  --tier-especial: #ffd23f;
+  --tier-especial-2: #ff8a1f;
+
+  --toon-border: 4px;
+  --toon-shadow: 6px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-ink: var(--toon-ink);
+  --color-night: var(--toon-night);
+  --color-grass: var(--toon-grass);
+  --color-grass-dark: var(--toon-grass-dark);
+  --color-sun: var(--toon-sun);
+  --color-orange: var(--toon-orange);
+  --color-hot: var(--toon-hot);
+  --color-sky: var(--toon-sky);
+  --color-purple: var(--toon-purple);
+  --color-cream: var(--toon-cream);
+  --color-paper: var(--toon-paper);
+  --font-display: var(--font-toon-display);
+  --font-sans: var(--font-toon-body);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--toon-night);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1.5px, transparent 1.6px);
+  background-size: 14px 14px;
+  color: var(--toon-paper);
+  font-family: var(--font-toon-body), system-ui, sans-serif;
+}
+
+/* ---------- Tipografia ---------- */
+
+.toon-title {
+  font-family: var(--font-toon-display), system-ui, sans-serif;
+  letter-spacing: 0.02em;
+  line-height: 0.95;
+  color: var(--toon-paper);
+  -webkit-text-stroke: 2px var(--toon-ink);
+  paint-order: stroke fill;
+  text-shadow:
+    3px 3px 0 var(--toon-ink),
+    5px 5px 0 rgba(0, 0, 0, 0.25);
+}
+
+.toon-title-sm {
+  font-family: var(--font-toon-display), system-ui, sans-serif;
+  letter-spacing: 0.03em;
+  -webkit-text-stroke: 1.5px var(--toon-ink);
+  paint-order: stroke fill;
+  text-shadow: 2px 2px 0 var(--toon-ink);
+}
+
+/* ---------- Caixas e botões ---------- */
+
+.toon-box {
+  border: var(--toon-border) solid var(--toon-ink);
+  border-radius: 22px;
+  box-shadow: var(--toon-shadow) var(--toon-shadow) 0 var(--toon-ink);
+}
+
+.toon-box-sm {
+  border: 3px solid var(--toon-ink);
+  border-radius: 14px;
+  box-shadow: 4px 4px 0 var(--toon-ink);
+}
+
+.toon-paper {
+  background-color: var(--toon-paper);
+  color: var(--toon-ink);
+}
+
+.toon-halftone {
+  background-image: radial-gradient(rgba(27, 16, 56, 0.12) 1.4px, transparent 1.5px);
+  background-size: 10px 10px;
+}
+
+.toon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-toon-display), system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  color: var(--toon-ink);
+  background: var(--toon-sun);
+  border: 3px solid var(--toon-ink);
+  border-radius: 999px;
+  box-shadow: 0 5px 0 var(--toon-ink);
+  padding: 0.7rem 1.4rem;
+  transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.15s;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toon-btn:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 0 var(--toon-ink);
+}
+
+.toon-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 var(--toon-ink);
+}
+
+.toon-btn:focus-visible {
+  outline: 3px dashed var(--toon-sky);
+  outline-offset: 4px;
+}
+
+.toon-btn-green {
+  background: var(--toon-grass);
+}
+
+.toon-btn-white {
+  background: var(--toon-paper);
+}
+
+.toon-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 2.5px solid var(--toon-ink);
+  border-radius: 999px;
+  padding: 0.15rem 0.7rem;
+  font-weight: 800;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--toon-ink);
+  box-shadow: 2px 2px 0 var(--toon-ink);
+}
+
+/* Explosão de quadrinho (selo) */
+.toon-burst {
+  clip-path: polygon(
+    50% 0%, 61% 15%, 79% 7%, 80% 26%, 98% 30%, 88% 46%, 100% 61%, 82% 68%,
+    84% 88%, 65% 84%, 50% 100%, 37% 85%, 17% 92%, 17% 72%, 0% 64%, 11% 49%,
+    2% 31%, 20% 27%, 22% 8%, 39% 15%
+  );
+}
+
+/* ---------- Gramado ---------- */
+
+.toon-pitch {
+  background-color: var(--toon-grass);
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--toon-grass) 0 10%,
+    #2fb851 10% 20%
+  );
+}
+
+/* ---------- Cartas ---------- */
+
+.card-tier-base {
+  --c1: var(--tier-base);
+  --c2: var(--tier-base-2);
+}
+.card-tier-destaque {
+  --c1: var(--tier-destaque);
+  --c2: var(--tier-destaque-2);
+}
+.card-tier-epica {
+  --c1: var(--tier-epica);
+  --c2: var(--tier-epica-2);
+}
+.card-tier-especial {
+  --c1: var(--tier-especial);
+  --c2: var(--tier-especial-2);
+}
+
+.player-card {
+  background: linear-gradient(160deg, var(--c1) 0%, var(--c2) 100%);
+  transition: transform 0.2s ease;
+}
+
+.player-card:hover {
+  transform: translateY(-6px) rotate(-1.5deg);
+}
+
+.card-tier-especial.player-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-tier-especial.player-card::after {
+  content: "";
+  position: absolute;
+  inset: -50%;
+  background: linear-gradient(
+    115deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.65) 48%,
+    rgba(255, 255, 255, 0.1) 52%,
+    transparent 60%
+  );
+  animation: toon-shine 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ---------- Animações ---------- */
+
+@keyframes toon-shine {
+  0% { transform: translateX(-60%); }
+  60%, 100% { transform: translateX(60%); }
+}
+
+@keyframes toon-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes toon-wiggle {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(4deg); }
+}
+
+@keyframes toon-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  70% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@keyframes toon-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes toon-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+@keyframes toon-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes toon-flash {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.6; }
+}
+
+.anim-bob { animation: toon-bob 3s ease-in-out infinite; }
+.anim-wiggle { animation: toon-wiggle 1.6s ease-in-out infinite; }
+.anim-pop { animation: toon-pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.4) both; }
+.anim-spin-slow { animation: toon-spin 14s linear infinite; }
+.anim-blink { animation: toon-blink 1s steps(2, start) infinite; }
+.anim-marquee { animation: toon-marquee 28s linear infinite; }
+.anim-flash { animation: toon-flash 2.4s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
