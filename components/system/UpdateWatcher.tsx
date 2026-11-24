@@ -73,30 +73,30 @@ export function UpdateWatcher() {
       aria-describedby="update-desc"
       className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(27,16,56,0.82)] p-4 backdrop-blur-sm"
     >
-      <div className="toon-box toon-paper toon-halftone anim-pop relative w-full max-w-sm p-6 pt-12 text-center">
-        <div className="toon-burst absolute -top-12 left-1/2 flex h-24 w-24 -translate-x-1/2 items-center justify-center bg-[var(--toon-sun)]">
-          <svg viewBox="0 0 48 48" className="anim-wiggle h-12 w-12" aria-hidden>
-            <circle cx="24" cy="24" r="18" fill="#fff" stroke="var(--toon-ink)" strokeWidth="3" />
+      <div className="panel halftone anim-pop relative w-full max-w-sm p-6 pt-14 text-center">
+        <div className="absolute -top-10 left-1/2 flex h-20 w-20 -translate-x-1/2 items-center justify-center rounded-2xl border-[3px] border-[var(--ink)] bg-[var(--sun)] shadow-[0_4px_0_var(--ink)]">
+          <svg viewBox="0 0 48 48" className="h-12 w-12" aria-hidden>
+            <circle cx="24" cy="24" r="18" fill="#fff" stroke="var(--ink)" strokeWidth="3" />
             <path
               d="M24 10l6 5-2 7h-8l-2-7zM12 22l6 2 2 7-4 5-6-3M36 22l-6 2-2 7 4 5 6-3M20 31h8"
-              fill="var(--toon-ink)"
-              stroke="var(--toon-ink)"
+              fill="var(--ink)"
+              stroke="var(--ink)"
               strokeWidth="1.5"
               strokeLinejoin="round"
             />
           </svg>
         </div>
-        <h2 id="update-title" className="toon-title text-3xl text-[var(--toon-sun)]">
+        <h2 id="update-title" className="t-heading text-2xl">
           Apito! Tem atualização
         </h2>
         <p id="update-desc" className="mt-3 font-bold">
           Saiu uma versão nova do Prancheta. Para continuar jogando, atualize o jogo.
         </p>
         {update.notes.length > 0 && (
-          <ul className="toon-box-sm mt-4 space-y-1 bg-white px-4 py-3 text-left text-sm font-semibold">
+          <ul className="mt-4 space-y-1 rounded-xl border-[3px] border-[var(--ink)] bg-white px-4 py-3 text-left text-sm font-semibold">
             {update.notes.map((note) => (
               <li key={note} className="flex gap-2">
-                <span aria-hidden className="text-[var(--toon-grass-dark)]">★</span>
+                <span aria-hidden className="text-[var(--grass-2)]">★</span>
                 {note}
               </li>
             ))}
@@ -106,7 +106,7 @@ export function UpdateWatcher() {
           type="button"
           autoFocus
           onClick={() => window.location.reload()}
-          className="toon-btn toon-btn-green mt-6 w-full text-xl"
+          className="btn btn-green btn-lg mt-6 w-full"
         >
           Atualizar agora
         </button>

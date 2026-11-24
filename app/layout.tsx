@@ -1,28 +1,28 @@
 import type { Metadata, Viewport } from "next";
-import { Lilita_One, Nunito } from "next/font/google";
+import { Baloo_2, Bungee } from "next/font/google";
 import { UpdateWatcher } from "@/components/system/UpdateWatcher";
 import "./globals.css";
 
-const display = Lilita_One({
-  variable: "--font-toon-display",
+const display = Bungee({
+  variable: "--font-display-face",
   weight: "400",
   subsets: ["latin", "latin-ext"],
 });
 
-const body = Nunito({
-  variable: "--font-toon-body",
+const body = Baloo_2({
+  variable: "--font-body-face",
   subsets: ["latin", "latin-ext"],
 });
 
 export const metadata: Metadata = {
   title: "Prancheta — o manager de futebol online no navegador",
   description:
-    "Monte seu clube, escale o time e acompanhe a partida simulada ao vivo contra outros técnicos. O clássico manager de futebol dos anos 90, agora online, no celular e sem instalar nada.",
+    "Monte seu clube, escale o time e acompanhe a partida simulada ao vivo contra outros técnicos. Manager de futebol online no navegador: cartas, ligas, copas, leilão e amistosos com amigos.",
   applicationName: "Prancheta",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#231a5c",
+  themeColor: "#1d1650",
   width: "device-width",
   initialScale: 1,
 };

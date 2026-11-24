@@ -1,78 +1,85 @@
 import type { ReactNode } from "react";
 import { CARD_TIERS, CUPS, DIVISIONS, TIER_ORDER } from "@/lib/game-config";
-import { PlayerCard } from "@/components/ui/PlayerCard";
+import { Art } from "@/components/ui/Art";
+import { GameIcon, type GameIconName } from "@/components/ui/GameIcon";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
-import {
-  ClipboardIcon,
-  GavelIcon,
-  GiftIcon,
-  HandshakeIcon,
-  PhoneIcon,
-  ShieldIcon,
-  TrophyIcon,
-  TvIcon,
-} from "@/components/ui/ToonIcons";
+import { PlayerCard } from "@/components/ui/PlayerCard";
+import { TierGem } from "@/components/ui/TierGem";
+import { DivisionBadge, TrophyIcon } from "@/components/ui/ToonIcons";
 import { MatchDemo } from "./MatchDemo";
 import { SAMPLE_CARDS } from "./sample-cards";
 
-function SectionTitle({ kicker, title, children }: { kicker?: string; title: ReactNode; children?: ReactNode }) {
+/* ------------------------------------------------------------------ */
+/* Base de layout                                                      */
+/* ------------------------------------------------------------------ */
+
+function Section({
+  id,
+  tone = "plain",
+  compact = false,
+  children,
+}: {
+  id?: string;
+  tone?: "plain" | "band" | "green" | "pink";
+  compact?: boolean;
+  children: ReactNode;
+}) {
+  const tones = {
+    plain: "",
+    band: "border-y-[3px] border-[var(--ink)] bg-[var(--night-2)]",
+    green: "border-y-[3px] border-[var(--ink)] bg-[var(--grass-2)]",
+    pink: "border-y-[3px] border-[var(--ink)] bg-[var(--hot)]",
+  };
   return (
-    <div className="mx-auto mb-10 max-w-2xl text-center">
-      {kicker && <span className="toon-chip bg-[var(--toon-sky)]">{kicker}</span>}
-      <h2 className="toon-title mt-3 text-4xl sm:text-5xl">{title}</h2>
-      {children && <p className="mt-4 text-lg font-bold text-white/85">{children}</p>}
-    </div>
+    <section id={id} className={`scroll-mt-20 px-4 sm:px-6 ${compact ? "py-10 sm:py-14" : "py-16 sm:py-24"} ${tones[tone]}`}>
+      <div className="mx-auto max-w-6xl">{children}</div>
+    </section>
   );
 }
 
-/* ------------------------------------------------------------------ */
-
-export function Ticker() {
-  const items = [
-    "Rodada 12 da Várzea começa às 20h",
-    "Tubarões da Vila 3 x 2 Unidos do Morro",
-    "Leilão: carta ESPECIAL saindo por 48.200 moedas",
-    "Bola Murcha EC sobe para a Série D!",
-    "Copa Nacional: oitavas definidas",
-    "Novo técnico? Liga da Várzea tem vaga agora",
-  ];
-  const row = [...items, ...items];
+function SectionTitle({ kicker, title, children }: { kicker: string; title: ReactNode; children?: ReactNode }) {
   return (
-    <div className="overflow-hidden border-b-4 border-[var(--toon-ink)] bg-[var(--toon-sun)] py-2 text-[var(--toon-ink)]" aria-hidden>
-      <div className="anim-marquee flex w-max gap-10 whitespace-nowrap font-[family-name:var(--font-toon-display)] text-lg tracking-wide">
-        {row.map((t, i) => (
-          <span key={i} className="flex items-center gap-10">
-            {t}
-            <span className="text-[var(--toon-hot)]">⚽</span>
-          </span>
-        ))}
-      </div>
-    </div>
+    <header className="mx-auto mb-10 max-w-2xl text-center sm:mb-14">
+      <span className="tag">{kicker}</span>
+      <h2 className="t-display mt-4 text-3xl sm:text-5xl">{title}</h2>
+      {children && <p className="mt-4 text-lg leading-relaxed text-white/85">{children}</p>}
+    </header>
+  );
+}
+
+function IconTile({ name, bg }: { name: GameIconName; bg: string }) {
+  return (
+    <span
+      className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border-[3px] border-[var(--ink)] shadow-[0_3px_0_var(--ink)]"
+      style={{ background: bg }}
+    >
+      <GameIcon name={name} className="h-11 w-11" />
+    </span>
   );
 }
 
 /* ------------------------------------------------------------------ */
 
 export function Perks() {
-  const perks = [
-    { icon: <GiftIcon className="h-12 w-12" />, title: "Grátis de verdade", text: "Cartas Base, ligas e copas sem gastar nada." },
-    { icon: <PhoneIcon className="h-12 w-12" />, title: "No navegador", text: "Leve como um jogo dos anos 90. Abre até no 4G." },
-    { icon: <HandshakeIcon className="h-12 w-12" />, title: "Gente de verdade", text: "Todo adversário é outro técnico, não um robô." },
+  const perks: { icon: GameIconName; bg: string; title: string; text: string }[] = [
+    { icon: "gratis", bg: "var(--hot)", title: "Grátis pra começar", text: "Clube, cartas Base, ligas e copas sem gastar nada." },
+    { icon: "celular", bg: "var(--sky)", title: "Roda no celular", text: "Leve, abre no navegador e gasta pouca internet." },
+    { icon: "pvp", bg: "var(--sun)", title: "Técnicos de verdade", text: "Todo adversário é outra pessoa, não um robô." },
   ];
   return (
-    <section className="mx-auto -mt-2 max-w-5xl px-4 pt-12">
-      <ul className="grid gap-5 sm:grid-cols-3">
+    <Section compact>
+      <ul className="grid gap-4 lg:grid-cols-3 lg:gap-6">
         {perks.map((p) => (
-          <li key={p.title} className="toon-box toon-paper flex items-center gap-4 p-4">
-            <span className="shrink-0">{p.icon}</span>
-            <span>
-              <strong className="block font-[family-name:var(--font-toon-display)] text-xl tracking-wide">{p.title}</strong>
-              <span className="text-sm font-semibold opacity-80">{p.text}</span>
-            </span>
+          <li key={p.title} className="panel flex h-full items-center gap-4 p-4 sm:p-5">
+            <IconTile name={p.icon} bg={p.bg} />
+            <div>
+              <h3 className="t-heading text-lg">{p.title}</h3>
+              <p className="mt-1 leading-snug opacity-75">{p.text}</p>
+            </div>
           </li>
         ))}
       </ul>
-    </section>
+    </Section>
   );
 }
 
@@ -80,139 +87,150 @@ export function Perks() {
 
 export function LiveMatch() {
   return (
-    <section id="ao-vivo" className="scroll-mt-28 px-4 py-20">
-      <SectionTitle kicker="Simulação ao vivo" title={<>Cada lance na sua <span className="text-[var(--toon-grass)]">telinha</span></>}>
-        Seu time joga sozinho, igual no manager clássico, mas agora você pode assistir ao vivo e mexer na tática no meio
-        do jogo. Testa aí: muda a tática do TUB e vê o que acontece.
+    <Section id="ao-vivo" tone="band">
+      <SectionTitle kicker="Partida ao vivo" title={<>Cada lance na sua <span className="text-[var(--grass)]">tela</span></>}>
+        O jogo é simulado como uma partida de verdade: elenco, tática e mando de campo fazem diferença. Assista ao vivo e
+        mexa no time durante o jogo — ou feche o app e veja o resultado depois.
       </SectionTitle>
       <MatchDemo />
-    </section>
+    </Section>
   );
 }
 
 /* ------------------------------------------------------------------ */
 
 export function HowItWorks() {
-  const steps = [
-    { icon: <ShieldIcon className="h-16 w-16" />, title: "Funde seu clube", text: "Escolha nome, escudo e cores. Você ganha um elenco inicial de cartas Base e entra direto numa liga da Várzea.", color: "bg-[var(--toon-sky)]" },
-    { icon: <ClipboardIcon className="h-16 w-16" />, title: "Monte a prancheta", text: "Escale os 11, escolha o esquema (4-4-2, 3-5-2...) e o estilo: retranca, toque de bola ou pra cima deles.", color: "bg-[var(--toon-sun)]" },
-    { icon: <TvIcon className="h-16 w-16" />, title: "A rodada rola sozinha", text: "Os jogos têm hora marcada. Assista ao vivo e faça substituições, ou feche o app: o jogo acontece de qualquer jeito.", color: "bg-[var(--toon-hot)]" },
-    { icon: <TrophyIcon className="h-16 w-16" />, title: "Suba de divisão", text: "Ganhe, evolua suas cartas e suba da Várzea até a Liga das Lendas. Cada degrau abre copas e prêmios novos.", color: "bg-[var(--toon-grass)]" },
+  const steps: { icon: GameIconName; bg: string; title: string; text: string }[] = [
+    { icon: "clube", bg: "var(--sky)", title: "Funde seu clube", text: "Escolha nome, escudo e cores. Você recebe um elenco de cartas Base e entra numa liga na hora." },
+    { icon: "tatica", bg: "var(--sun)", title: "Arme a prancheta", text: "Escale os titulares, escolha o esquema e o estilo de jogo: retranca, toque de bola ou pressão." },
+    { icon: "ao-vivo", bg: "var(--hot)", title: "A rodada acontece", text: "Os jogos têm hora marcada. Acompanhe ao vivo e faça mudanças, ou deixe o time jogar sozinho." },
+    { icon: "acesso", bg: "var(--grass)", title: "Suba de divisão", text: "Vença, evolua suas cartas e suba da Várzea até a Liga das Lendas, liberando copas e prêmios." },
   ];
   return (
-    <section id="como-funciona" className="scroll-mt-28 border-y-4 border-[var(--toon-ink)] bg-[var(--toon-grass-dark)] px-4 py-20">
-      <SectionTitle kicker="Como funciona" title={<>Quatro passos pro <span className="text-[var(--toon-sun)]">timaço</span></>} />
-      <ol className="mx-auto grid max-w-6xl gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    <Section id="como-funciona">
+      <SectionTitle kicker="Como funciona" title={<>Quatro passos para o <span className="text-[var(--sun)]">título</span></>} />
+      <ol className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {steps.map((s, i) => (
-          <li key={s.title} className="toon-box toon-paper toon-halftone relative p-5 pt-8">
-            <span className="toon-box-sm absolute -left-3 -top-4 flex h-11 w-11 items-center justify-center bg-[var(--toon-ink)] font-[family-name:var(--font-toon-display)] text-2xl text-[var(--toon-sun)]">
-              {i + 1}
-            </span>
-            <div className={`toon-box-sm mb-4 flex h-24 items-center justify-center ${s.color}`}>{s.icon}</div>
-            <h3 className="font-[family-name:var(--font-toon-display)] text-2xl tracking-wide">{s.title}</h3>
-            <p className="mt-2 text-sm font-semibold leading-relaxed opacity-85">{s.text}</p>
+          <li key={s.title} className="panel halftone relative flex h-full gap-4 p-4 sm:flex-col sm:gap-0 sm:p-5">
+            <IconTile name={s.icon} bg={s.bg} />
+            <span className="t-num absolute right-4 top-3 text-2xl text-[var(--ink)]/15 sm:top-4 sm:text-4xl">0{i + 1}</span>
+            <div className="min-w-0 sm:mt-5">
+              <h3 className="t-heading pr-10 text-lg sm:pr-0 sm:text-xl">{s.title}</h3>
+              <p className="mt-1.5 leading-snug opacity-75 sm:mt-2">{s.text}</p>
+            </div>
           </li>
         ))}
       </ol>
-    </section>
+    </Section>
   );
 }
 
 /* ------------------------------------------------------------------ */
 
 export function CardsShowcase() {
-  const byTier = TIER_ORDER.map((tier) => ({
-    tier: CARD_TIERS[tier],
-    card: SAMPLE_CARDS.find((c) => c.tier === tier)!,
-  }));
   return (
-    <section id="cartas" className="scroll-mt-28 px-4 py-20">
-      <SectionTitle kicker="Sistema de cartas" title={<>Do terrão ao <span className="text-[var(--toon-sun)]">estrelato</span></>}>
-        Cada jogador é uma cartinha que ganha experiência jogando, sobe de nível e aumenta o overall. Quanto mais rara,
-        mais longe ela chega.
+    <Section id="cartas" tone="band">
+      <SectionTitle kicker="Sistema de cartas" title={<>Cartas que <span className="text-[var(--sun)]">evoluem</span></>}>
+        Cada jogador é uma carta. Jogando, ela ganha experiência, sobe de nível e aumenta o overall — até o limite da sua
+        raridade.
       </SectionTitle>
-      <ul className="mx-auto grid max-w-6xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {byTier.map(({ tier, card }) => (
-          <li key={tier.id} className={`toon-box card-tier-${tier.id} flex flex-col items-center gap-4 bg-[var(--toon-paper)] p-5 text-[var(--toon-ink)]`}>
-            <PlayerCard player={card} />
-            <div className="w-full">
-              <h3 className="toon-title-sm text-center text-3xl text-[var(--c1)]">{tier.label}</h3>
-              <dl className="mt-3 grid grid-cols-2 gap-2 text-center">
-                <div className="toon-box-sm bg-white px-2 py-1.5">
-                  <dt className="text-[0.65rem] font-black uppercase opacity-60">Overall máx</dt>
-                  <dd className="font-[family-name:var(--font-toon-display)] text-2xl">{tier.maxOverall}</dd>
+
+      <ul className="grid grid-cols-2 gap-x-4 gap-y-8 lg:grid-cols-4 lg:gap-6">
+        {TIER_ORDER.map((id) => {
+          const tier = CARD_TIERS[id];
+          const card = SAMPLE_CARDS.find((c) => c.tier === id)!;
+          return (
+            <li key={id} className="flex flex-col items-center">
+              <PlayerCard player={card} size="fluid" className="lg:!text-[15px]" />
+              <div className="mt-5 w-full max-w-[220px]">
+                <div className="flex items-center justify-center gap-2">
+                  <TierGem tier={id} className="h-6 w-6" />
+                  <h3 className="t-heading text-lg sm:text-xl">{tier.label}</h3>
                 </div>
-                <div className="toon-box-sm bg-white px-2 py-1.5">
-                  <dt className="text-[0.65rem] font-black uppercase opacity-60">Nível máx</dt>
-                  <dd className="font-[family-name:var(--font-toon-display)] text-2xl">{tier.maxLevel}</dd>
-                </div>
-              </dl>
-              <p className="mt-3 text-center text-sm font-bold opacity-80">{tier.howToGet}</p>
-              <p className="mt-1 text-center text-xs font-black uppercase text-[var(--toon-hot)]">
-                {tier.squadLimit ? `Até ${tier.squadLimit} por elenco` : "Sem limite no elenco"}
-              </p>
-            </div>
-          </li>
-        ))}
+                <dl className="mt-3 grid grid-cols-2 overflow-hidden rounded-xl border-[3px] border-[var(--ink)] bg-[var(--paper)] text-center text-[var(--ink)]">
+                  <div className="border-r-[3px] border-[var(--ink)] py-2">
+                    <dt className="text-[0.65rem] font-extrabold uppercase tracking-wider opacity-55">OVR máx</dt>
+                    <dd className="t-num text-xl">{tier.maxOverall}</dd>
+                  </div>
+                  <div className="py-2">
+                    <dt className="text-[0.65rem] font-extrabold uppercase tracking-wider opacity-55">Nível máx</dt>
+                    <dd className="t-num text-xl">{tier.maxLevel}</dd>
+                  </div>
+                </dl>
+                <p className="mt-2 text-center text-sm leading-snug text-white/70">{tier.howToGet}</p>
+              </div>
+            </li>
+          );
+        })}
       </ul>
-    </section>
+    </Section>
   );
 }
 
 /* ------------------------------------------------------------------ */
 
 export function LeaguesAndCups() {
-  const ladder = [...DIVISIONS].reverse();
   return (
-    <section id="ligas" className="scroll-mt-28 border-y-4 border-[var(--toon-ink)] bg-[var(--toon-night-2)] px-4 py-20">
-      <SectionTitle kicker="Ligas & copas" title={<>Suba degrau por <span className="text-[var(--toon-orange)]">degrau</span></>}>
-        Entrou hoje? Já tem liga te esperando. Todo clube novo começa na Várzea, e cada acesso libera novas copas,
-        prêmios e cartas melhores no leilão.
+    <Section id="ligas">
+      <SectionTitle kicker="Ligas e copas" title={<>Da várzea às <span className="text-[var(--orange)]">lendas</span></>}>
+        Entrou hoje? Tem liga com vaga esperando. Todo clube começa na Várzea e cada acesso libera copas novas, prêmios
+        maiores e cartas melhores no leilão.
       </SectionTitle>
 
-      <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1.2fr_1fr]">
-        <ol className="flex flex-col gap-3">
-          {ladder.map((d, i) => {
-            const indent = (ladder.length - 1 - i) * 3;
-            const isStart = d.id === "varzea";
-            return (
-              <li
-                key={d.id}
-                className={`toon-box-sm flex items-center gap-4 px-4 py-3 ${isStart ? "bg-[var(--toon-sun)]" : "bg-[var(--toon-paper)]"} text-[var(--toon-ink)]`}
-                style={{ marginLeft: `${indent}%`, marginRight: `${indent}%` }}
-              >
-                <span className="toon-box-sm flex h-12 w-12 shrink-0 items-center justify-center bg-[var(--toon-ink)] font-[family-name:var(--font-toon-display)] text-xl text-[var(--toon-sun)]">
-                  {d.short}
-                </span>
-                <span className="min-w-0">
-                  <strong className="block font-[family-name:var(--font-toon-display)] text-xl tracking-wide">
-                    {d.name} {isStart && <span className="toon-chip ml-1 bg-[var(--toon-grass)] align-middle !text-[0.6rem]">Você começa aqui</span>}
-                  </strong>
-                  <span className="text-sm font-semibold opacity-80">{d.description}</span>
-                </span>
-              </li>
-            );
-          })}
-        </ol>
+      <h3 className="t-heading mb-4 text-xl text-[var(--sun)]">Divisões</h3>
+      <ol className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
+        {DIVISIONS.map((d, i) => {
+          const start = i === 0;
+          return (
+            <li
+              key={d.id}
+              className={`relative flex h-full flex-col items-center rounded-2xl border-[3px] border-[var(--ink)] p-4 text-center shadow-[0_5px_0_var(--ink)] ${
+                start ? "bg-[var(--sun)] text-[var(--ink)]" : "bg-[var(--paper)] text-[var(--ink)]"
+              }`}
+            >
+              <span className="t-num absolute left-3 top-2.5 text-xs opacity-35">{i + 1}</span>
+              <Art
+                name={`div-${d.id}`}
+                width={256}
+                height={288}
+                className="h-16 w-14 object-contain"
+                fallback={<DivisionBadge id={d.id} label={d.short} className="h-16 w-14" />}
+              />
+              <h4 className="t-heading mt-3 text-base leading-tight">{d.name}</h4>
+              <p className="mt-1.5 text-sm leading-snug opacity-70">{d.description}</p>
+              {start && <span className="tag mt-auto translate-y-1 bg-[var(--grass)]">Início</span>}
+            </li>
+          );
+        })}
+      </ol>
 
-        <div>
-          <h3 className="toon-title-sm mb-4 text-center text-3xl text-[var(--toon-sun)] lg:text-left">Copas pelo caminho</h3>
-          <ul className="grid grid-cols-2 gap-4">
-            {CUPS.map((c) => (
-              <li key={c.id} className="toon-box toon-paper flex flex-col items-center p-4 text-center">
-                <TrophyIcon className="anim-bob h-16 w-16" color={c.color} />
-                <strong className="mt-2 font-[family-name:var(--font-toon-display)] text-lg leading-tight tracking-wide">{c.name}</strong>
-                <span className="mt-1 text-xs font-bold opacity-70">{c.unlock}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="toon-box-sm mt-5 bg-[var(--toon-ink)] p-4 text-sm font-bold text-white/90">
-            <span className="text-[var(--toon-sun)]">⏰ Rodadas com hora marcada:</span> o calendário é do jogo, não seu. Se
-            você não estiver online, seu time entra com a última escalação salva.
-          </p>
-        </div>
-      </div>
-    </section>
+      <h3 className="t-heading mb-4 mt-14 text-xl text-[var(--sun)]">Copas</h3>
+      <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        {CUPS.map((c) => (
+          <li key={c.id} className="panel flex h-full flex-col items-center p-4 text-center sm:p-6">
+            <div className="flex h-24 w-24 items-center justify-center sm:h-28 sm:w-28">
+              <Art
+                name={`trophy-${c.id}`}
+                width={512}
+                height={512}
+                className="h-full w-full object-contain"
+                fallback={<TrophyIcon className="h-20 w-20 sm:h-24 sm:w-24" color={c.color} />}
+              />
+            </div>
+            <h4 className="t-heading mt-3 text-base leading-tight sm:text-lg">{c.name}</h4>
+            <p className="mt-1.5 text-sm opacity-65">{c.unlock}</p>
+          </li>
+        ))}
+      </ul>
+
+      <p className="panel-dark mt-10 flex items-start gap-3 p-4 sm:items-center sm:p-5">
+        <span className="tag shrink-0 bg-[var(--sky)]">Rodadas</span>
+        <span className="leading-snug text-white/85">
+          O calendário é do jogo: as partidas acontecem no horário marcado. Se você não estiver online, o time entra com a
+          última escalação salva.
+        </span>
+      </p>
+    </Section>
   );
 }
 
@@ -226,42 +244,47 @@ export function Auction() {
     { who: "Real Várzea", value: "26.750" },
   ];
   return (
-    <section id="leilao" className="scroll-mt-28 px-4 py-20">
-      <SectionTitle kicker="Leilão" title={<>Bateu o <span className="text-[var(--toon-orange)]">martelo!</span></>}>
-        Cartas raras vão a leilão para todos os técnicos. Dê seu lance com as moedas que seu clube ganha jogando e leve o
-        craque que falta pro seu time.
+    <Section id="leilao" tone="band">
+      <SectionTitle kicker="Leilão" title={<>Arremate seu <span className="text-[var(--orange)]">craque</span></>}>
+        Cartas raras vão a leilão para todos os técnicos. Use as moedas que o clube ganha jogando e leve o craque que
+        falta no seu time.
       </SectionTitle>
 
-      <div className="toon-box toon-paper toon-halftone mx-auto grid max-w-4xl items-center gap-8 p-6 sm:grid-cols-[auto_1fr] sm:p-8">
-        <div className="relative mx-auto">
-          <span className="absolute -right-5 -top-14 z-10">
-            <GavelIcon className="anim-wiggle h-16 w-16" />
-          </span>
-          <PlayerCard player={card} />
+      <div className="panel halftone mx-auto grid max-w-4xl items-center gap-8 p-5 sm:p-8 md:grid-cols-[auto_1fr] md:gap-10">
+        <div className="mx-auto">
+          <PlayerCard player={card} size="lg" />
         </div>
-        <div>
+        <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="toon-chip bg-[var(--toon-red)] text-white">
+            <span className="tag bg-[var(--red)] text-white">
               <span className="anim-blink h-2 w-2 rounded-full bg-white" /> Ao vivo
             </span>
-            <span className="toon-chip bg-white">Termina em 02:14:07</span>
+            <span className="tag bg-white">Termina em 02:14:07</span>
           </div>
-          <p className="mt-4 text-sm font-black uppercase opacity-60">Maior lance</p>
-          <p className="toon-title text-5xl text-[var(--toon-grass)]">31.500 🪙</p>
-          <ol className="mt-4 space-y-2">
+          <p className="mt-5 text-xs font-extrabold uppercase tracking-[0.15em] opacity-55">Maior lance</p>
+          <p className="mt-1 flex items-center gap-2">
+            <GameIcon name="moeda" className="h-10 w-10" />
+            <span className="t-num text-4xl sm:text-5xl">31.500</span>
+          </p>
+          <ol className="mt-5 overflow-hidden rounded-xl border-[3px] border-[var(--ink)]">
             {bids.map((b, i) => (
-              <li key={b.who} className={`toon-box-sm flex justify-between px-3 py-2 text-sm font-black ${i === 0 ? "bg-[var(--toon-sun)]" : "bg-white"}`}>
-                <span>{b.who}</span>
-                <span>{b.value}</span>
+              <li
+                key={b.who}
+                className={`flex items-center justify-between gap-3 px-4 py-2.5 font-bold ${
+                  i === 0 ? "bg-[var(--sun)]" : "border-t-2 border-[var(--ink)]/15 bg-white"
+                }`}
+              >
+                <span className="truncate">{b.who}</span>
+                <span className="t-num shrink-0 text-sm">{b.value}</span>
               </li>
             ))}
           </ol>
-          <a href="#comecar" className="toon-btn mt-6 w-full text-lg sm:w-auto">
-            Quero dar meu lance
+          <a href="#comecar" className="btn btn-green mt-6 w-full sm:w-auto">
+            Quero dar um lance
           </a>
         </div>
       </div>
-    </section>
+    </Section>
   );
 }
 
@@ -269,43 +292,43 @@ export function Auction() {
 
 export function Friends() {
   return (
-    <section id="amigos" className="scroll-mt-28 border-y-4 border-[var(--toon-ink)] bg-[var(--toon-hot)] px-4 py-20">
-      <div className="mx-auto grid max-w-5xl items-center gap-10 md:grid-cols-2">
+    <Section id="amigos" tone="pink">
+      <div className="grid items-center gap-10 md:grid-cols-2">
         <div className="text-center md:text-left">
-          <span className="toon-chip bg-white">Amistosos</span>
-          <h2 className="toon-title mt-3 text-4xl sm:text-5xl">
-            Chama a <span className="text-[var(--toon-sun)]">resenha</span> pro jogo
+          <span className="tag bg-white">Amistosos</span>
+          <h2 className="t-display mt-4 text-3xl sm:text-5xl">
+            Desafie seus <span className="text-[var(--sun)]">amigos</span>
           </h2>
-          <p className="mt-4 text-lg font-bold text-white">
-            Marque um amistoso com os amigos: manda o link no grupo, escolhe o horário e assistam juntos o seu time contra o
-            dele. Quem perder paga o churrasco (isso não é com a gente).
+          <p className="mt-4 text-lg leading-relaxed text-white">
+            Marque um amistoso, mande o link no grupo e escolham o horário. Os dois times entram em campo com a escalação e
+            a tática de cada um — e quem perder ouve a resenha a semana inteira.
           </p>
         </div>
 
-        <div className="toon-box toon-paper p-5">
-          <p className="text-center text-xs font-black uppercase tracking-widest opacity-60">Convite de amistoso</p>
-          <div className="mt-4 flex items-center justify-between gap-2">
+        <div className="panel mx-auto w-full max-w-md p-5 sm:p-6">
+          <p className="text-center text-xs font-extrabold uppercase tracking-[0.15em] opacity-55">Convite de amistoso</p>
+          <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
             <div className="flex flex-col items-center">
-              <div className="toon-box-sm h-20 w-20 overflow-hidden rounded-full bg-[var(--toon-sky)]">
+              <div className="h-20 w-20 overflow-hidden rounded-2xl border-[3px] border-[var(--ink)] bg-[var(--sky)]">
                 <PlayerAvatar look={SAMPLE_CARDS[1].look} className="h-full w-full" />
               </div>
-              <strong className="mt-2 text-sm font-black">Você</strong>
+              <strong className="mt-2 text-sm">Você</strong>
             </div>
-            <span className="toon-title text-4xl text-[var(--toon-orange)]">VS</span>
+            <span className="t-display text-3xl text-[var(--orange)]">VS</span>
             <div className="flex flex-col items-center">
-              <div className="toon-box-sm flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-[var(--toon-cream)] font-[family-name:var(--font-toon-display)] text-4xl text-[var(--toon-ink)]">
+              <div className="t-display flex h-20 w-20 items-center justify-center rounded-2xl border-[3px] border-dashed border-[var(--ink)] bg-[var(--cream)] text-3xl text-[var(--ink)] [text-shadow:none]">
                 ?
               </div>
-              <strong className="mt-2 text-sm font-black">Seu amigo</strong>
+              <strong className="mt-2 text-sm">Seu amigo</strong>
             </div>
           </div>
-          <div className="toon-box-sm mt-5 flex items-center justify-between gap-2 bg-white px-3 py-2 font-mono text-sm font-bold">
-            <span className="truncate">prancheta.gg/x/RESENHA-7</span>
-            <span className="toon-chip shrink-0 bg-[var(--toon-sun)]">Copiar</span>
+          <div className="mt-6 flex items-center gap-2 rounded-xl border-[3px] border-[var(--ink)] bg-white p-1.5 pl-3">
+            <span className="min-w-0 flex-1 truncate font-mono text-sm font-bold">prancheta.gg/x/RESENHA-7</span>
+            <span className="btn btn-sm shrink-0">Copiar</span>
           </div>
-          <p className="mt-3 text-center text-sm font-bold opacity-70">Sábado, 21h · Estádio do Tubarões</p>
+          <p className="mt-3 text-center text-sm font-semibold opacity-60">Sábado, 21h · Estádio dos Tubarões</p>
         </div>
       </div>
-    </section>
+    </Section>
   );
 }

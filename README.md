@@ -1,6 +1,6 @@
 # Prancheta ⚽📋
 
-Manager de futebol online no navegador, com visual cartoon anos 90.
+Manager de futebol online no navegador, com arte no estilo dos desenhos animados dos anos 90.
 Monte seu clube, evolua cartas de jogadores, dispute ligas, copas, leilões e
 amistosos contra técnicos de verdade — com partidas simuladas lance a lance.
 
@@ -22,6 +22,8 @@ Abra http://localhost:3000.
 - `lib/game-config.ts` — regras do jogo (raridades, divisões, copas).
 - `lib/mini-sim.ts` — simulador determinístico da vitrine.
 - `docs/ARQUITETURA.md` — decisões de arquitetura e próximos passos.
+- `docs/PROMPTS-IMAGENS.md` — prompts para gerar a arte final. Salve as imagens em
+  `public/art/` com o nome indicado e elas substituem os desenhos provisórios.
 
 ## Publicando uma atualização
 

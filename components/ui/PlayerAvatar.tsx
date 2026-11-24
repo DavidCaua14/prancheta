@@ -13,7 +13,7 @@ export type AvatarLook = {
  * Gerado a partir de poucos parâmetros — no jogo, o "look" sai da seed da carta.
  */
 export function PlayerAvatar({ look, className = "" }: { look: AvatarLook; className?: string }) {
-  const ink = "var(--toon-ink)";
+  const ink = "var(--ink)";
   return (
     <svg viewBox="0 0 100 100" className={className} aria-hidden>
       {/* camisa */}

@@ -8,7 +8,6 @@ import {
   LeaguesAndCups,
   LiveMatch,
   Perks,
-  Ticker,
 } from "@/components/landing/Sections";
 import { Faq, FinalCta, SiteFooter } from "@/components/landing/Closing";
 
@@ -18,7 +17,6 @@ export default function Home() {
       <SiteHeader />
       <main className="flex-1">
         <Hero />
-        <Ticker />
         <Perks />
         <LiveMatch />
         <HowItWorks />

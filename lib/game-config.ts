@@ -82,8 +82,8 @@ export const DIVISIONS: Division[] = [
 export type Cup = { id: string; name: string; unlock: string; color: string };
 
 export const CUPS: Cup[] = [
-  { id: "copa-varzea", name: "Copa da Várzea", unlock: "Liberada desde o 1º dia", color: "var(--toon-orange)" },
-  { id: "copa-nacional", name: "Copa Nacional", unlock: "A partir da Série C", color: "var(--toon-sky)" },
-  { id: "supercopa", name: "Supercopa", unlock: "Campeões de divisão", color: "var(--toon-hot)" },
-  { id: "copa-lendas", name: "Copa das Lendas", unlock: "Liga das Lendas", color: "var(--toon-sun)" },
+  { id: "copa-varzea", name: "Copa da Várzea", unlock: "Liberada desde o 1º dia", color: "var(--orange)" },
+  { id: "copa-nacional", name: "Copa Nacional", unlock: "A partir da Série C", color: "var(--sky)" },
+  { id: "supercopa", name: "Supercopa", unlock: "Campeões de divisão", color: "var(--hot)" },
+  { id: "copa-lendas", name: "Copa das Lendas", unlock: "Liga das Lendas", color: "var(--sun)" },
 ];
