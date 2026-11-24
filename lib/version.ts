@@ -6,9 +6,8 @@ export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
  * de atualização obrigatória que os jogadores veem.
  */
 export const RELEASE_NOTES: string[] = [
-  "Login com Google",
-  "Funde seu clube: nome, escudo e camisa do seu jeito",
-  "Sede do clube",
+  "Peneira: monte seu elenco inicial escolhendo cartas Base",
+  "Nova tela inicial do clube (protótipo)",
 ];
 
 export type VersionPayload = {

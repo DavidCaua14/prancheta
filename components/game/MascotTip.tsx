@@ -2,12 +2,12 @@
 
 import type { ReactNode } from "react";
 
-type Props = { mascot: ReactNode; children: ReactNode; step?: string };
+type Props = { mascot: ReactNode; children: ReactNode; step?: string; always?: boolean };
 
-/** Celular/tablet: mascote pequena e balão acima do painel. */
-export function MascotTipInline({ mascot, children, step }: Props) {
+/** Celular/tablet: mascote pequena e balão acima do painel (`always` mostra também no desktop). */
+export function MascotTipInline({ mascot, children, step, always }: Props) {
   return (
-    <div className="mb-4 flex items-end gap-2 lg:hidden">
+    <div className={`mb-4 flex items-end gap-2 ${always ? "" : "lg:hidden"}`}>
       <div className="h-20 w-16 shrink-0 overflow-hidden">{mascot}</div>
       <div className="relative flex-1 rounded-2xl border-[3px] border-[var(--ink)] bg-[var(--paper)] px-3.5 py-2.5 text-sm font-semibold leading-snug text-[var(--ink)] shadow-[0_4px_0_var(--ink)]">
         {step && <p className="mb-0.5 text-[0.65rem] font-extrabold uppercase tracking-[0.14em] opacity-50">{step}</p>}

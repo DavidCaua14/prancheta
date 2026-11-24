@@ -1,4 +1,4 @@
-import { Art } from "./Art";
+import { ArtImg } from "./ArtImg";
 
 function Mark({ className }: { className?: string }) {
   return (
@@ -22,7 +22,7 @@ export function Logo({ className = "", size = "sm" }: { className?: string; size
   const markClass = big ? "h-16 w-16 sm:h-20 sm:w-20" : "h-10 w-10";
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
-      <Art name="logo-mark" width={256} height={256} className={`${markClass} object-contain`} fallback={<Mark className={markClass} />} />
+      <ArtImg name="logo-mark" alt="" className={`${markClass} object-contain`} fallback={<Mark className={markClass} />} />
       <span className="flex flex-col leading-none">
         <span className={`t-display ${big ? "text-4xl sm:text-6xl" : "text-lg sm:text-xl"} text-[var(--sun)]`}>Prancheta</span>
         <span

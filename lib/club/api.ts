@@ -9,6 +9,8 @@ export type Club = {
   tag: string;
   crest: string;
   kit: string;
+  /** Escolhas da peneira ("1:0120..."); null até montar o elenco. */
+  squad: string | null;
 };
 
 const CLUB_CACHE = (uid: string) => `prancheta:club:${uid}`;
@@ -16,7 +18,9 @@ const CLUB_CACHE = (uid: string) => `prancheta:club:${uid}`;
 function readCache(uid: string): Club | null {
   try {
     const raw = localStorage.getItem(CLUB_CACHE(uid));
-    return raw ? (JSON.parse(raw) as Club) : null;
+    const club = raw ? (JSON.parse(raw) as Club) : null;
+    // cache de versão antiga (sem o campo squad) ou elenco ainda vazio: relê do banco
+    return club && typeof club.squad === "string" ? club : null;
   } catch {
     return null;
   }
@@ -46,7 +50,7 @@ export async function getMyClub(session: Session, { fresh = false } = {}): Promi
     const cached = readCache(uid);
     if (cached) return cached;
   }
-  const { data, error } = await supabase().from("clubs").select("id,name,tag,crest,kit").eq("id", uid).maybeSingle();
+  const { data, error } = await supabase().from("clubs").select("id,name,tag,crest,kit,squad").eq("id", uid).maybeSingle();
   if (error) throw error;
   if (data) writeCache(data);
   return data;
@@ -56,10 +60,10 @@ export type CreateClubError = "name_taken" | "already_has_club" | "invalid" | "s
 
 export async function createClub(
   session: Session,
-  input: Omit<Club, "id">,
+  input: Omit<Club, "id" | "squad">,
 ): Promise<{ club: Club } | { error: CreateClubError }> {
-  const club: Club = { id: session.user.id, ...input, name: input.name.trim() };
-  const { error } = await supabase().from("clubs").insert(club);
+  const club: Club = { id: session.user.id, ...input, name: input.name.trim(), squad: null };
+  const { error } = await supabase().from("clubs").insert({ ...input, id: club.id, name: club.name });
   if (!error) {
     writeCache(club);
     return { club };
@@ -78,10 +82,22 @@ export async function routeForSession(session: Session | null): Promise<string> 
   if (!session) return "/entrar";
   try {
     const club = await getMyClub(session);
-    return club ? "/jogo" : "/clube/novo";
+    return !club ? "/clube/novo" : club.squad ? "/jogo" : "/peneira";
   } catch {
     return "/clube/novo";
   }
+}
+
+/**
+ * Salva o elenco da peneira (1 escrita, uma única vez — o banco bloqueia refazer).
+ */
+export async function saveSquad(session: Session, club: Club, squad: string): Promise<{ club: Club } | { error: "locked" | "network" }> {
+  const { data, error } = await supabase().from("clubs").update({ squad }).eq("id", session.user.id).select("squad").maybeSingle();
+  if (error) return { error: error.code === "P0001" ? "locked" : "network" };
+  if (!data) return { error: "network" };
+  const saved = { ...club, squad: data.squad as string };
+  writeCache(saved);
+  return { club: saved };
 }
 
 /**

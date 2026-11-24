@@ -156,7 +156,8 @@ export function CreateClubWizard({ mascot, banner }: { mascot: ReactNode; banner
       if (!alive) return;
       if (!s) return router.replace("/entrar");
       try {
-        if (await getMyClub(s)) return router.replace("/jogo");
+        const existing = await getMyClub(s);
+        if (existing) return router.replace(existing.squad ? "/jogo" : "/peneira");
       } catch {
         // sem conexão: deixa montar; o envio avisa se der erro
       }
@@ -229,7 +230,7 @@ export function CreateClubWizard({ mascot, banner }: { mascot: ReactNode; banner
       try {
         localStorage.removeItem(DRAFT_KEY);
       } catch {}
-      router.replace("/jogo?novo=1");
+      router.replace("/peneira");
       return;
     }
     setBusy(false);
@@ -238,10 +239,11 @@ export function CreateClubWizard({ mascot, banner }: { mascot: ReactNode; banner
         setStep(0);
         setNameError("Esse nome acabou de ser registrado por outro técnico. Escolha outro.");
         break;
-      case "already_has_club":
-        await getMyClub(session, { fresh: true });
-        router.replace("/jogo");
+      case "already_has_club": {
+        const existing = await getMyClub(session, { fresh: true });
+        router.replace(existing?.squad ? "/jogo" : "/peneira");
         break;
+      }
       case "session":
         router.replace("/entrar");
         break;

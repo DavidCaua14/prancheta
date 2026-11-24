@@ -166,3 +166,16 @@ Hoje as telas do jogo usam o mesmo estádio da página inicial (`hero-stadium`).
 | Arquivo | Prompt (depois do estilo base, **sem** a parte de transparência) |
 | --- | --- |
 | `bg-jogo.webp` | `Wide background illustration of a Brazilian football stadium at night seen from the pitch level, green and yellow crowd with flags, big floodlights, empty center area with only soft blurred grass and sky, dark and calm, low contrast so panels on top stay readable. No text.` |
+
+---
+
+## 10. Menu do jogo (tela inicial do clube)
+
+Ícones do menu inferior e dos atalhos. Mesmo formato da seção 5: **512 × 512, fundo transparente, sem moldura**.
+Os outros ícones do menu reaproveitam artes que já existem (`icon-ao-vivo`, `icon-leilao`, `icon-clube`,
+`icon-tatica`, `icon-pvp`, troféus).
+
+| Arquivo | Onde aparece | Prompt (depois do estilo base) |
+| --- | --- | --- |
+| `icon-inicio.png` | Menu → Início | `Icon of a small cartoon football stadium seen from the front, green pitch, two floodlights and a little flag on top.` |
+| `icon-elenco.png` | Menu → Elenco e atalho "Elenco" | `Icon of a fanned hand of three football player trading cards (bronze, blue and purple frames) with a small star on the front card.` |

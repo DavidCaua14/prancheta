@@ -78,6 +78,26 @@ sob demanda quando as existentes enchem). Copas liberadas por divisão.
 Estimativa no plano grátis (500 MB): o próprio Supabase guarda ~1–2 KB por usuário em `auth.users`;
 a tabela `clubs` soma ~0,1 KB. Ou seja, dezenas de milhares de técnicos cabem com folga.
 
+## Peneira — elenco inicial (implementado)
+
+- **Cartas não ficam no banco.** `lib/cards/generate.ts` gera uma carta Base a partir de uma seed
+  `hash(id do clube, vaga, opção)`: nome, posição, atributos, overall (45–60), idade, pé e visual.
+  Mesma seed → mesma carta, em qualquer aparelho. Gera 28 mil cartas em ~55 ms.
+- **Vagas** (`lib/cards/squad.ts`): 11 titulares no 4-3-3 (3 opções cada) + 3 reservas (5 opções cada).
+- **No banco**: coluna `clubs.squad` = `"1:"` + 14 dígitos com a opção escolhida em cada vaga (16 bytes).
+  O CHECK só aceita opções que existem (0–2 nos titulares, 0–4 nas reservas) e um gatilho impede refazer a
+  peneira depois de confirmada (`supabase/migrations/0002_squad.sql`). Como as opções são fixas por clube,
+  recarregar a página não sorteia de novo.
+- **Uma escrita só**: o progresso fica no aparelho e o elenco vai para o banco ao confirmar.
+- O prefixo `1:` é a versão do gerador. ⚠️ Nunca mude a lógica da v1: isso trocaria as cartas de todos.
+  Para evoluir, crie a v2 e mantenha a v1 para quem já tem elenco.
+
+### Evolução das cartas (próximo)
+
+Quando as cartas começarem a ganhar XP, a ideia é guardar só o que muda, também compacto:
+uma coluna com o XP de cada carta do elenco (ex.: 14 números) e uma tabela pequena só para cartas que
+chegarem de fora (leilão, prêmios), referenciadas pela seed.
+
 ## Esboço do banco (Postgres)
 
 ```
@@ -96,7 +116,8 @@ friendlies(id, codigo, casa_id, fora_id, inicio_em, match_id)
 
 ## Próximos passos
 
-1. ~~Autenticação e criação de clube~~ ✅ (falta o elenco inicial de cartas Base, gerado por seed).
+1. ~~Autenticação e criação de clube~~ ✅
+1. ~~Peneira: elenco inicial de cartas Base~~ ✅
 2. Motor de simulação completo (`lib/sim/`) com testes de determinismo.
 3. Tela de escalação/prancheta.
 4. Ligas da Várzea + job de rodadas.
