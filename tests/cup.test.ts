@@ -124,3 +124,19 @@ test("próxima edição: hoje antes do prazo, amanhã depois", () => {
   assert.equal(nextEditionStart(brt(12, 44), CUP_KINDS[0]), brt(13, 0));
   assert.equal(nextEditionStart(brt(12, 45), CUP_KINDS[0]), brt(13, 0) + 86400_000);
 });
+
+test("Supercopa: 16 campeões, 4 fases, todo domingo", () => {
+  const d = cup(31, [], 2);
+  assert.deepEqual([1, 2, 3, 4].map((r) => slotsIn(d, r).length), [16, 8, 4, 2]);
+  assert.deepEqual([1, 2, 3, 4].map((r) => roundName(r, 4)), ["Oitavas", "Quartas", "Semifinal", "Final"]);
+  const reach = cupReach(d);
+  assert.deepEqual([0, 1, 2, 3, 4].map((r) => reach.filter((x) => x === r).length), [8, 4, 2, 1, 1]);
+  assert.equal(new Set(Array.from({ length: 16 }, (_, s) => cupTeam(d, s, d.kickoffs[0]).name)).size, 16);
+  assert.deepEqual(CUP_KINDS[2].prizes, [100, 250, 500, 900, 2000]);
+  // 2026-06-10 é quarta-feira; domingos: 14/06 e 21/06
+  const brt = (day: number, h: number, m: number) => Date.UTC(2026, 5, day, h + 3, m);
+  assert.equal(nextEditionStart(brt(10, 9, 0), CUP_KINDS[2]), brt(14, 14, 30));
+  assert.equal(nextEditionStart(brt(14, 14, 0), CUP_KINDS[2]), brt(14, 14, 30));
+  assert.equal(nextEditionStart(brt(14, 14, 15), CUP_KINDS[2]), brt(21, 14, 30));
+  assert.equal(nextEditionStart(brt(13, 23, 0), CUP_KINDS[2]), brt(14, 14, 30));
+});

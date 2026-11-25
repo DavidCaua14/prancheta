@@ -9,7 +9,7 @@
  */
 import { wonAt, type WonLot } from "@/lib/auction/lots";
 import { hash32, rng, type BaseCard } from "@/lib/cards/generate";
-import { SERIE_B_CLUBS, SERIE_C_CLUBS, SERIE_D_CLUBS, VARZEA_CLUBS } from "@/lib/cards/names";
+import { LENDAS_CLUBS, SERIE_A_CLUBS, SERIE_B_CLUBS, SERIE_C_CLUBS, SERIE_D_CLUBS, VARZEA_CLUBS } from "@/lib/cards/names";
 import { clubCards } from "@/lib/cards/squad";
 import { decodeCrest, decodeKit } from "@/lib/club/identity";
 import { botTeam, tagOf } from "@/lib/league/bots";
@@ -36,7 +36,14 @@ export type CupConfig = {
   /** moedas por fase alcançada: 0 = caiu na 1ª fase ... última = campeão (espelho de cup_prize) */
   prizes: readonly number[];
   tagline: string;
+  /** dia da semana da edição (0 = domingo); ausente = todo dia */
+  weekday?: number;
+  /** só para campeões de divisão (1º lugar numa temporada encerrada nos últimos 7 dias) */
+  requiresTitle?: boolean;
 };
+
+/** Validade do título de divisão para entrar na Supercopa (espelho de join_cup). */
+export const TITLE_VALID_DAYS = 7;
 
 /** Copas do jogo (a chave é cups.kind no banco; espelho de cup_config() no SQL). */
 export const CUP_KINDS: Record<number, CupConfig> = {
@@ -65,6 +72,21 @@ export const CUP_KINDS: Record<number, CupConfig> = {
     botNames: [...SERIE_C_CLUBS, ...SERIE_B_CLUBS, ...SERIE_D_CLUBS],
     prizes: [0, 25, 50, 100, 250, 600, 1600],
     tagline: "Mata-mata diário · 64 clubes · a partir da Série C",
+  },
+  2: {
+    id: "supercopa",
+    name: "Supercopa",
+    art: "trophy-supercopa",
+    size: 16,
+    firstMinute: 14 * 60 + 30,
+    deadlineMinute: 14 * 60 + 15,
+    minDivision: 0,
+    botDivision: 3,
+    botNames: [...SERIE_A_CLUBS, ...LENDAS_CLUBS],
+    prizes: [100, 250, 500, 900, 2000],
+    tagline: "Todo domingo · 16 campeões de divisão",
+    weekday: 0,
+    requiresTitle: true,
   },
 };
 export type CupKind = number;

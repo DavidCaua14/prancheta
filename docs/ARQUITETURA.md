@@ -252,7 +252,7 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
 - **Custo**: lances = 1 linha por lote disputado (no máximo 8 a cada 2 h, ~100 por dia). A tela relê só os
   lotes da rodada a cada 8 s enquanto está aberta.
 
-## Copas — Copa da Várzea e Copa Nacional (implementado)
+## Copas — Copa da Várzea, Copa Nacional e Supercopa (implementado)
 
 - **Formato**: mata-mata diário de 32 clubes, jogo único em campo neutro, empate vai para os pênaltis
   (`lib/cup/shootout.ts`, seed própria). Fases às 13h, 15h, 17h, 19h e 21h (Brasília) — horas ímpares, sem
@@ -276,8 +276,13 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
   1.600, vice 600, semi 250, quartas 100, oitavas 50, 2ª fase 25. Um clube pode jogar as duas copas no mesmo dia.
 - **Configuração**: `CUP_KINDS` (`lib/cup/core.ts`) espelhado em `cup_config()` e `cup_prize()` no SQL. Os
   times da CPU usam uma lista de nomes própria de cada copa, embaralhada por edição, sem repetir na chave.
-- **Próximas copas** (ver `CUPS` em `lib/game-config.ts`): Supercopa (campeões de divisão) e Copa das Lendas —
-  cada uma vira um `kind` novo em `CUP_KINDS`, `cup_config()`, `cup_prize()` e `join_cup()`.
+- **Supercopa** (`kind = 2`, implementado): a copa dos campeões, **semanal, todo domingo**. Só entra quem
+  terminou em **1º lugar** a temporada da sua divisão (qualquer divisão) numa temporada fechada nos **últimos
+  7 dias** (`join_cup` recusa com `P0010`). 16 clubes: oitavas 14h30, quartas 16h30, semi 18h30, final 20h30
+  (horários livres de liga e das outras copas); inscrição até 14h15 de domingo. CPU no nível da Série B com
+  nomes da Série A e das Lendas. Prêmios: campeão 2.000, vice 900, semi 500, quartas 250, oitavas 100.
+- **Próxima copa** (ver `CUPS` em `lib/game-config.ts`): Copa das Lendas — um `kind` novo em `CUP_KINDS`,
+  `cup_config()`, `cup_prize()` e `join_cup()`.
 
 ## Esboço do banco (Postgres)
 
@@ -311,7 +316,8 @@ friendlies(id, codigo, casa_id, fora_id, inicio_em, match_id)
 1. ~~Leilão (cartas Destaque, Épica e Especial; moedas e prêmios por temporada)~~ ✅
 1. ~~Copa da Várzea~~ ✅
 1. ~~Copa Nacional~~ ✅
-1. Supercopa, Copa das Lendas; amistosos entre amigos.
+1. ~~Supercopa~~ ✅
+1. Copa das Lendas; amistosos entre amigos.
 2. Motor de simulação completo (`lib/sim/`) com testes de determinismo.
 3. Tela de escalação/prancheta.
 4. Ligas da Várzea + job de rodadas.

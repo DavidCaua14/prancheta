@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { CrestSvg } from "@/components/club/CrestSvg";
 import { ArtImg } from "@/components/ui/ArtImg";
 import { Icon } from "@/components/ui/Icon";
-import { CUP_KINDS, cupConfig, cupMatch, nextEditionStart, pathOf, roundName, roundsOf, slotsIn, type CupData, type CupMatch } from "@/lib/cup/data";
+import { CUP_KINDS, cupConfig, cupMatch, lastTitle, nextEditionStart, TITLE_VALID_DAYS, pathOf, roundName, roundsOf, slotsIn, type CupData, type CupMatch } from "@/lib/cup/data";
 import { divisionInfo } from "@/lib/league/divisions";
 import { liveRound, pairsKnown, roundOver, scoresKnown, useCup } from "@/lib/cup/useCup";
 import { CUPS } from "@/lib/game-config";
@@ -93,6 +93,16 @@ export function CupHub() {
 function CupView({ kind, onPick }: { kind: number; onPick: (k: number) => void }) {
   const KIND = cupConfig(kind);
   const { club, entry, data, ready, joining, error, join, reload } = useCup(kind);
+  // Supercopa: precisa de um título de divisão recente (o banco confere de novo na inscrição)
+  const [title, setTitle] = useState<{ closed_at: string; division: number } | null | undefined>(KIND.requiresTitle ? undefined : null);
+  useEffect(() => {
+    if (!KIND.requiresTitle || !club) return;
+    let stop = false;
+    void lastTitle(club.id).then((t) => !stop && setTitle(t));
+    return () => {
+      stop = true;
+    };
+  }, [KIND.requiresTitle, club]);
   const now = useNow(1000);
   const [tab, setTab] = useState<number | null>(null);
 
@@ -126,7 +136,9 @@ function CupView({ kind, onPick }: { kind: number; onPick: (k: number) => void }
   const shown = Math.min(total, Math.max(1, tab ?? current));
   const canJoin = !data || ended;
   const next = now ? nextEditionStart(now, KIND) : null;
-  const locked = club.division < KIND.minDivision;
+  const titleUntil = title ? new Date(title.closed_at).getTime() + TITLE_VALID_DAYS * 86400_000 : 0;
+  const noTitle = !!KIND.requiresTitle && title !== undefined && titleUntil <= now;
+  const locked = club.division < KIND.minDivision || noTitle;
 
   // situação do técnico
   let status: ReactNode = null;
@@ -215,7 +227,7 @@ function CupView({ kind, onPick }: { kind: number; onPick: (k: number) => void }
             const open = k >= 0;
             const active = k === kind;
             const cfg = open ? cupConfig(k) : null;
-            const lockedHere = cfg ? club.division < cfg.minDivision : false;
+            const lockedHere = cfg ? club.division < cfg.minDivision || (!!cfg.requiresTitle && (k !== kind || noTitle)) : false;
             return (
               <button
                 key={c.id}
@@ -253,10 +265,23 @@ function CupView({ kind, onPick }: { kind: number; onPick: (k: number) => void }
         {canJoin && locked ? (
           <Panel>
             <span className="tag bg-white/15">Bloqueada</span>
-            <p className="t-heading mt-2 text-xl">A {KIND.name} é a partir da {divisionInfo(KIND.minDivision).name}</p>
-            <p className="mt-1 text-sm text-white/75">
-              O {club.name} está na {divisionInfo(club.division).name}. Suba na liga para disputar — enquanto isso, a Copa da Várzea está aberta todo dia.
-            </p>
+            {noTitle ? (
+              <>
+                <p className="t-heading mt-2 text-xl">A {KIND.name} é só para campeões</p>
+                <p className="mt-1 text-sm text-white/75">
+                  Termine a temporada em 1º lugar na sua divisão — qualquer divisão, da Várzea às Lendas — para ganhar vaga. O título vale por{" "}
+                  {TITLE_VALID_DAYS} dias.
+                  {title ? ` O último título do ${club.name} já passou desse prazo.` : ""}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="t-heading mt-2 text-xl">A {KIND.name} é a partir da {divisionInfo(KIND.minDivision).name}</p>
+                <p className="mt-1 text-sm text-white/75">
+                  O {club.name} está na {divisionInfo(club.division).name}. Suba na liga para disputar — enquanto isso, a Copa da Várzea está aberta todo dia.
+                </p>
+              </>
+            )}
             {kind !== 0 && (
               <button type="button" onClick={() => onPick(0)} className="btn btn-paper btn-sm mt-3">
                 Ver a Copa da Várzea
@@ -266,9 +291,15 @@ function CupView({ kind, onPick }: { kind: number; onPick: (k: number) => void }
         ) : canJoin ? (
           <Panel>
             <p className="t-heading text-xl">Inscreva o {club.name}</p>
+            {KIND.requiresTitle && title && (
+              <p className="mt-1 inline-flex items-center gap-1.5 rounded-lg bg-[var(--sun)] px-2 py-0.5 text-xs font-extrabold text-[var(--ink)]">
+                <Icon name="trophy" className="h-3.5 w-3.5" /> Campeão da {divisionInfo(title.division).name} · vaga garantida até {fmtKickoff(titleUntil)}
+              </p>
+            )}
             <p className="mt-1 text-sm text-white/75">
-              Próxima edição: <b className="text-[var(--sun)]">{next ? fmtKickoff(next) : "..."}</b>. Inscrições até {hhmm(KIND.deadlineMinute)} de cada dia; depois disso, a inscrição vale
-              para a copa do dia seguinte.
+              Próxima edição: <b className="text-[var(--sun)]">{next ? fmtKickoff(next) : "..."}</b>. {KIND.weekday === undefined
+                ? `Inscrições até ${hhmm(KIND.deadlineMinute)} de cada dia; depois disso, a inscrição vale para a copa do dia seguinte.`
+                : `Inscrições até ${hhmm(KIND.deadlineMinute)} do domingo; depois disso, a inscrição vale para o domingo seguinte.`}
             </p>
             <button type="button" onClick={() => void join()} disabled={joining} className="btn btn-green mt-3">
               <Icon name="trophy" className="h-5 w-5" /> {joining ? "Inscrevendo..." : "Inscrever na copa"}
@@ -315,9 +346,11 @@ function CupView({ kind, onPick }: { kind: number; onPick: (k: number) => void }
           <p className="t-heading">Como funciona</p>
           <ul className="mt-2 space-y-1.5 text-sm text-white/80">
             <li className="flex gap-2">
-              <Icon name="clock" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sun)]" /> Todo dia, mata-mata de {KIND.size} clubes:{" "}
+              <Icon name="clock" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sun)]" /> {KIND.weekday === undefined ? "Todo dia" : "Todo domingo"}, mata-mata de{" "}
+              {KIND.size} clubes:{" "}
               {Array.from({ length: total }, (_, k) => `${roundName(k + 1, total).toLowerCase()} às ${hhmm(KIND.firstMinute + k * 120)}`).join(", ")} (Brasília).
               {KIND.minDivision > 0 && ` Só clubes da ${divisionInfo(KIND.minDivision).name} para cima; as vagas livres ficam com a CPU da ${divisionInfo(KIND.botDivision).name}.`}
+              {KIND.requiresTitle && ` Só campeões de divisão (1º lugar numa temporada dos últimos ${TITLE_VALID_DAYS} dias); as vagas livres ficam com a CPU da ${divisionInfo(KIND.botDivision).name}.`}
             </li>
             <li className="flex gap-2">
               <Icon name="whistle" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sun)]" /> Jogo único em campo neutro. Empatou, vai para os pênaltis. Dá para mexer no time ao vivo, como na liga.

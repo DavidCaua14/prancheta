@@ -6,9 +6,9 @@ export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
  * de atualização obrigatória que os jogadores veem.
  */
 export const RELEASE_NOTES: string[] = [
-  "Copa Nacional: 64 clubes da Série C para cima, todo dia das 11h30 às 21h30",
-  "Campeão da Copa Nacional leva 1.600 moedas",
-  "Times da CPU das copas sem nomes repetidos na chave",
+  "Supercopa: todo domingo, só para campeões de divisão",
+  "16 campeões, das 14h30 às 20h30; o vencedor leva 2.000 moedas",
+  "Ganhou sua liga? Sua vaga na Supercopa vale por 7 dias",
 ];
 
 export type VersionPayload = {

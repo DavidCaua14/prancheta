@@ -69,6 +69,21 @@ export async function sendCupChange(data: CupData, round: number, clubId: string
   return !error;
 }
 
+/** Último título de divisão (1º lugar) do clube: quando a temporada fechou, ou null. */
+export async function lastTitle(clubId: string): Promise<{ closed_at: string; division: number } | null> {
+  const { data, error } = await supabase()
+    .from("club_seasons")
+    .select("division,leagues!inner(closed_at)")
+    .eq("club_id", clubId)
+    .eq("pos", 1)
+    .order("league_id", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return null;
+  const row = data as unknown as { division: number; leagues: { closed_at: string | null } };
+  return row.leagues.closed_at ? { closed_at: row.leagues.closed_at, division: row.division } : null;
+}
+
 /** Pede ao servidor para fechar a copa e pagar os prêmios (idempotente). */
 export async function closeCup(cupId: number) {
   const { error } = await supabase().functions.invoke("close-cup", { body: { cup_id: cupId } });
@@ -81,6 +96,13 @@ export function nextEditionStart(now: number, cfg: CupConfig): number {
   const parts = Object.fromEntries(fmt.formatToParts(new Date(now)).map((p) => [p.type, p.value]));
   const minutes = Number(parts.hour) * 60 + Number(parts.minute);
   const day = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day));
+  let ahead = minutes < cfg.deadlineMinute ? 0 : 1;
+  if (cfg.weekday !== undefined) {
+    // copa semanal: próximo dia da semana certo (hoje, se ainda dá tempo)
+    const dow = new Date(day).getUTCDay();
+    ahead = (cfg.weekday - dow + 7) % 7;
+    if (ahead === 0 && minutes >= cfg.deadlineMinute) ahead = 7;
+  }
   // Brasília = UTC-3 (sem horário de verão desde 2019)
-  return day + (minutes < cfg.deadlineMinute ? 0 : 86400_000) + (cfg.firstMinute + 3 * 60) * 60_000;
+  return day + ahead * 86400_000 + (cfg.firstMinute + 3 * 60) * 60_000;
 }
