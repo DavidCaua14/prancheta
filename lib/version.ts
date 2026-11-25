@@ -6,9 +6,9 @@ export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
  * de atualização obrigatória que os jogadores veem.
  */
 export const RELEASE_NOTES: string[] = [
-  "Liga da Várzea: 8 rodadas por dia, das 8h às 22h",
-  "Jogos ao vivo com tabela, rodadas e mudanças durante a partida",
-  "Times da CPU completam a liga: sempre tem jogo",
+  "Acesso à Série D: os 4 primeiros da Várzea sobem",
+  "Série D com times da CPU mais fortes e 3 rebaixados",
+  "Tela de fim de temporada com sua campanha",
 ];
 
 export type VersionPayload = {

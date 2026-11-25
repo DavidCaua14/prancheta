@@ -17,6 +17,8 @@ export type Club = {
   league_id: number | null;
   league_slot: number | null;
   joined_round: number | null;
+  /** Divisão atual (0 = Várzea, 1 = Série D...) — só o servidor muda. */
+  division: number;
 };
 
 const CLUB_CACHE = (uid: string) => `prancheta:club:${uid}`;
@@ -26,7 +28,7 @@ function readCache(uid: string): Club | null {
     const raw = localStorage.getItem(CLUB_CACHE(uid));
     const club = raw ? (JSON.parse(raw) as Club) : null;
     // cache de versão antiga (sem o campo squad) ou elenco ainda vazio: relê do banco
-    return club && typeof club.squad === "string" && "lineup" in club && "league_id" in club ? club : null;
+    return club && typeof club.squad === "string" && "lineup" in club && "division" in club ? club : null;
   } catch {
     return null;
   }
@@ -56,7 +58,7 @@ export async function getMyClub(session: Session, { fresh = false } = {}): Promi
     const cached = readCache(uid);
     if (cached) return cached;
   }
-  const { data, error } = await supabase().from("clubs").select("id,name,tag,crest,kit,squad,lineup,league_id,league_slot,joined_round").eq("id", uid).maybeSingle();
+  const { data, error } = await supabase().from("clubs").select("id,name,tag,crest,kit,squad,lineup,league_id,league_slot,joined_round,division").eq("id", uid).maybeSingle();
   if (error) throw error;
   if (data) writeCache(data);
   return data;
@@ -68,7 +70,7 @@ export async function createClub(
   session: Session,
   input: Pick<Club, "name" | "tag" | "crest" | "kit">,
 ): Promise<{ club: Club } | { error: CreateClubError }> {
-  const club: Club = { id: session.user.id, ...input, name: input.name.trim(), squad: null, lineup: null, league_id: null, league_slot: null, joined_round: null };
+  const club: Club = { id: session.user.id, ...input, name: input.name.trim(), squad: null, lineup: null, league_id: null, league_slot: null, joined_round: null, division: 0 };
   const { error } = await supabase().from("clubs").insert({ ...input, id: club.id, name: club.name });
   if (!error) {
     writeCache(club);

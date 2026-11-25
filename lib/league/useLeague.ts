@@ -4,11 +4,22 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { getMyClub, getSession, type Club } from "@/lib/club/api";
-import { clockAt, joinLeague, loadLeague, refreshChanges, type LeagueData } from "./data";
-
+import { clockAt, closeLeague, joinLeague, lastSeason, loadLeague, refreshChanges, type LeagueData, type SeasonRow } from "./data";
 
 /** Dados da liga em memória (navegar entre telas não relê o banco). */
 const memory = new Map<number, LeagueData>();
+/** Resultado da temporada que acabou de fechar (até o técnico fechar o aviso). */
+let pendingSeason: SeasonRow | null = null;
+
+const SEEN = (clubId: string) => `prancheta:temporada-vista:${clubId}`;
+
+function seenSeason(clubId: string): number {
+  try {
+    return Number(localStorage.getItem(SEEN(clubId)) ?? 0);
+  } catch {
+    return 0;
+  }
+}
 
 /** Relógio da tela: atualiza a cada `ms`. */
 export function useNow(ms = 1000) {
@@ -24,9 +35,10 @@ export function useNow(ms = 1000) {
 }
 
 /**
- * Clube + liga do técnico. Entra numa liga automaticamente quando precisa
- * (primeira vez ou temporada encerrada). Relê as mudanças ao vivo a cada 10 s
- * só enquanto há rodada em andamento, e a liga inteira quando uma rodada começa.
+ * Clube + liga do técnico. Quando a temporada acaba, pede ao servidor para
+ * fechá-la (acesso/rebaixamento), mostra o resultado e entra na liga da nova
+ * divisão. Relê as mudanças ao vivo a cada 10 s só enquanto há rodada em
+ * andamento, e a liga inteira quando uma rodada começa.
  */
 export function useLeague({ autoJoin = true }: { autoJoin?: boolean } = {}) {
   const router = useRouter();
@@ -35,6 +47,7 @@ export function useLeague({ autoJoin = true }: { autoJoin?: boolean } = {}) {
   const [data, setData] = useState<LeagueData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
+  const [season, setSeason] = useState<SeasonRow | null>(pendingSeason);
 
   const load = useCallback(
     async (opts: { forceJoin?: boolean } = {}) => {
@@ -44,6 +57,7 @@ export function useLeague({ autoJoin = true }: { autoJoin?: boolean } = {}) {
       if (!c) return router.replace("/clube/novo");
       if (!c.squad) return router.replace("/peneira");
       setSession(s);
+      setError(null);
 
       let d = c.league_id ? memory.get(c.league_id) : undefined;
       if (c.league_id && (!d || Date.now() - d.loadedAt > 120_000)) {
@@ -57,13 +71,31 @@ export function useLeague({ autoJoin = true }: { autoJoin?: boolean } = {}) {
       const over = !c.league_id || !d || Date.now() > new Date(d.league.ends_at).getTime();
       if ((over && autoJoin) || opts.forceJoin) {
         setJoining(true);
+        const prev = c.league_id;
         try {
+          // temporada acabou: o servidor recalcula a tabela e decide quem sobe/cai
+          if (prev && d && !d.league.closed_at && Date.now() > new Date(d.league.ends_at).getTime()) {
+            await closeLeague(prev);
+          }
           const id = await joinLeague();
           c = (await getMyClub(s, { fresh: true })) ?? c;
+          if (prev && prev !== id) {
+            memory.delete(prev);
+            const last = await lastSeason(c.id);
+            if (last && last.league_id === prev && seenSeason(c.id) < last.league_id) {
+              pendingSeason = last;
+              setSeason(last);
+            }
+          }
           d = await loadLeague(id);
           memory.set(id, d);
-        } catch {
-          setError("Não deu para entrar na liga agora. Tente de novo em instantes.");
+        } catch (e) {
+          const code = (e as { code?: string })?.code;
+          setError(
+            code === "P0003"
+              ? "Fechando a tabela da temporada... Tente de novo em alguns segundos."
+              : "Não deu para entrar na liga agora. Tente de novo em instantes.",
+          );
         }
         setJoining(false);
       }
@@ -77,6 +109,15 @@ export function useLeague({ autoJoin = true }: { autoJoin?: boolean } = {}) {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial assíncrona
     void load();
   }, [load]);
+
+  // fim da temporada com a tela aberta: fecha e vai para a próxima sozinho
+  useEffect(() => {
+    if (!data || !autoJoin) return;
+    const wait = new Date(data.league.ends_at).getTime() - Date.now() + 2_000;
+    if (wait <= 0 || wait > 86400_000) return;
+    const id = window.setTimeout(() => void load(), wait);
+    return () => window.clearTimeout(id);
+  }, [data, autoJoin, load]);
 
   // rodada ao vivo: relê só as mudanças (pequeno) a cada 10 s
   useEffect(() => {
@@ -92,5 +133,17 @@ export function useLeague({ autoJoin = true }: { autoJoin?: boolean } = {}) {
     return () => window.clearInterval(id);
   }, [data]);
 
-  return { session, club, data, error, joining, reload: load, setData };
+  const dismissSeason = useCallback(() => {
+    if (season && club) {
+      try {
+        localStorage.setItem(SEEN(club.id), String(season.league_id));
+      } catch {
+        // sem armazenamento: o aviso some só nesta sessão
+      }
+    }
+    pendingSeason = null;
+    setSeason(null);
+  }, [season, club]);
+
+  return { session, club, data, error, joining, reload: load, setData, season, dismissSeason };
 }

@@ -11,7 +11,9 @@ import { Logo } from "@/components/ui/Logo";
 import { signOut } from "@/lib/club/api";
 import { decodeCrest, decodeKit } from "@/lib/club/identity";
 import { clockAt, fmtCountdown, fmtKickoff, matchAt, matchDone, standings } from "@/lib/league/data";
+import { divisionInfo } from "@/lib/league/divisions";
 import { useLeague, useNow } from "@/lib/league/useLeague";
+import { SeasonSummary } from "@/components/league/SeasonSummary";
 import { scoreAt } from "@/components/league/LeagueHub";
 import { squadCards } from "@/lib/cards/squad";
 import { FORMATIONS, strength } from "@/lib/tactics/formations";
@@ -66,7 +68,7 @@ function Soon({ title, text }: { title: string; text: string }) {
 /** Tela inicial do jogo (protótipo). */
 export function ClubHome({ mascot }: { mascot: ReactNode }) {
   const router = useRouter();
-  const { club, data: league, joining } = useLeague();
+  const { club, data: league, joining, season, dismissSeason } = useLeague();
   const now = useNow(1000);
   const [tab, setTab] = useState<Tab>("inicio");
   const [isNew, setIsNew] = useState(false);
@@ -113,12 +115,13 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
   const benchCards = cards.filter((_, i) => !lineup.xi.includes(i));
   const ovr = strength(formation, xiCards).ovr;
   const goLineup = () => router.push("/escalacao");
+  const div = divisionInfo(league?.league.division ?? club.division);
   const soon = (what: string) => setToast(`${what} chega nas próximas atualizações!`);
 
   const tiles: { label: string; icon: string; alt?: string; fallback: IconName; action: () => void; ready?: boolean }[] = [
     { label: "Elenco", icon: "icon-elenco", fallback: "cards", action: () => setTab("elenco"), ready: true },
     { label: "Escalação", icon: "icon-tatica", fallback: "clipboard", action: goLineup, ready: true },
-    { label: "Liga", icon: "icon-liga", alt: "trophy-copa-varzea", fallback: "trophy", action: () => router.push("/liga"), ready: true },
+    { label: "Liga", icon: div.art, alt: "icon-liga", fallback: "trophy", action: () => router.push("/liga"), ready: true },
     { label: "Treino", icon: "icon-treino", alt: "icon-pvp", fallback: "whistle", action: () => router.push("/partida"), ready: true },
     { label: "Leilão", icon: "icon-leilao", fallback: "gavel", action: () => soon("O leilão") },
     { label: "Copas", icon: "trophy-copa-nacional", fallback: "trophy", action: () => soon("As copas") },
@@ -126,6 +129,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
 
   return (
     <div className="flex min-h-dvh flex-col">
+      {season && <SeasonSummary season={season} clubName={club.name} onClose={dismissSeason} />}
       {/* barra de status */}
       <header className="sticky top-0 z-30 border-b-[3px] border-[var(--ink)] bg-[var(--night-2)]">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-3 sm:px-6">
@@ -137,7 +141,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
           <div className="min-w-0 flex-1">
             <p className="t-heading truncate text-white">{club.name}</p>
             <p className="text-xs font-bold text-white/60">
-              Várzea{league ? ` · Grupo #${league.league.id}` : ""}
+              {div.short}{league ? ` · Grupo #${league.league.id}` : ""}
               {leagueInfo?.pos ? ` · ${leagueInfo.pos}º lugar` : ""}
             </p>
           </div>
@@ -183,7 +187,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
                   if (!m) {
                     return (
                       <div className="relative p-5 text-center">
-                        <span className="tag bg-[var(--sky)]">Liga da Várzea</span>
+                        <span className="tag bg-[var(--sky)]">{div.name}</span>
                         <p className="mt-3 font-bold">{joining ? "Procurando uma vaga na liga..." : "Carregando a tabela..."}</p>
                       </div>
                     );
@@ -201,7 +205,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
                             "Próximo jogo"
                           )}</span>
                         <span className="text-xs font-extrabold text-white/70">
-                          Liga da Várzea · Rodada {m.round}/{leagueInfo.total}
+                          {div.name} · Rodada {m.round}/{leagueInfo.total}
                         </span>
                       </div>
                       <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
@@ -304,7 +308,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
           </div>
         )}
 
-        {tab === "jogos" && <Soon title="Calendário" text="Rodadas da Liga da Várzea, copas e amistosos, com a partida ao vivo e a narração lance a lance." />}
+        {tab === "jogos" && <Soon title="Calendário" text="Rodadas da liga, copas e amistosos, com a partida ao vivo e a narração lance a lance." />}
         {tab === "leilao" && <Soon title="Leilão" text="Cartas Destaque, Épicas e Especiais em disputa entre todos os técnicos." />}
 
         {tab === "clube" && (

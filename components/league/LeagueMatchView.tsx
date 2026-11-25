@@ -15,6 +15,7 @@ import {
   refreshChanges,
   sendChange,
 } from "@/lib/league/data";
+import { divisionInfo } from "@/lib/league/divisions";
 import { useLeague, useNow } from "@/lib/league/useLeague";
 
 /** Folga entre pedir a mudança e ela valer (para chegar a todos os aparelhos). */
@@ -128,7 +129,7 @@ export function LeagueMatchView() {
       <div className="mx-auto grid w-full max-w-5xl flex-1 grid-cols-1 gap-4 px-3 pb-28 pt-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:pb-10">
         <section className="flex min-w-0 flex-col gap-4">
           <p className="text-center text-xs font-extrabold uppercase tracking-[0.15em] text-white/70">
-            Liga da Várzea · Rodada {m.round} · {fmtKickoff(m.kickoff)}
+            {divisionInfo(data.league.division).name} · Rodada {m.round} · {fmtKickoff(m.kickoff)}
             {live && (
               <span className="ml-2 inline-flex items-center gap-1 rounded bg-[var(--red)] px-1.5 py-0.5 align-middle text-white">
                 <Icon name="dot" className="h-2.5 w-2.5" /> AO VIVO

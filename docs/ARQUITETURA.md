@@ -174,8 +174,31 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
   alheio (`match_change_ok`). O aparelho relê as mudanças a cada 10 s só durante as rodadas.
 - **Custo**: por liga, ~18 linhas de horários + 1 linha de escalação por "Salvar" + mudanças ao vivo
   (só quando alguém mexe). Leituras: 5 consultas pequenas ao abrir a liga.
-- **Pendente**: acesso/rebaixamento entre divisões precisa de um juiz confiável para fechar a tabela
-  (próximo passo: uma Edge Function do Supabase que roda o mesmo motor e grava só a classificação final).
+
+## Acesso à Série D (implementado)
+
+- **Regras** (`lib/league/divisions.ts`, espelhadas em SQL em `division_rules()`):
+  Várzea → os **4 primeiros sobem** para a Série D. Série D → os **3 últimos caem** para a Várzea
+  (ninguém sobe da D enquanto a Série C não existe). Vale a posição da vaga — quem assumiu um time da CPU no
+  meio da temporada leva a campanha dele.
+- **Quem fecha a temporada é o servidor**: a Edge Function `close-league`
+  (`supabase/functions/close-league/index.ts`) relê a liga, recalcula os 90 jogos com o **mesmo código do jogo**
+  (`lib/league/core.ts`, código puro, sem navegador) e chama `close_league()` com a ordem final das vagas e os
+  pontos. Só a `service_role` executa `close_league()`, então nenhum aparelho consegue inventar a própria
+  classificação. É idempotente: liga já fechada só devolve o resultado.
+- **Quando fecha**: o primeiro técnico daquela liga que abrir o jogo depois do fim (`ends_at`) dispara o
+  fechamento; com a tela aberta, isso acontece sozinho. `join_league()` não deixa ninguém sair de uma liga
+  encerrada sem fechar (erro `P0003`), exceto depois de 6 h — para ninguém ficar preso se algo falhar.
+- **O que fica no banco**: `leagues.final` (10 caracteres) + `closed_at`, `clubs.division` e **uma linha por
+  clube por temporada** em `club_seasons (pos, pts, move)`. Nada de placares.
+- **Série D**: mesmo formato (10 clubes, 8 rodadas/dia); os times da CPU têm nomes do interior e escolhem
+  sempre a melhor carta da peneira (~3 pontos de overall acima da CPU da Várzea). A CPU da Várzea continua
+  idêntica (testado em `tests/league.test.ts`), porque ligas antigas são recalculadas.
+- **Fim de temporada no app**: aviso com posição, pontos e "Acesso!"/"Rebaixado" (`SeasonSummary`), visto uma
+  vez por temporada (guardado no aparelho).
+- **Publicar a função** (empacota `lib/` com esbuild e envia pela Management API):
+  `SUPABASE_ACCESS_TOKEN=sbp_... npm run fn:deploy`. Só é preciso republicar quando mudar o motor, os times
+  da CPU ou as regras da liga — e, nesse caso, junto com o deploy do site.
 
 ## Esboço do banco (Postgres)
 
@@ -200,7 +223,8 @@ friendlies(id, codigo, casa_id, fora_id, inicio_em, match_id)
 1. ~~Escalação e tática~~ ✅
 1. ~~Motor de simulação + amistoso de treino~~ ✅
 1. ~~Liga da Várzea (8 rodadas/dia, ao vivo, CPU nas vagas livres)~~ ✅
-1. Acesso e rebaixamento (Edge Function fecha a temporada) → Série D, C, B, A.
+1. ~~Acesso à Série D (Edge Function fecha a temporada)~~ ✅
+1. Séries C, B e A; evolução das cartas; prêmios por título.
 2. Motor de simulação completo (`lib/sim/`) com testes de determinismo.
 3. Tela de escalação/prancheta.
 4. Ligas da Várzea + job de rodadas.

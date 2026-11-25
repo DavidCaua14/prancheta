@@ -16,7 +16,9 @@ import {
   type LeagueData,
   type LeagueMatch,
 } from "@/lib/league/data";
+import { divisionInfo, zoneOf } from "@/lib/league/divisions";
 import { useLeague, useNow } from "@/lib/league/useLeague";
+import { SeasonSummary } from "./SeasonSummary";
 import { clockText } from "@/components/match/parts";
 
 type Tab = "tabela" | "rodadas" | "jogos";
@@ -73,7 +75,7 @@ function myFixtures(data: LeagueData, slot: number) {
 }
 
 export function LeagueHub() {
-  const { club, data, error, joining, reload } = useLeague();
+  const { club, data, error, joining, reload, season, dismissSeason } = useLeague();
   const now = useNow(1000);
   const [tab, setTab] = useState<Tab>("tabela");
   const [round, setRound] = useState<number | null>(null);
@@ -101,7 +103,7 @@ export function LeagueHub() {
         ) : (
           <>
             <span className="h-10 w-10 animate-spin rounded-full border-4 border-[var(--ink)] border-t-[var(--sun)]" aria-label="Carregando" />
-            {joining && <p className="font-bold">Procurando uma vaga na Liga da Várzea...</p>}
+            {joining && <p className="font-bold">Fechando a tabela e procurando a sua liga...</p>}
           </>
         )}
       </div>
@@ -116,17 +118,21 @@ export function LeagueHub() {
   const nextMine = clock.next ? mine[clock.next - 1] : null;
   const myPos = table.findIndex((r) => r.slot === mySlot) + 1;
   const total = data.kickoffs.length;
+  const div = divisionInfo(data.league.division);
+  const myZone = myPos > 0 ? zoneOf(div, myPos, data.league.size) : null;
+  const closesIn = new Date(data.league.ends_at).getTime() - now;
 
   return (
     <div className="flex min-h-dvh flex-col">
+      {season && <SeasonSummary season={season} clubName={club.name} onClose={dismissSeason} />}
       <header className="sticky top-0 z-30 border-b-[3px] border-[var(--ink)] bg-[var(--night-2)]">
         <div className="mx-auto flex h-16 max-w-5xl items-center gap-3 px-3 sm:px-6">
           <Link href="/jogo" className="flex h-10 w-10 items-center justify-center rounded-xl border-[3px] border-[var(--ink)] bg-white/10 font-extrabold text-white" aria-label="Voltar">
             <Icon name="back" className="h-5 w-5" />
           </Link>
-          <ArtImg name="icon-liga" className="h-10 w-10 object-contain" fallback={<ArtImg name="trophy-copa-varzea" className="h-10 w-10 object-contain" fallback={null} />} />
+          <ArtImg name={div.art} className="h-11 w-11 object-contain" fallback={<Icon name="trophy" className="h-8 w-8 text-[var(--sun)]" />} />
           <div className="min-w-0 flex-1">
-            <p className="t-heading truncate text-white">Liga da Várzea</p>
+            <p className="t-heading truncate text-white">{div.name}</p>
             <p className="truncate text-xs font-bold text-white/60">
               Grupo #{data.league.id} · {clock.ended ? "Temporada encerrada" : `Rodada ${Math.min(total, clock.live ?? clock.next ?? total)} de ${total}`}
             </p>
@@ -178,11 +184,23 @@ export function LeagueHub() {
           <div className="rounded-[20px] border-[3px] border-[var(--ink)] bg-[var(--sun)] p-4 text-[var(--ink)] shadow-[0_5px_0_var(--ink)]">
             <p className="t-heading text-xl">Temporada encerrada! Você terminou em {myPos}º.</p>
             <p className="mt-1 text-sm font-semibold">
-              {myPos > 0 && myPos <= 2 ? "Campanha de acesso! " : ""}O acesso para a Série D chega numa próxima atualização. Enquanto isso, jogue a próxima temporada da Várzea.
+              {myZone === "up"
+                ? `Campanha de acesso! Sua vaga na ${div.upTo} é confirmada quando a tabela fechar.`
+                : myZone === "down"
+                  ? `Zona de rebaixamento: a volta para a ${div.downTo} é confirmada quando a tabela fechar.`
+                  : div.up > 0
+                    ? `Só os ${div.up} primeiros sobem. A próxima temporada da ${div.name} começa já já.`
+                    : "A próxima temporada começa já já."}
             </p>
-            <button type="button" onClick={() => void reload({ forceJoin: true })} disabled={joining} className="btn btn-green mt-3">
-              {joining ? "Procurando liga..." : "Jogar a próxima temporada"}
-            </button>
+            {closesIn > 0 ? (
+              <p className="mt-3 flex items-center gap-1.5 text-sm font-extrabold">
+                <Icon name="clock" className="h-4 w-4" /> Tabela fecha em <span className="t-num">{fmtCountdown(closesIn)}</span>
+              </p>
+            ) : (
+              <button type="button" onClick={() => void reload()} disabled={joining} className="btn btn-green mt-3">
+                {joining ? "Fechando a tabela..." : "Ver resultado da temporada"}
+              </button>
+            )}
           </div>
         ) : nextMine ? (
           <div className="rounded-[20px] border-[3px] border-[var(--ink)] bg-[var(--night-2)] p-4 text-white shadow-[0_5px_0_var(--ink)]">
@@ -221,9 +239,20 @@ export function LeagueHub() {
                 {table.map((r, i) => {
                   const me = r.slot === mySlot;
                   return (
-                    <tr key={r.slot} className={`border-b border-[var(--ink)]/10 last:border-0 ${me ? "bg-[var(--sun)]/40 font-extrabold" : ""}`}>
+                    <tr
+                      key={r.slot}
+                      className={`border-b last:border-0 ${
+                        (div.up > 0 && i + 1 === div.up) || (div.down > 0 && i + 2 === data.league.size - div.down + 1) ? "border-b-[3px] border-dashed border-[var(--ink)]/35" : "border-[var(--ink)]/10"
+                      } ${me ? "bg-[var(--sun)]/40 font-extrabold" : ""}`}
+                    >
                       <td className="py-2 pl-2">
-                        <span className={`t-num inline-flex h-6 w-6 items-center justify-center rounded-md text-xs ${i < 2 ? "bg-[var(--grass)] text-[var(--ink)]" : "bg-[var(--ink)]/10"}`}>{i + 1}</span>
+                        <span
+                          className={`t-num inline-flex h-6 w-6 items-center justify-center rounded-md text-xs ${
+                            zoneOf(div, i + 1, data.league.size) === "up" ? "bg-[var(--grass)] text-[var(--ink)]" : zoneOf(div, i + 1, data.league.size) === "down" ? "bg-[var(--red)] text-white" : "bg-[var(--ink)]/10"
+                          }`}
+                        >
+                          {i + 1}
+                        </span>
                       </td>
                       <td className="py-2">
                         <span className="flex min-w-0 items-center gap-2">
@@ -254,9 +283,19 @@ export function LeagueHub() {
                 })}
               </tbody>
             </table>
-            <p className="flex items-center gap-2 border-t border-[var(--ink)]/10 px-3 py-2 text-xs font-bold opacity-70">
-              <span className="h-3 w-3 rounded bg-[var(--grass)]" /> Zona de acesso para a Série D · CPU = vaga ainda sem técnico (novos técnicos assumem essas vagas)
-            </p>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-[var(--ink)]/10 px-3 py-2 text-xs font-bold opacity-75">
+              {div.up > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <span className="h-3 w-3 rounded bg-[var(--grass)]" /> {div.up} primeiros sobem para a {div.upTo}
+                </span>
+              )}
+              {div.down > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <span className="h-3 w-3 rounded bg-[var(--red)]" /> {div.down} últimos caem para a {div.downTo}
+                </span>
+              )}
+              <span>CPU = vaga sem técnico (novos técnicos assumem essas vagas)</span>
+            </div>
           </Panel>
         )}
 

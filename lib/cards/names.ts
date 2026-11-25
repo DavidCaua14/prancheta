@@ -40,3 +40,13 @@ export const VARZEA_CLUBS = [
   "Associação Galo Preto", "Unidos da Feira", "Primavera FC", "Asas do Sertão", "Paulistinha EC",
   "Cruzeirinho do Sul", "Palmeirinha da Vila", "Morumbizinho EC", "Rubro-Negro da Laje", "Tricolor do Beco",
 ];
+
+/** Clubes da CPU na Série D: times do interior, cidades inventadas. */
+export const SERIE_D_CLUBS = [
+  "EC Serra Azul", "Atlético Vale do Juruá", "União Cajueiro", "Operário de Pedra Alta", "Esporte Clube Lagoa Funda",
+  "Ferroviário de Três Pontes", "Guarani do Agreste", "Sport Club Barra Mansa", "Comercial de Rio Claro do Sul", "Independente de Ouro Fino",
+  "Tupi de Santa Luzia", "Mixto do Cerrado", "Nacional de Porto Velho do Sul", "Rio Branco da Serra", "América de Campo Belo",
+  "Sampaio do Litoral", "Itapuã FC", "Aimoré de Vale Verde", "Botafogo do Planalto", "Princesa do Sertão",
+  "Ypiranga de Monte Alto", "Tiradentes EC", "Colorado de Pau Grande", "Caiçara FC", "Real Itaberá",
+  "Estrela Dalva EC", "Novo Horizonte FC", "Grêmio Cachoeirense", "Atlético Riachão", "Paraná do Oeste",
+];

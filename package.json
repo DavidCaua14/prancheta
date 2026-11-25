@@ -10,7 +10,9 @@
     "start": "next start",
     "lint": "eslint",
     "test": "tsx --tsconfig tsconfig.json --test tests/*.test.ts",
-    "sim:balance": "tsx --tsconfig tsconfig.json scripts/sim-balance.ts"
+    "sim:balance": "tsx --tsconfig tsconfig.json scripts/sim-balance.ts",
+    "fn:build": "node scripts/fn-build.mjs",
+    "fn:deploy": "bash scripts/fn-deploy.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.2",
