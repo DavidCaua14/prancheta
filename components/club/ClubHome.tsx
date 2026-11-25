@@ -151,6 +151,8 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
     { label: "Treino", icon: "icon-treino", alt: "icon-pvp", fallback: "whistle", action: () => router.push("/partida"), ready: true },
     { label: "Leilão", icon: "icon-leilao", fallback: "gavel", action: () => router.push("/leilao"), ready: true },
     { label: "Copas", icon: "trophy-copa-varzea", fallback: "trophy", action: () => router.push("/copas"), ready: true },
+    { label: "Eventos", icon: "icon-eventos", fallback: "star", action: () => router.push("/eventos"), ready: true },
+    { label: "Loja", icon: "icon-loja", alt: "icon-moeda", fallback: "bolt", action: () => router.push("/loja"), ready: true },
   ];
 
   return (
@@ -173,9 +175,9 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
           </div>
           <button
             type="button"
-            onClick={() => router.push("/leilao")}
+            onClick={() => router.push("/loja")}
             className="flex h-10 shrink-0 items-center gap-1 rounded-xl border-[3px] border-[var(--ink)] bg-white/10 px-1.5 text-white sm:px-2"
-            aria-label={`${club.coins ?? 0} moedas — abrir o leilão`}
+            aria-label={`${club.coins ?? 0} moedas — abrir a loja`}
           >
             <ArtImg name="icon-moeda" className="h-5 w-5 object-contain" fallback={<span className="h-4 w-4 rounded-full border-2 border-[var(--ink)] bg-[var(--sun)]" />} />
             <span className="t-num text-sm leading-none text-[var(--sun)] sm:text-lg">
@@ -282,7 +284,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
               </Panel>
 
               {/* atalhos */}
-              <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
+              <div className="grid grid-cols-4 gap-2 sm:gap-3">
                 {tiles.map((t) => (
                   <button
                     key={t.label}
@@ -295,8 +297,8 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
                         breve
                       </span>
                     )}
-                    <NavIcon icon={t.icon} alt={t.alt} fallback={t.fallback} className="h-11 w-11 sm:h-14 sm:w-14" />
-                    <span className="mt-1.5 text-xs font-extrabold sm:text-sm">{t.label}</span>
+                    <NavIcon icon={t.icon} alt={t.alt} fallback={t.fallback} className="h-10 w-10 sm:h-14 sm:w-14" />
+                    <span className="mt-1.5 text-[0.7rem] font-extrabold sm:text-sm">{t.label}</span>
                   </button>
                 ))}
               </div>

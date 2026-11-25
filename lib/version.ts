@@ -6,9 +6,9 @@ export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
  * de atualização obrigatória que os jogadores veem.
  */
 export const RELEASE_NOTES: string[] = [
-  "Supercopa: todo domingo, só para campeões de divisão",
-  "16 campeões, das 14h30 às 20h30; o vencedor leva 2.000 moedas",
-  "Ganhou sua liga? Sua vaga na Supercopa vale por 7 dias",
+  "Prêmios bem maiores: campeão da Várzea leva 1.800 moedas, das Lendas 10.500",
+  "Eventos semanais: missões que pagam moedas grátis por jogar",
+  "Nova loja de moedas (pagamentos em breve) e +500 moedas de presente",
 ];
 
 export type VersionPayload = {

@@ -1,6 +1,7 @@
 "use client";
 
 import type { WonLot } from "@/lib/auction/lots";
+import { START_COINS } from "@/lib/economy";
 import type { Session } from "@supabase/supabase-js";
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL, supabase } from "@/lib/supabase/client";
 
@@ -87,7 +88,7 @@ export async function createClub(
   session: Session,
   input: Pick<Club, "name" | "tag" | "crest" | "kit">,
 ): Promise<{ club: Club } | { error: CreateClubError }> {
-  const club: Club = { id: session.user.id, ...input, name: input.name.trim(), squad: null, lineup: null, league_id: null, league_slot: null, joined_round: null, division: 0, xp: null, coins: 1000, won: [], fetchedAt: Date.now() };
+  const club: Club = { id: session.user.id, ...input, name: input.name.trim(), squad: null, lineup: null, league_id: null, league_slot: null, joined_round: null, division: 0, xp: null, coins: START_COINS, won: [], fetchedAt: Date.now() };
   const { error } = await supabase().from("clubs").insert({ ...input, id: club.id, name: club.name });
   if (!error) {
     writeCache(club);

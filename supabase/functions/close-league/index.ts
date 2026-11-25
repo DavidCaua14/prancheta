@@ -10,7 +10,7 @@
  * Este arquivo é empacotado com esbuild (npm run fn:build) porque importa
  * o código do jogo; o deploy envia o pacote pronto (npm run fn:deploy).
  */
-import { buildLeagueData, CLUB_COLS, clubMatchXp, finalCode, finalTable, LEAGUE_COLS, LOT_COLS, logsSince, type LeagueClub, type LeagueRow, type LotRow } from "../../../lib/league/core";
+import { buildLeagueData, CLUB_COLS, clubLeagueStats, clubMatchXp, finalCode, finalTable, LEAGUE_COLS, LOT_COLS, logsSince, type LeagueClub, type LeagueRow, type LotRow } from "../../../lib/league/core";
 
 declare const Deno: { env: { get(k: string): string | undefined }; serve(h: (req: Request) => Response | Promise<Response>): void };
 
@@ -75,10 +75,14 @@ Deno.serve(async (req) => {
     const table = finalTable(data);
     const points = Array.from({ length: league.size }, (_, slot) => table.find((r) => r.slot === slot)!.p);
     const xp: Record<string, number[]> = {};
-    for (const c of clubs) xp[c.id] = clubMatchXp(data, c.id, Number.POSITIVE_INFINITY).xp;
+    const stats: Record<string, unknown> = {};
+    for (const c of clubs) {
+      xp[c.id] = clubMatchXp(data, c.id, Number.POSITIVE_INFINITY).xp;
+      stats[c.id] = clubLeagueStats(data, c.id, Number.POSITIVE_INFINITY);
+    }
     const final = await rest<string>("rpc/close_league", {
       method: "POST",
-      body: JSON.stringify({ p_league: id, p_final: finalCode(table), p_points: points, p_xp: xp }),
+      body: JSON.stringify({ p_league: id, p_final: finalCode(table), p_points: points, p_xp: xp, p_stats: stats }),
     });
     return reply(200, { league_id: id, final, closed: true });
   } catch (e) {

@@ -284,6 +284,28 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
 - **Próxima copa** (ver `CUPS` em `lib/game-config.ts`): Copa das Lendas — um `kind` novo em `CUP_KINDS`,
   `cup_config()`, `cup_prize()` e `join_cup()`.
 
+## Economia, loja e eventos (implementado)
+
+- **Tudo em `lib/economy.ts`** (espelhado em SQL: `season_prize`, `cup_prize`, default de `clubs.coins`).
+- **Entradas de moedas** (técnico ativo, por semana): liga ~2.400 (3 temporadas no meio da tabela da Várzea),
+  Copa da Várzea ~1.000, eventos ~3.000 → **~6.500/semana** sem pagar nada. Começa com 1.500.
+- **Prêmio de temporada**: 1º lugar 1.200 (Várzea) · 1.800 (D) · 2.600 (C) · 3.600 (B) · 5.000 (A) · 7.000
+  (Lendas), **+50% para o campeão** (Várzea 1.800, Lendas 10.500), caindo até 25% no último.
+- **Copas**: Copa da Várzea até 1.500 · Copa Nacional até 4.000 · Supercopa 500 a 6.000.
+- **Leilão** (saída): Destaque a partir de 300, Épica 900, Especial 2.500 — um campeão da Várzea já disputa uma
+  Épica; campeão das divisões de cima, Especiais.
+- **Loja** (`/loja`, só vitrine — pagamento desligado em desenvolvimento): 6 pacotes de R$ 4,90 a R$ 99,90, com
+  bônus crescente (até +63% de moedas por real) e uma oferta de estreia (8.000 por R$ 4,90, uma vez).
+  Moedas só compram no leilão; não mudam a força direto.
+- **Eventos semanais** (`/eventos`): segunda 0h → domingo 23h59 (Brasília), um tema por semana em rodízio
+  (`event_templates`: Artilheiro, Muralha, Maratona, Rumo ao Título), 6 missões com ~3.000 moedas no total.
+  - O fechamento da temporada e da copa grava os números de cada clube (jogos, vitórias, gols, jogos sem
+    sofrer gol, goleadas, fases de copa) calculados pela Edge Function com o motor — o banco não confia no
+    aparelho.
+  - `my_event_progress()` soma o que **fechou na semana**; `claim_mission()` confere a meta e paga uma vez
+    (`event_claims`). O que ainda está em andamento aparece no aparelho como "a confirmar".
+  - Custo: 1 linha por semana (`events`) + 1 por resgate.
+
 ## Esboço do banco (Postgres)
 
 ```
@@ -317,7 +339,8 @@ friendlies(id, codigo, casa_id, fora_id, inicio_em, match_id)
 1. ~~Copa da Várzea~~ ✅
 1. ~~Copa Nacional~~ ✅
 1. ~~Supercopa~~ ✅
-1. Copa das Lendas; amistosos entre amigos.
+1. ~~Economia, loja (vitrine) e eventos semanais~~ ✅
+1. Copa das Lendas; pagamento da loja; amistosos entre amigos.
 2. Motor de simulação completo (`lib/sim/`) com testes de determinismo.
 3. Tela de escalação/prancheta.
 4. Ligas da Várzea + job de rodadas.

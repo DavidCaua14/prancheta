@@ -190,3 +190,53 @@ Mesmo estilo base da seção 1. **512 × 512, fundo transparente, sem moldura** 
 | --- | --- | --- |
 | `icon-liga.png` | Atalho "Liga" e topo da tela da liga | `Icon of a small rustic várzea league trophy next to a chalkboard standings table with three colored rows and a tiny football, simple bold shapes.` |
 | `icon-treino.png` | Atalho "Treino" (amistoso de treino) | `Icon of orange training cones, a football and a coach's whistle on a small patch of grass, simple bold shapes.` |
+
+---
+
+## 12. Loja de moedas
+
+Mesmo estilo base da seção 1. Salve em `public/art/` com o nome exato.
+
+### Ícone e faixa da loja
+
+| Arquivo | Tamanho | Onde aparece | Prompt (depois do estilo base) |
+| --- | --- | --- | --- |
+| `icon-loja.png` | 512 × 512, fundo transparente | Atalho "Loja" na sede e topo da loja | `Icon of a small cheerful football club shop stall with a striped yellow and pink awning, a big gold coin with a football engraved on it hanging as the sign, a little stack of coins on the counter, simple bold shapes.` |
+| `banner-loja.png` | 1200 × 600, **sem** transparência | Faixa no topo da loja (o texto fica embaixo, à esquerda) | `Wide banner scene: a cozy football club treasure room at night, piles of shiny gold coins with football engravings, an open wooden chest overflowing with coins, a club scarf draped over it, stadium floodlights glowing through a window in the background, warm golden light, leave the lower-left third calmer and darker for text. No text.` |
+
+### Pacotes de moedas — 512 × 512, fundo transparente
+
+Gere os seis na mesma sessão: cada um deve parecer **maior e mais rico** que o anterior.
+
+| Arquivo | Pacote | Prompt (depois do estilo base) |
+| --- | --- | --- |
+| `pack-estreia.png` | Oferta de estreia (só 1 vez) | `A shiny gift box wrapped in the colors of a football kit (green and yellow stripes) with a big pink ribbon, gold coins bursting out of the top, a small football and sparkles around it, a ticket-shaped tag with a star.` |
+| `pack-punhado.png` | Punhado de moedas | `A small handful of five gold coins with a football engraved on each, slightly scattered, two of them standing on their edge, a few sparkles.` |
+| `pack-saco.png` | Saco de moedas | `A chunky burlap money bag tied with a sky blue rope, a football symbol stitched on the front, gold coins spilling from the top and a few on the ground.` |
+| `pack-bau.png` | Baú do roupeiro | `An open wooden kit-room chest with metal corners and a football club crest on the lid, filled to the top with gold coins, a folded football shirt hanging on the side, sparkles.` |
+| `pack-cofre.png` | Cofre do clube | `A heavy round steel vault door slightly open, a mountain of gold coins and a few small gold bars pouring out, the vault wheel shaped like a football, glowing yellow light from inside.` |
+| `pack-tesouro.png` | Tesouro do presidente | `A giant overflowing treasure pile of gold coins and gold bars on a purple velvet cushion, a golden trophy and a president's top hat on top, a crown-shaped sparkle, rays of light behind, the most luxurious of the set.` |
+
+---
+
+## 13. Eventos semanais
+
+Mesmo estilo base da seção 1.
+
+### Ícone dos eventos — 512 × 512, fundo transparente
+
+| Arquivo | Onde aparece | Prompt (depois do estilo base) |
+| --- | --- | --- |
+| `icon-eventos.png` | Atalho "Eventos" na sede e topo da tela de eventos | `Icon of a wall calendar page with a big star on it, a gold coin and a small football bouncing out of the page, a little party confetti burst, simple bold shapes.` |
+
+### Faixas dos eventos — 1200 × 600, **sem** transparência
+
+Aparecem no topo da tela de eventos, uma por semana (o nome e as informações ficam
+por cima, na parte de baixo). Deixe o terço de baixo mais calmo e escuro.
+
+| Arquivo | Evento | Prompt (depois do estilo base) |
+| --- | --- | --- |
+| `event-artilheiro.png` | Semana do Artilheiro | `Wide banner scene: a striker in a hot pink kit doing a spectacular bicycle kick, the ball flying into the net which bulges with motion lines, the scoreboard behind lighting up, orange and pink sunset sky over a small stadium, confetti in the air. No text.` |
+| `event-muralha.png` | Semana da Muralha | `Wide banner scene: a heroic goalkeeper in a sky blue kit making a full-stretch diving save, a wall of defenders in purple linking arms like a brick wall in front of the goal, the ball bouncing off, cool blue and purple night stadium lights. No text.` |
+| `event-maratona.png` | Maratona da Bola | `Wide banner scene: a group of cartoon players in green kits running together across a long winding street-football course through a Brazilian neighborhood, a big clock in the sky, footballs bouncing, morning sunshine and blue sky. No text.` |
+| `event-titulo.png` | Rumo ao Título | `Wide banner scene: a team in yellow kits lifting a giant golden trophy on a stage, gold confetti raining down, fireworks and floodlights in a packed night stadium, pink and gold glow, triumphant mood. No text.` |

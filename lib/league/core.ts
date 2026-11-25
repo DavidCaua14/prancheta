@@ -343,6 +343,45 @@ export function clubMatchXp(data: LeagueData, clubId: string, now: number): { xp
   return { xp: total, games };
 }
 
+/** Números de um clube num conjunto de jogos (alimentam as missões dos eventos). */
+export type MatchStats = { games: number; wins: number; draws: number; goals_for: number; goals_against: number; clean_sheets: number; big_wins: number };
+
+export function emptyStats(): MatchStats {
+  return { games: 0, wins: 0, draws: 0, goals_for: 0, goals_against: 0, clean_sheets: 0, big_wins: 0 };
+}
+
+/** Soma um jogo (gols a favor / contra) nas estatísticas. */
+export function addGame(s: MatchStats, gf: number, ga: number) {
+  s.games++;
+  s.goals_for += gf;
+  s.goals_against += ga;
+  if (gf > ga) s.wins++;
+  else if (gf === ga) s.draws++;
+  if (ga === 0) s.clean_sheets++;
+  if (gf - ga >= 3) s.big_wins++;
+}
+
+/** Estatísticas do clube nos jogos da liga terminados até `now` (só os que o próprio técnico comandou). */
+export function clubLeagueStats(data: LeagueData, clubId: string, now: number): MatchStats {
+  const st = emptyStats();
+  for (let r = 1; r <= data.kickoffs.length; r++) {
+    if (data.kickoffs[r - 1] > now) break;
+    const fixtures = data.fixtures[r - 1];
+    for (let i = 0; i < fixtures.length; i++) {
+      const home = teamAt(data, fixtures[i].home, r);
+      const away = teamAt(data, fixtures[i].away, r);
+      const side = home.clubId === clubId ? 0 : away.clubId === clubId ? 1 : -1;
+      if (side < 0) continue;
+      const m = matchAt(data, r, i);
+      if (!matchDone(m, now)) break;
+      const [h, a] = m.result.score;
+      addGame(st, side === 0 ? h : a, side === 0 ? a : h);
+      break;
+    }
+  }
+  return st;
+}
+
 /** Tabela final (todos os jogos da temporada). */
 export function finalTable(data: LeagueData): Row[] {
   return standings(data, Number.POSITIVE_INFINITY);

@@ -17,6 +17,7 @@ import {
   type LeagueMatch,
 } from "@/lib/league/data";
 import { divisionInfo, zoneOf } from "@/lib/league/divisions";
+import { seasonPrize } from "@/lib/economy";
 import { useLeague, useNow } from "@/lib/league/useLeague";
 import { SeasonSummary } from "./SeasonSummary";
 import { clockText } from "@/components/match/parts";
@@ -295,6 +296,10 @@ export function LeagueHub() {
                 </span>
               )}
               <span>CPU = vaga sem técnico (novos técnicos assumem essas vagas)</span>
+              <span className="basis-full">
+                Prêmio: campeão leva {seasonPrize(data.league.division, 1, data.league.size).toLocaleString("pt-BR")} moedas
+                {myPos > 0 && ` · na sua posição atual (${myPos}º), ${seasonPrize(data.league.division, myPos, data.league.size).toLocaleString("pt-BR")}`}
+              </span>
             </div>
           </Panel>
         )}

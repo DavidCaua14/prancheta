@@ -15,7 +15,8 @@ export const ROUND_SECONDS = 7200;
 export const LOTS_PER_ROUND = 8;
 /** Cada lance novo marca o fim do lote para daqui a 10 minutos (espelho de place_bid). */
 export const BID_WINDOW_SECONDS = 600;
-export const START_COINS = 1000;
+/** Moedas iniciais: ver lib/economy.ts (START_COINS). */
+export { START_COINS } from "@/lib/economy";
 
 export type LotTier = Exclude<CardTier, "base">;
 

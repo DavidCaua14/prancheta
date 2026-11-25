@@ -6,7 +6,7 @@
  * prêmios em moedas. Idempotente: copa já fechada só devolve o campeão.
  * Empacotada com esbuild (npm run fn:build) e publicada com npm run fn:deploy.
  */
-import { buildCupData, CUP_COLS, cupReach, ENTRY_COLS, type CupEntry, type CupRow } from "../../../lib/cup/core";
+import { buildCupData, CUP_COLS, cupReach, cupStats, ENTRY_COLS, type CupEntry, type CupRow } from "../../../lib/cup/core";
 import { LOT_COLS, type LotRow } from "../../../lib/league/core";
 
 declare const Deno: { env: { get(k: string): string | undefined }; serve(h: (req: Request) => Response | Promise<Response>): void };
@@ -67,7 +67,10 @@ Deno.serve(async (req) => {
 
     const data = buildCupData({ cup, entries, logs, changes, lots });
     const reach = cupReach(data);
-    const champion = await rest<number>("rpc/close_cup", { method: "POST", body: JSON.stringify({ p_cup: id, p_reach: reach }) });
+    // números de cada vaga com técnico (alimentam os eventos semanais)
+    const stats: Record<string, unknown> = {};
+    for (const e of entries) stats[String(e.slot)] = cupStats(data, e.slot);
+    const champion = await rest<number>("rpc/close_cup", { method: "POST", body: JSON.stringify({ p_cup: id, p_reach: reach, p_stats: stats }) });
     return reply(200, { cup_id: id, champion, closed: true });
   } catch (e) {
     console.error(e);

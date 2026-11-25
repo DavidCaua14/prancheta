@@ -13,7 +13,7 @@ import { LENDAS_CLUBS, SERIE_A_CLUBS, SERIE_B_CLUBS, SERIE_C_CLUBS, SERIE_D_CLUB
 import { clubCards } from "@/lib/cards/squad";
 import { decodeCrest, decodeKit } from "@/lib/club/identity";
 import { botTeam, tagOf } from "@/lib/league/bots";
-import type { ChangeRow, LogRow, LotRow, TeamView } from "@/lib/league/core";
+import { addGame, emptyStats, type ChangeRow, type LogRow, type LotRow, type MatchStats, type TeamView } from "@/lib/league/core";
 import { simulate, type Change, type MatchResult, type TeamInput } from "@/lib/sim/engine";
 import { lineupFor, type Lineup } from "@/lib/tactics/lineup";
 import { shootout, type Shootout } from "./shootout";
@@ -57,7 +57,7 @@ export const CUP_KINDS: Record<number, CupConfig> = {
     minDivision: 0,
     botDivision: 0,
     botNames: [...VARZEA_CLUBS, ...SERIE_D_CLUBS],
-    prizes: [0, 30, 60, 150, 300, 600],
+    prizes: [0, 100, 200, 400, 800, 1500],
     tagline: "Mata-mata diário · 32 clubes · aberta a todos",
   },
   1: {
@@ -70,7 +70,7 @@ export const CUP_KINDS: Record<number, CupConfig> = {
     minDivision: 2,
     botDivision: 2,
     botNames: [...SERIE_C_CLUBS, ...SERIE_B_CLUBS, ...SERIE_D_CLUBS],
-    prizes: [0, 25, 50, 100, 250, 600, 1600],
+    prizes: [0, 100, 200, 400, 800, 2000, 4000],
     tagline: "Mata-mata diário · 64 clubes · a partir da Série C",
   },
   2: {
@@ -83,7 +83,7 @@ export const CUP_KINDS: Record<number, CupConfig> = {
     minDivision: 0,
     botDivision: 3,
     botNames: [...SERIE_A_CLUBS, ...LENDAS_CLUBS],
-    prizes: [100, 250, 500, 900, 2000],
+    prizes: [500, 1000, 1800, 3000, 6000],
     tagline: "Todo domingo · 16 campeões de divisão",
     weekday: 0,
     requiresTitle: true,
@@ -286,4 +286,21 @@ export function pathOf(data: CupData, slot: number): CupMatch[] {
     out.push(cupMatch(data, r, Math.floor(k / 2)));
   }
   return out;
+}
+
+/**
+ * Estatísticas de uma vaga na copa (jogos terminados até `now`). Pênaltis não
+ * contam como gol nem vitória: o jogo conta como empate (como no futebol).
+ */
+export function cupStats(data: CupData, slot: number, now = Number.POSITIVE_INFINITY): MatchStats & { cup_wins: number } {
+  const st = emptyStats();
+  let cupWins = 0;
+  for (const m of pathOf(data, slot)) {
+    if (now < m.kickoff + m.result.length * 6000) break;
+    const side = m.home.slot === slot ? 0 : 1;
+    const [h, a] = m.result.score;
+    addGame(st, side === 0 ? h : a, side === 0 ? a : h);
+    if (m.winner === side) cupWins++;
+  }
+  return { ...st, cup_wins: cupWins };
 }
