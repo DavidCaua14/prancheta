@@ -8,7 +8,9 @@ type Props = { mascot: ReactNode; children: ReactNode; step?: string; always?: b
 export function MascotTipInline({ mascot, children, step, always }: Props) {
   return (
     <div className={`mb-4 flex items-end gap-2 ${always ? "" : "lg:hidden"}`}>
-      <div className="h-20 w-16 shrink-0 overflow-hidden">{mascot}</div>
+      <div className="h-20 w-16 shrink-0 -scale-x-100 overflow-hidden [&_img]:h-[150%] [&_img]:w-[150%] [&_img]:max-w-none [&_img]:-translate-x-[17%] [&_img]:object-cover [&_img]:object-top">
+        {mascot}
+      </div>
       <div className="relative flex-1 rounded-2xl border-[3px] border-[var(--ink)] bg-[var(--paper)] px-3.5 py-2.5 text-sm font-semibold leading-snug text-[var(--ink)] shadow-[0_4px_0_var(--ink)]">
         {step && <p className="mb-0.5 text-[0.65rem] font-extrabold uppercase tracking-[0.14em] opacity-50">{step}</p>}
         <div aria-live="polite">{children}</div>

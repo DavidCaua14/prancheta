@@ -9,8 +9,8 @@ export function MascotImage({ className = "" }: { className?: string }) {
   return (
     <Art
       name="mascote"
-      width={640}
-      height={800}
+      width={560}
+      height={700}
       className={`object-contain object-bottom ${className}`}
       fallback={
         <PlayerAvatar

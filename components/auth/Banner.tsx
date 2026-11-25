@@ -10,7 +10,7 @@ export function Banner({ name, children }: { name: string; children?: React.Reac
       <Art
         name={name}
         width={1200}
-        height={400}
+        height={675}
         eager
         sizes="(min-width: 640px) 576px, 100vw"
         className="absolute inset-0 h-full w-full object-cover"

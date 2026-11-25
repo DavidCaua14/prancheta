@@ -1,5 +1,7 @@
 // Arquivo gerado por scripts/art-manifest.mjs — não edite à mão.
 export const ART: Record<string, string> = {
+  "banner-clube": "/art/banner-clube.webp",
+  "banner-login": "/art/banner-login.webp",
   "div-liga-lendas": "/art/div-liga-lendas.webp",
   "div-serie-a": "/art/div-serie-a.webp",
   "div-serie-b": "/art/div-serie-b.webp",
@@ -15,12 +17,15 @@ export const ART: Record<string, string> = {
   "icon-ao-vivo": "/art/icon-ao-vivo.webp",
   "icon-celular": "/art/icon-celular.webp",
   "icon-clube": "/art/icon-clube.webp",
+  "icon-elenco": "/art/icon-elenco.webp",
   "icon-gratis": "/art/icon-gratis.webp",
+  "icon-inicio": "/art/icon-inicio.webp",
   "icon-leilao": "/art/icon-leilao.webp",
   "icon-moeda": "/art/icon-moeda.webp",
   "icon-pvp": "/art/icon-pvp.webp",
   "icon-tatica": "/art/icon-tatica.webp",
   "logo-mark": "/art/logo-mark.webp",
+  "mascote": "/art/mascote.webp",
   "trophy-copa-lendas": "/art/trophy-copa-lendas.webp",
   "trophy-copa-nacional": "/art/trophy-copa-nacional.webp",
   "trophy-copa-varzea": "/art/trophy-copa-varzea.webp",
