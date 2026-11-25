@@ -6,16 +6,25 @@ import { buildLeagueData, clubLeagueStats, finalTable, type LeagueClub, type Lea
 import { MIN_BID } from "@/lib/auction/lots";
 
 test("prêmios de temporada (mesmos valores do SQL season_prize)", () => {
-  assert.equal(seasonPrize(0, 1), 1800);
-  assert.equal(seasonPrize(0, 10), 300);
-  assert.equal(seasonPrize(5, 1), 10500);
+  assert.deepEqual([0, 1, 2, 3, 4, 5].map((d) => seasonPrize(d, 1)), [450, 525, 600, 750, 900, 1050]);
+  assert.equal(seasonPrize(0, 10), 75);
   // sempre cai com a posição e sobe com a divisão
   for (let d = 0; d <= 5; d++) for (let p = 1; p < 10; p++) assert.ok(seasonPrize(d, p) > seasonPrize(d, p + 1));
   for (let d = 0; d < 5; d++) assert.ok(seasonPrize(d + 1, 1) > seasonPrize(d, 1));
-  // campeão da Várzea já disputa uma Épica; campeão das Lendas, várias Especiais
-  assert.ok(seasonPrize(0, 1) >= 2 * MIN_BID.epica);
-  assert.ok(seasonPrize(5, 1) >= 4 * MIN_BID.especial);
-  assert.ok(START_COINS >= MIN_BID.destaque * 5);
+  // prêmio compra cartas Base boas, nunca uma rara sozinho
+  for (let d = 0; d <= 5; d++) {
+    assert.ok(seasonPrize(d, 1) >= 3 * MIN_BID.base, `div ${d}`);
+    assert.ok(seasonPrize(d, 1) < MIN_BID.destaque, `div ${d}`);
+  }
+  assert.ok(START_COINS >= 3 * MIN_BID.base && START_COINS < MIN_BID.destaque);
+  // rara exige paciência (semanas de eventos ~1.500) ou pacote
+  const weeklyFree = 3 * seasonPrize(0, 5) + 7 * 30 + 1500;
+  assert.ok(weeklyFree < MIN_BID.destaque * 2, `grátis por semana ~${weeklyFree}`);
+  assert.ok(MIN_BID.especial / weeklyFree > 4, "Especial leva semanas sem pacote");
+  // pacotes: acesso rápido a muitas moedas
+  const bau = COIN_PACKS.find((p) => p.id === "bau")!;
+  assert.ok(bau.coins >= MIN_BID.especial);
+  assert.ok(COIN_PACKS.find((p) => p.id === "punhado")!.coins >= weeklyFree);
 });
 
 test("pacotes: quanto maior, mais moedas por real", () => {

@@ -91,7 +91,7 @@ test("clube inscrito joga com a força congelada na inscrição", () => {
     far = [far[0] + cupReach(e(null))[7], far[1] + cupReach(e(Array(14).fill(1350)))[7]];
   }
   assert.ok(far[1] > far[0], `base ${far[0] / 30} fases × evoluído ${far[1] / 30}`);
-  assert.equal(CUP_KINDS[0].prizes[5], 1500);
+  assert.equal(CUP_KINDS[0].prizes[5], 300);
 });
 
 test("Copa Nacional: 64 clubes, 6 fases, CPU da Série C e nomes sem repetir", () => {
@@ -114,7 +114,7 @@ test("Copa Nacional: 64 clubes, 6 fases, CPU da Série C e nomes sem repetir", (
     }).reduce((a, b) => a + b, 0) / n;
   assert.ok(avg(d, 64) > avg(v, 32) + 3);
   assert.equal(CUP_KINDS[1].prizes.length, 7);
-  assert.equal(CUP_KINDS[1].prizes[6], 4000);
+  assert.equal(CUP_KINDS[1].prizes[6], 500);
 });
 
 test("próxima edição: hoje antes do prazo, amanhã depois", () => {
@@ -132,7 +132,7 @@ test("Supercopa: 16 campeões, 4 fases, todo domingo", () => {
   const reach = cupReach(d);
   assert.deepEqual([0, 1, 2, 3, 4].map((r) => reach.filter((x) => x === r).length), [8, 4, 2, 1, 1]);
   assert.equal(new Set(Array.from({ length: 16 }, (_, s) => cupTeam(d, s, d.kickoffs[0]).name)).size, 16);
-  assert.deepEqual(CUP_KINDS[2].prizes, [500, 1000, 1800, 3000, 6000]);
+  assert.deepEqual(CUP_KINDS[2].prizes, [100, 150, 250, 400, 800]);
   // 2026-06-10 é quarta-feira; domingos: 14/06 e 21/06
   const brt = (day: number, h: number, m: number) => Date.UTC(2026, 5, day, h + 3, m);
   assert.equal(nextEditionStart(brt(10, 9, 0), CUP_KINDS[2]), brt(14, 14, 30));

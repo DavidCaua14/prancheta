@@ -3,17 +3,23 @@
  * Os valores que o banco usa estão espelhados em SQL (season_prize, cup_prize,
  * default de clubs.coins). Mudou aqui, mude lá (migração nova).
  *
- * Meta (por semana, técnico ativo sem pagar nada):
- *   liga (~3 temporadas) ~2.400 · Copa da Várzea ~1.000 · eventos ~3.000
- *   = ~6.500 moedas → uma Épica disputada ou uma Especial a cada 1–2 semanas.
- * Campeões ganham bem mais: o título é o atalho para reforçar o time.
+ * Filosofia:
+ *   • prêmios de liga e copa compram cartas Base boas (leilão a partir de 100);
+ *   • Destaque (1.500) / Épica (5.000) / Especial (15.000) pedem paciência —
+ *     juntar moedas nos eventos semanais — ou um pacote da loja;
+ *   • quem compra pacote tem acesso rápido a MUITAS moedas (a vantagem dele).
+ *
+ * Técnico ativo sem pagar nada, por semana: liga ~600 (3 temporadas) +
+ * copas ~350 + eventos ~1.500 = ~2.400 → uma Destaque por semana, uma Épica
+ * em ~2 semanas, uma Especial em ~6. O pacote de R$ 19,90 (16.000) compra uma
+ * Especial na hora.
  */
 
-/** Moedas com que todo clube começa (dá para uma Destaque logo no 1º dia). */
-export const START_COINS = 1500;
+/** Moedas com que todo clube começa (dá para algumas cartas Base no 1º dia). */
+export const START_COINS = 500;
 
 /** Prêmio do 1º colocado por divisão (Várzea, D, C, B, A, Lendas). */
-export const SEASON_PRIZE_BASE = [1200, 1800, 2600, 3600, 5000, 7000] as const;
+export const SEASON_PRIZE_BASE = [300, 350, 400, 500, 600, 700] as const;
 
 /**
  * Prêmio de fim de temporada (espelho de season_prize no SQL):

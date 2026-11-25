@@ -286,25 +286,27 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
 
 ## Economia, loja e eventos (implementado)
 
-- **Tudo em `lib/economy.ts`** (espelhado em SQL: `season_prize`, `cup_prize`, default de `clubs.coins`).
-- **Entradas de moedas** (técnico ativo, por semana): liga ~2.400 (3 temporadas no meio da tabela da Várzea),
-  Copa da Várzea ~1.000, eventos ~3.000 → **~6.500/semana** sem pagar nada. Começa com 1.500.
-- **Prêmio de temporada**: 1º lugar 1.200 (Várzea) · 1.800 (D) · 2.600 (C) · 3.600 (B) · 5.000 (A) · 7.000
-  (Lendas), **+50% para o campeão** (Várzea 1.800, Lendas 10.500), caindo até 25% no último.
-- **Copas**: Copa da Várzea até 1.500 · Copa Nacional até 4.000 · Supercopa 500 a 6.000.
-- **Leilão** (saída): Destaque a partir de 300, Épica 900, Especial 2.500 — um campeão da Várzea já disputa uma
-  Épica; campeão das divisões de cima, Especiais.
-- **Loja** (`/loja`, só vitrine — pagamento desligado em desenvolvimento): 6 pacotes de R$ 4,90 a R$ 99,90, com
-  bônus crescente (até +63% de moedas por real) e uma oferta de estreia (8.000 por R$ 4,90, uma vez).
-  Moedas só compram no leilão; não mudam a força direto.
-- **Eventos semanais** (`/eventos`): segunda 0h → domingo 23h59 (Brasília), um tema por semana em rodízio
-  (`event_templates`: Artilheiro, Muralha, Maratona, Rumo ao Título), 6 missões com ~3.000 moedas no total.
+- **Filosofia**: prêmios de liga e copa compram **cartas Base boas**; Destaque, Épica e Especial pedem
+  **paciência** (juntar moedas nos eventos semanais) ou um **pacote da loja**. Quem joga muito evolui sempre;
+  quem compra pacote tem acesso rápido a muitas moedas — essa é a vantagem dele.
+- **Tudo em `lib/economy.ts`** (espelhado em SQL: `season_prize`, `cup_prize`, `auction_min`, default de `clubs.coins`).
+- **Leilão (preço mínimo)**: Base 100 (4 lotes por rodada, a melhor de 3 cartas sorteadas) · Destaque 1.500 ·
+  Épica 5.000 · Especial 15.000. Os 8 lotes raros (índices 0–7) não mudaram; os Base são os índices 8–11.
+- **Prêmio de temporada**: 1º lugar 300 (Várzea) · 350 (D) · 400 (C) · 500 (B) · 600 (A) · 700 (Lendas),
+  **+50% para o campeão** (450 a 1.050), caindo até 25% no último (Várzea: 75).
+- **Copas**: Copa da Várzea até 300 · Copa Nacional até 500 · Supercopa 100 a 800.
+- **Eventos semanais**: ~1.500 moedas por semana (6 missões).
+- **Técnico ativo sem pagar nada**: ~2.300 moedas por semana (liga ~600 + copas ~200 + eventos ~1.500) →
+  uma Destaque por semana, uma Épica em ~2 semanas, uma Especial em ~6–7 semanas. Começa com 500.
+- **Loja** (`/loja`, só vitrine — pagamento desligado em desenvolvimento): 6 pacotes de R$ 4,90 a R$ 99,90 com
+  bônus crescente; o de R$ 4,90 (3.000) já vale mais que uma semana jogando, o de R$ 19,90 (16.000) compra uma
+  Especial na hora. Oferta de estreia: 8.000 por R$ 4,90, uma vez. Moedas só compram no leilão.
+- **Eventos** (`/eventos`): segunda 0h → domingo 23h59 (Brasília), um tema por semana em rodízio
+  (`event_templates`: Artilheiro, Muralha, Maratona, Rumo ao Título).
   - O fechamento da temporada e da copa grava os números de cada clube (jogos, vitórias, gols, jogos sem
-    sofrer gol, goleadas, fases de copa) calculados pela Edge Function com o motor — o banco não confia no
-    aparelho.
+    sofrer gol, goleadas, fases de copa) calculados pela Edge Function com o motor.
   - `my_event_progress()` soma o que **fechou na semana**; `claim_mission()` confere a meta e paga uma vez
-    (`event_claims`). O que ainda está em andamento aparece no aparelho como "a confirmar".
-  - Custo: 1 linha por semana (`events`) + 1 por resgate.
+    (`event_claims`). O que está em andamento aparece no aparelho como "a confirmar".
 
 ## Esboço do banco (Postgres)
 

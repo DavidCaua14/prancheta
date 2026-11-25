@@ -26,6 +26,7 @@ import { fmtCountdown } from "@/lib/league/data";
 import { useNow } from "@/lib/league/useLeague";
 
 const TIER_STYLE: Record<LotTier, string> = {
+  base: "bg-[#c97d3c] text-white",
   destaque: "bg-[var(--sky)] text-[var(--ink)]",
   epica: "bg-[#a46bff] text-white",
   especial: "bg-[var(--sun)] text-[var(--ink)]",
@@ -273,7 +274,7 @@ export function AuctionHouse() {
             <Panel className="flex items-start gap-3 !p-3">
               <Icon name="gavel" className="mt-0.5 h-5 w-5 shrink-0 text-[var(--sun)]" />
               <p className="text-xs font-semibold text-white/80 sm:text-sm">
-                A cada 2 horas, 8 cartas novas. Suas moedas ficam reservadas no lance e voltam na hora se alguém cobrir. Cada lance novo faz o
+                A cada 2 horas, 12 cartas novas: 4 Base boas e 8 raras. Suas moedas ficam reservadas no lance e voltam na hora se alguém cobrir. Cada lance novo faz o
                 lote fechar {BID_WINDOW_SECONDS / 60} minutos depois — tempo para os outros técnicos verem e cobrirem. Quem tiver o maior lance no fim leva a carta para o elenco — sem limite de cartas{extras ? ` (você já tem ${extras} do leilão)` : ""}.
               </p>
             </Panel>
@@ -293,8 +294,17 @@ export function AuctionHouse() {
               {Array.from({ length: LOTS_PER_ROUND }, (_, idx) => renderLot(round, idx))}
             </div>
             <p className="text-center text-xs font-bold text-white/60">
-              Destaque a partir de {MIN_BID.destaque}, Épica de {MIN_BID.epica} e Especial (a cada 8 horas) de {MIN_BID.especial} moedas. Moedas entram
-              no fim de cada temporada, conforme a posição e a divisão.
+              Base a partir de {MIN_BID.base.toLocaleString("pt-BR")}, Destaque de {MIN_BID.destaque.toLocaleString("pt-BR")}, Épica de{" "}
+              {MIN_BID.epica.toLocaleString("pt-BR")} e Especial (a cada 8 horas) de {MIN_BID.especial.toLocaleString("pt-BR")} moedas. Prêmios de liga e
+              copa compram cartas Base; para as raras, junte moedas nos{" "}
+              <Link href="/eventos" className="underline">
+                eventos
+              </Link>{" "}
+              ou passe na{" "}
+              <Link href="/loja" className="underline">
+                loja
+              </Link>
+              .
             </p>
           </>
         )}

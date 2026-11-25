@@ -57,7 +57,7 @@ export const CUP_KINDS: Record<number, CupConfig> = {
     minDivision: 0,
     botDivision: 0,
     botNames: [...VARZEA_CLUBS, ...SERIE_D_CLUBS],
-    prizes: [0, 100, 200, 400, 800, 1500],
+    prizes: [0, 20, 40, 80, 150, 300],
     tagline: "Mata-mata diário · 32 clubes · aberta a todos",
   },
   1: {
@@ -70,7 +70,7 @@ export const CUP_KINDS: Record<number, CupConfig> = {
     minDivision: 2,
     botDivision: 2,
     botNames: [...SERIE_C_CLUBS, ...SERIE_B_CLUBS, ...SERIE_D_CLUBS],
-    prizes: [0, 100, 200, 400, 800, 2000, 4000],
+    prizes: [0, 20, 40, 80, 150, 300, 500],
     tagline: "Mata-mata diário · 64 clubes · a partir da Série C",
   },
   2: {
@@ -83,7 +83,7 @@ export const CUP_KINDS: Record<number, CupConfig> = {
     minDivision: 0,
     botDivision: 3,
     botNames: [...SERIE_A_CLUBS, ...LENDAS_CLUBS],
-    prizes: [500, 1000, 1800, 3000, 6000],
+    prizes: [100, 150, 250, 400, 800],
     tagline: "Todo domingo · 16 campeões de divisão",
     weekday: 0,
     requiresTitle: true,

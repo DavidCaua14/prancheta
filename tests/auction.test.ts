@@ -12,25 +12,26 @@ test("rodadas de 2 horas e raridade dos lotes", () => {
   const r = roundAt(t);
   assert.ok(roundStart(r) <= t && t < roundEnd(r));
   assert.equal(roundEnd(r) - roundStart(r), 7200_000);
-  const tiers = (round: number) => Array.from({ length: 8 }, (_, i) => lotTier(round, i));
-  assert.deepEqual(tiers(4), ["destaque", "destaque", "destaque", "destaque", "destaque", "epica", "epica", "especial"]);
-  assert.deepEqual(tiers(5), ["destaque", "destaque", "destaque", "destaque", "destaque", "epica", "epica", "destaque"]);
+  const tiers = (round: number) => Array.from({ length: 12 }, (_, i) => lotTier(round, i));
+  // os 8 primeiros nunca mudam (cartas já arrematadas); 8–11 são Base
+  assert.deepEqual(tiers(4), ["destaque", "destaque", "destaque", "destaque", "destaque", "epica", "epica", "especial", "base", "base", "base", "base"]);
+  assert.deepEqual(tiers(5), ["destaque", "destaque", "destaque", "destaque", "destaque", "epica", "epica", "destaque", "base", "base", "base", "base"]);
 });
 
 test("lance mínimo: piso da raridade, depois +5% (no mínimo +10)", () => {
   assert.equal(nextMinBid("destaque", null), MIN_BID.destaque);
-  assert.equal(nextMinBid("destaque", 300), 315);
-  assert.equal(nextMinBid("destaque", 100), 110);
-  assert.equal(nextMinBid("especial", 2500), 2625);
+  assert.equal(nextMinBid("destaque", 1500), 1575);
+  assert.equal(nextMinBid("base", 100), 110);
+  assert.equal(nextMinBid("especial", 15000), 15750);
 });
 
 test("carta do lote: determinística e na faixa da raridade", () => {
   for (let r = 1000; r < 1040; r++) {
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 12; i++) {
       const a = lotCard(r, i);
       assert.deepEqual(a, lotCard(r, i));
       const tier = lotTier(r, i);
-      assert.equal(a.tier, tier);
+      assert.equal(a.tier ?? "base", tier);
       const [lo, hi] = CARD_TIERS[tier].startOverall;
       assert.ok(a.overall >= lo && a.overall <= hi, `${tier} ${a.overall}`);
     }
@@ -94,4 +95,17 @@ test("sem limite de cartas: escalação v2 a partir da 37ª carta", () => {
   // a escalação automática enxerga o elenco inteiro
   const auto = autoLineup(defaultLineup(squad), squad);
   assert.ok(auto.xi.some((i) => i >= 14));
+});
+
+test("lote Base: carta boa (melhor de 3 sorteios)", () => {
+  let sum = 0;
+  let n = 0;
+  for (let r = 3000; r < 3100; r++) for (let i = 8; i < 12; i++) {
+    sum += lotCard(r, i).overall;
+    n++;
+  }
+  assert.ok(sum / n >= 55, `média ${(sum / n).toFixed(1)}`);
+  // as cartas raras de rodadas antigas continuam as mesmas
+  assert.equal(lotCard(1000, 3).key, "L1000-3");
+  assert.equal(lotCard(1000, 3).tier, "destaque");
 });
