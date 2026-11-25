@@ -30,7 +30,7 @@ export function GameShell({ children, topRight, bare }: { children: ReactNode; t
             />
           }
         />
-        <div className="absolute inset-0 bg-[rgba(29,22,80,0.55)]" />
+        <div className="absolute inset-0 bg-[rgba(29,22,80,0.25)]" />
       </div>
 
       {!bare && (

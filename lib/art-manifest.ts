@@ -2,6 +2,7 @@
 export const ART: Record<string, string> = {
   "banner-clube": "/art/banner-clube.webp",
   "banner-login": "/art/banner-login.webp",
+  "bg-jogo": "/art/bg-jogo.webp",
   "div-liga-lendas": "/art/div-liga-lendas.webp",
   "div-serie-a": "/art/div-serie-a.webp",
   "div-serie-b": "/art/div-serie-b.webp",
