@@ -252,6 +252,27 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
 - **Custo**: lances = 1 linha por lote disputado (no máximo 8 a cada 2 h, ~100 por dia). A tela relê só os
   lotes da rodada a cada 8 s enquanto está aberta.
 
+## Copas — Copa da Várzea (implementado)
+
+- **Formato**: mata-mata diário de 32 clubes, jogo único em campo neutro, empate vai para os pênaltis
+  (`lib/cup/shootout.ts`, seed própria). Fases às 13h, 15h, 17h, 19h e 21h (Brasília) — horas ímpares, sem
+  bater com a liga. Inscrição aberta a todos os clubes até 12h45 (depois, vale a edição do dia seguinte); as
+  vagas sem técnico ficam com a CPU da Várzea.
+- **Banco**: `cups` (1 linha por edição) e `cup_entries` (1 por inscrito, até 32) — nada de jogos ou placares.
+  `join_cup()` escolhe a edição com mais humanos e sorteia a vaga. Mudanças ao vivo em `cup_changes`
+  (`cup_change_ok`: só o próprio time, só minuto futuro, 30 por fase). Códigos de substituição: `xAB` ou
+  `yAABB` (elenco com mais de 36 cartas — também passou a valer na liga).
+- **Força congelada**: a inscrição guarda o XP das cartas; a copa inteira usa esse XP (a liga pode fechar no
+  meio da copa e mudar o XP). Cartas do leilão contam a partir do arremate, como na liga.
+- **Cálculo no aparelho** (`lib/cup/core.ts`): 1ª fase = vaga 0×1, 2×3...; depois, vencedor do jogo 2i × 2i+1.
+  A tela só mostra os confrontos de uma fase quando a anterior terminou e os dados foram relidos depois disso
+  (senão o "vencedor" seria calculado sem as últimas mudanças dos técnicos).
+- **Fechamento**: a Edge Function `close-cup` recalcula o mata-mata e chama `close_cup()` (só service_role),
+  que confere a chave (16/8/4/2/1/1 por fase), grava a fase alcançada e paga as moedas: campeão 600, vice 300,
+  semi 150, quartas 60, oitavas 30. A copa **não dá XP** (mudaria a força das cartas no meio da liga).
+- **Próximas copas** (ver `CUPS` em `lib/game-config.ts`): Copa Nacional (a partir da Série C), Supercopa
+  (campeões de divisão) e Copa das Lendas — cada uma vira um `kind` novo em `CUP_KINDS` e em `join_cup()`.
+
 ## Esboço do banco (Postgres)
 
 ```
@@ -282,7 +303,8 @@ friendlies(id, codigo, casa_id, fora_id, inicio_em, match_id)
 1. ~~Liga das Lendas~~ ✅
 1. ~~Evolução das cartas (XP por jogo, bônus de acesso e título)~~ ✅
 1. ~~Leilão (cartas Destaque, Épica e Especial; moedas e prêmios por temporada)~~ ✅
-1. Copas e amistosos entre amigos.
+1. ~~Copa da Várzea~~ ✅
+1. Copa Nacional, Supercopa, Copa das Lendas; amistosos entre amigos.
 2. Motor de simulação completo (`lib/sim/`) com testes de determinismo.
 3. Tela de escalação/prancheta.
 4. Ligas da Várzea + job de rodadas.

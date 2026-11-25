@@ -149,6 +149,7 @@ function toChanges(rows: ChangeRow[], round: number, clubId: string | undefined,
     .map((c): Change => {
       const k = c.change[0];
       if (k === "x") return { minute: c.tick, team: side, kind: "sub", out: parseInt(c.change[1], 36), in: parseInt(c.change[2], 36) };
+      if (k === "y") return { minute: c.tick, team: side, kind: "sub", out: parseInt(c.change.slice(1, 3), 36), in: parseInt(c.change.slice(3, 5), 36) };
       const v = Number(c.change.slice(1));
       return { minute: c.tick, team: side, kind: "tactic", ...(k === "p" ? { posture: v } : k === "m" ? { marking: v } : { passing: v }) };
     });

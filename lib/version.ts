@@ -6,9 +6,9 @@ export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
  * de atualização obrigatória que os jogadores veem.
  */
 export const RELEASE_NOTES: string[] = [
-  "Leilão aberto: 8 cartas Destaque, Épica e Especial a cada 2 horas",
-  "Você começa com 1.000 moedas e ganha mais no fim de cada temporada",
-  "Cada lance dá 10 minutos para os outros cobrirem; elenco sem limite de cartas",
+  "Copa da Várzea: mata-mata diário de 32 clubes, das 13h às 21h",
+  "Pênaltis no empate, mudanças ao vivo e prêmio de até 600 moedas",
+  "Cartas do leilão agora podem entrar ao vivo nas substituições",
 ];
 
 export type VersionPayload = {

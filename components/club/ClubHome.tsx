@@ -143,7 +143,6 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
   const ovr = strength(formation, xiCards).ovr;
   const goLineup = () => router.push("/escalacao");
   const div = divisionInfo(league?.league.division ?? club.division);
-  const soon = (what: string) => setToast(`${what} chega nas próximas atualizações!`);
 
   const tiles: { label: string; icon: string; alt?: string; fallback: IconName; action: () => void; ready?: boolean }[] = [
     { label: "Elenco", icon: "icon-elenco", fallback: "cards", action: () => setTab("elenco"), ready: true },
@@ -151,7 +150,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
     { label: "Liga", icon: div.art, alt: "icon-liga", fallback: "trophy", action: () => router.push("/liga"), ready: true },
     { label: "Treino", icon: "icon-treino", alt: "icon-pvp", fallback: "whistle", action: () => router.push("/partida"), ready: true },
     { label: "Leilão", icon: "icon-leilao", fallback: "gavel", action: () => router.push("/leilao"), ready: true },
-    { label: "Copas", icon: "trophy-copa-nacional", fallback: "trophy", action: () => soon("As copas") },
+    { label: "Copas", icon: "trophy-copa-varzea", fallback: "trophy", action: () => router.push("/copas"), ready: true },
   ];
 
   return (

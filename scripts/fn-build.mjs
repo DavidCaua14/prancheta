@@ -4,7 +4,7 @@ import { build } from "esbuild";
 import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
-for (const fn of ["close-league"]) {
+for (const fn of ["close-league", "close-cup"]) {
   await build({
     entryPoints: [path.join(root, "supabase/functions", fn, "index.ts")],
     outfile: path.join(root, "supabase/functions", fn, "dist/index.js"),
