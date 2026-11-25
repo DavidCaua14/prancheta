@@ -92,11 +92,11 @@ a tabela `clubs` soma ~0,1 KB. Ou seja, dezenas de milhares de técnicos cabem c
 - O prefixo `1:` é a versão do gerador. ⚠️ Nunca mude a lógica da v1: isso trocaria as cartas de todos.
   Para evoluir, crie a v2 e mantenha a v1 para quem já tem elenco.
 
-### Evolução das cartas (próximo)
+### Evolução das cartas
 
-Quando as cartas começarem a ganhar XP, a ideia é guardar só o que muda, também compacto:
-uma coluna com o XP de cada carta do elenco (ex.: 14 números) e uma tabela pequena só para cartas que
-chegarem de fora (leilão, prêmios), referenciadas pela seed.
+Implementada como planejado: só o XP de cada carta do elenco (`clubs.xp`, 14 números) — ver a seção
+"Evolução das cartas" mais abaixo. Cartas que chegarem de fora (leilão, prêmios) vão para uma tabela
+pequena, referenciadas pela seed.
 
 ## Escalação e tática (implementado)
 
