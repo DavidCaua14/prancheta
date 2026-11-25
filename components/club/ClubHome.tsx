@@ -11,7 +11,9 @@ import { getMyClub, getSession, signOut, type Club } from "@/lib/club/api";
 import { decodeCrest, decodeKit, randomCrest } from "@/lib/club/identity";
 import { hash32, rng } from "@/lib/cards/generate";
 import { RIVAL_CLUBS } from "@/lib/cards/names";
-import { STARTERS, squadCards, teamOverall } from "@/lib/cards/squad";
+import { squadCards } from "@/lib/cards/squad";
+import { FORMATIONS, strength } from "@/lib/tactics/formations";
+import { POSTURES, lineupFor } from "@/lib/tactics/lineup";
 import { CrestSvg } from "./CrestSvg";
 import { KitSvg } from "./KitSvg";
 
@@ -106,12 +108,17 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
 
   const crest = decodeCrest(club.crest);
   const kit = decodeKit(club.kit);
-  const ovr = teamOverall(cards);
+  const lineup = lineupFor(club.lineup, cards);
+  const formation = FORMATIONS[lineup.formation];
+  const xiCards = lineup.xi.map((i) => cards[i]);
+  const benchCards = cards.filter((_, i) => !lineup.xi.includes(i));
+  const ovr = strength(formation, xiCards).ovr;
+  const goLineup = () => router.push("/escalacao");
   const soon = (what: string) => setToast(`${what} chega nas próximas atualizações!`);
 
   const tiles: { label: string; icon: string; fallback: string; action: () => void; ready?: boolean }[] = [
     { label: "Elenco", icon: "icon-elenco", fallback: "🃏", action: () => setTab("elenco"), ready: true },
-    { label: "Escalação", icon: "icon-tatica", fallback: "📋", action: () => soon("A escalação") },
+    { label: "Escalação", icon: "icon-tatica", fallback: "📋", action: goLineup, ready: true },
     { label: "Liga", icon: "trophy-copa-varzea", fallback: "🏆", action: () => soon("A tabela da liga") },
     { label: "Leilão", icon: "icon-leilao", fallback: "🔨", action: () => soon("O leilão") },
     { label: "Amistosos", icon: "icon-pvp", fallback: "🤝", action: () => soon("Os amistosos") },
@@ -189,7 +196,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
                     </div>
                   </div>
                   <div className="mt-5 grid grid-cols-2 gap-2">
-                    <button type="button" onClick={() => soon("A escalação")} className="btn btn-paper">
+                    <button type="button" onClick={goLineup} className="btn btn-paper">
                       Escalação
                     </button>
                     <button type="button" onClick={() => soon("O jogo ao vivo")} className="btn btn-green">
@@ -224,12 +231,21 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
             <Panel>
               <div className="mb-2 flex items-center justify-between">
                 <p className="t-heading">Time titular</p>
-                <button type="button" onClick={() => setTab("elenco")} className="text-xs font-extrabold text-[var(--sun)]">
-                  Ver elenco →
+                <button type="button" onClick={goLineup} className="text-xs font-extrabold text-[var(--sun)]">
+                  Editar escalação →
                 </button>
               </div>
-              <MiniPitch cards={cards.slice(0, STARTERS)} kit={kit} className="mx-auto max-w-[380px] text-[clamp(10px,3vw,13px)] lg:text-[12px]" />
-              <p className="mt-2 text-center text-xs font-bold text-white/60">4-3-3 · OVR {ovr}</p>
+              <MiniPitch
+                cards={xiCards}
+                kit={kit}
+                slots={formation.slots}
+                captain={cards[lineup.captain]}
+                showFit
+                className="mx-auto max-w-[380px] text-[clamp(10px,3vw,13px)] lg:text-[12px]"
+              />
+              <p className="mt-2 text-center text-xs font-bold text-white/60">
+                {formation.name} · {POSTURES[lineup.posture].label} · OVR {ovr}
+              </p>
             </Panel>
           </div>
         )}
@@ -237,8 +253,8 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
         {tab === "elenco" && (
           <div className="flex flex-col gap-4">
             {[
-              ["Titulares", cards.slice(0, STARTERS)],
-              ["Reservas", cards.slice(STARTERS)],
+              ["Titulares", xiCards],
+              ["Reservas", benchCards],
             ].map(([title, list]) => (
               <Panel key={title as string}>
                 <p className="t-heading mb-3">

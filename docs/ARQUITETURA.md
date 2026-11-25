@@ -98,6 +98,20 @@ Quando as cartas começarem a ganhar XP, a ideia é guardar só o que muda, tamb
 uma coluna com o XP de cada carta do elenco (ex.: 14 números) e uma tabela pequena só para cartas que
 chegarem de fora (leilão, prêmios), referenciadas pela seed.
 
+## Escalação e tática (implementado)
+
+- Tela `/escalacao`, inspirada no Brasfoot: lista de jogadores (titulares por vaga + reservas), 6 formações
+  (4-3-3, 4-4-2, 3-5-2, 4-5-1, 5-3-2, 3-4-3), escalação automática, campinho com o rendimento na vaga e força por
+  setor (DEF/MEI/ATA).
+- **Fora de posição rende menos** (`lib/tactics/formations.ts`): 100% na posição, ~80–90% em posições
+  parecidas (amarelo), 60–75% improvisado (vermelho) e 30% para goleiro na linha ou jogador no gol.
+- **Tática** (`lib/tactics/lineup.ts`): postura (retranca → tudo pra frente), marcação (leve/normal/pressão),
+  passes (toque curto/misto/ligação direta), capitão e cobrador de pênaltis. Os efeitos entram no motor de
+  simulação.
+- **No banco**: `clubs.lineup` = `"1:F:XXXXXXXXXXX:PMS:CK"` (~23 bytes), validado pela função `lineup_ok`
+  (11 titulares diferentes, capitão e cobrador entre eles). 1 escrita a cada "Salvar"
+  (`supabase/migrations/0003_lineup.sql`). Sem escalação salva, vale o 4-3-3 da peneira.
+
 ## Esboço do banco (Postgres)
 
 ```
@@ -118,6 +132,7 @@ friendlies(id, codigo, casa_id, fora_id, inicio_em, match_id)
 
 1. ~~Autenticação e criação de clube~~ ✅
 1. ~~Peneira: elenco inicial de cartas Base~~ ✅
+1. ~~Escalação e tática~~ ✅
 2. Motor de simulação completo (`lib/sim/`) com testes de determinismo.
 3. Tela de escalação/prancheta.
 4. Ligas da Várzea + job de rodadas.

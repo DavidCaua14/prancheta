@@ -11,6 +11,8 @@ export type Club = {
   kit: string;
   /** Escolhas da peneira ("1:0120..."); null até montar o elenco. */
   squad: string | null;
+  /** Escalação e tática ("1:0:0123456789a:211:a9"); null = padrão da peneira. */
+  lineup: string | null;
 };
 
 const CLUB_CACHE = (uid: string) => `prancheta:club:${uid}`;
@@ -20,7 +22,7 @@ function readCache(uid: string): Club | null {
     const raw = localStorage.getItem(CLUB_CACHE(uid));
     const club = raw ? (JSON.parse(raw) as Club) : null;
     // cache de versão antiga (sem o campo squad) ou elenco ainda vazio: relê do banco
-    return club && typeof club.squad === "string" ? club : null;
+    return club && typeof club.squad === "string" && "lineup" in club ? club : null;
   } catch {
     return null;
   }
@@ -50,7 +52,7 @@ export async function getMyClub(session: Session, { fresh = false } = {}): Promi
     const cached = readCache(uid);
     if (cached) return cached;
   }
-  const { data, error } = await supabase().from("clubs").select("id,name,tag,crest,kit,squad").eq("id", uid).maybeSingle();
+  const { data, error } = await supabase().from("clubs").select("id,name,tag,crest,kit,squad,lineup").eq("id", uid).maybeSingle();
   if (error) throw error;
   if (data) writeCache(data);
   return data;
@@ -60,9 +62,9 @@ export type CreateClubError = "name_taken" | "already_has_club" | "invalid" | "s
 
 export async function createClub(
   session: Session,
-  input: Omit<Club, "id" | "squad">,
+  input: Omit<Club, "id" | "squad" | "lineup">,
 ): Promise<{ club: Club } | { error: CreateClubError }> {
-  const club: Club = { id: session.user.id, ...input, name: input.name.trim(), squad: null };
+  const club: Club = { id: session.user.id, ...input, name: input.name.trim(), squad: null, lineup: null };
   const { error } = await supabase().from("clubs").insert({ ...input, id: club.id, name: club.name });
   if (!error) {
     writeCache(club);
@@ -112,6 +114,15 @@ export async function saveSquad(session: Session, club: Club, squad: string): Pr
   if (error) return { error: error.code === "P0001" ? "locked" : "network" };
   if (!data) return { error: "network" };
   const saved = { ...club, squad: data.squad as string };
+  writeCache(saved);
+  return { club: saved };
+}
+
+/** Salva escalação e tática (1 escrita a cada "Salvar"). */
+export async function saveLineup(session: Session, club: Club, lineup: string): Promise<{ club: Club } | { error: "network" }> {
+  const { data, error } = await supabase().from("clubs").update({ lineup }).eq("id", session.user.id).select("lineup").maybeSingle();
+  if (error || !data) return { error: "network" };
+  const saved = { ...club, lineup: data.lineup as string };
   writeCache(saved);
   return { club: saved };
 }
