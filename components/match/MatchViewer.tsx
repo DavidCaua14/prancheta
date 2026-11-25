@@ -15,6 +15,7 @@ import { makeRival } from "@/lib/sim/rival";
 import { FORMATIONS, fitLevel } from "@/lib/tactics/formations";
 import { LINES, MARKINGS, PASSES, POSTURES, TEMPOS, WIDTHS, lineupFor } from "@/lib/tactics/lineup";
 import { MatchBoard } from "@/components/match/MatchBoard";
+import { TRAINING_SPEEDS } from "@/lib/sim/pace";
 import { buildPlan, scoreAtTime, visibleEvents } from "@/lib/sim/board";
 import { tickClock } from "@/components/match/parts";
 
@@ -22,11 +23,7 @@ import { tickClock } from "@/components/match/parts";
  * Velocidade do treino (ms por minuto de jogo). A liga e as copas andam a
  * 6 s por minuto (~10 min por jogo); o treino é mais rápido: ~3 min no 1x.
  */
-const SPEEDS = [
-  { label: "1x", ms: 1800 },
-  { label: "2x", ms: 800 },
-  { label: "4x", ms: 350 },
-];
+export const SPEEDS = TRAINING_SPEEDS;
 const COUNT_KEY = (id: string) => `prancheta:amistoso:${id}`;
 
 
@@ -53,7 +50,7 @@ export function MatchViewer() {
   const [changes, setChanges] = useState<Change[]>([]);
   const [tick, setTick] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const [speed, setSpeed] = useState(1);
+  const [speed, setSpeed] = useState(0);
   const [sheet, setSheet] = useState<null | "tatica" | "subs">(null);
   const [subOut, setSubOut] = useState<number | null>(null);
   const [halfDone, setHalfDone] = useState(false);
@@ -167,7 +164,7 @@ export function MatchViewer() {
       : null;
   const nowClock = tickClock(tick, result.secondHalfTick, result.length);
   const stats = liveStats(visible);
-  const feed = [...visible].reverse().filter((e) => e.type !== "corner" || ended);
+  const feed = [...visible].reverse();
 
   // estado atual do meu time (para substituições e tática)
   const myPosture = [...changes].reverse().find((c) => c.kind === "tactic" && c.posture !== undefined && c.minute <= tick + 1);

@@ -42,3 +42,6 @@ next-env.d.ts
 
 # edge functions empacotadas
 supabase/functions/*/dist/
+
+# laboratório de simulação (vídeos e quadros)
+.lab/

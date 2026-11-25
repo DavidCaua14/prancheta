@@ -338,6 +338,25 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
 - **Troca de lado**: no 2º tempo os times invertem o campo (o quadro espelha tudo a partir da saída do 2º
   tempo) e as etiquetas dos times trocam de lado junto.
 
+## Laboratório de simulação (interno)
+
+- **`/lab`** (sem link no jogo, fora dos buscadores): roda uma partida inteira entre times da CPU, sem banco e
+  sem login, com o **mesmo** motor, roteiro e quadro do jogo. Parâmetros: `modo=online|treino`, `jogo=N`,
+  `div=0..5`, `de=minuto`, `vel=X` (acelera), `debug=1` (painel com o trecho do roteiro, passes e bola).
+- **Vídeo**: `npm run lab:video -- "modo=online&jogo=1&de=27&debug=1" 18 mobile nome` grava a página com o
+  navegador, gera `.lab/nome.mp4`, os quadros (2 por segundo) e folhas de contato com o tempo de cada quadro
+  (precisa do jogo rodando; `LAB_URL` muda o endereço).
+- **Métricas**: `npm run lab:metrics` mede 40 partidas — vai-e-volta, construção antes do gol, saltos na troca
+  de posse e bola parada no pé. Os limites estão em `tests/board.test.ts` ("jogadas com sentido").
+- **Ritmo** (`lib/sim/pace.ts`): online 6 s por minuto (~10 min); treino 4,5 s por minuto no 1x (~7 min),
+  2,2 s no 2x e 1 s no 4x.
+- **O roteiro do quadro agora**: o minuto antes de um lance é a construção dele (o time sai do meio e chega à
+  entrada da área); ninguém devolve a bola para quem acabou de passar; quem recebe conduz alguns metros; na
+  troca de posse fica com a bola o jogador mais perto dela e a bola rola até ele; escanteio sem chute antes
+  mostra a bola saindo pela linha de fundo; cada passe é conferido com as posições reais (longo ou com
+  adversário no caminho → outro companheiro); o adversário na linha do passe "abre a brecha"; a posse
+  mostrada acompanha a posse real do jogo; escanteios aparecem na narração ao vivo.
+
 ## Esboço do banco (Postgres)
 
 ```

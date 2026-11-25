@@ -68,18 +68,26 @@ test("bola em passes curtos, sem atravessar adversários, jogadores dentro do ca
   let passes = 0;
   let crossed = 0;
   let jumps = 0;
+  let longOnes = 0;
   for (const { res, plan } of all) {
     let prev = frameAt(plan, 0);
     for (let t = 0.02; t < res.length + 0.9; t += 0.02) {
       const fr = frameAt(plan, t);
       for (const d of fr.dots) if (!d.hidden) assert.ok(d.x >= -0.5 && d.x <= PITCH_W + 0.5 && d.y >= 0 && d.y <= PITCH_H, `jogador fora do campo em ${t.toFixed(2)}`);
-      const segN = plan.minutes[Math.floor(t)]?.length ?? 1;
-      const boundary = Math.abs(t - Math.round(t)) < 0.021;
+      const segs = plan.minutes[Math.floor(t)] ?? [];
+      const segN = segs.length || 1;
+      const fm = t - Math.floor(t);
+      const sg = segs.find((x) => fm < x.to) ?? segs[segs.length - 1];
+      // a bola rolando até o novo dono (troca de posse, tiro de meta) é animação, não salto
+      const rolling = !!sg?.fromBall && (fm - sg.from) / (sg.to - sg.from) < 0.12;
+      const boundary = Math.abs(t - Math.round(t)) < 0.021 || rolling;
       if (!boundary && Math.hypot(fr.ball.x - prev.ball.x, fr.ball.y - prev.ball.y) > 8 * segN) jumps++;
       if (fr.pass && !prev.pass) {
         passes++;
         const p = fr.pass;
-        assert.ok(Math.hypot(p.x2 - p.x1, p.y2 - p.y1) <= 40, `passe longo em ${t.toFixed(2)}`);
+        // até 45: só o lançamento de um contra-ataque passa de 32
+        assert.ok(Math.hypot(p.x2 - p.x1, p.y2 - p.y1) <= 45, `passe longo em ${t.toFixed(2)}`);
+        if (Math.hypot(p.x2 - p.x1, p.y2 - p.y1) > 34) longOnes++;
         const team = fr.dots.find((d) => Math.hypot(d.x - p.x1, d.y - p.y1) < 0.5)?.team;
         if (team !== undefined && fr.dots.some((d) => !d.hidden && d.team !== team && distToSegment(d.x, d.y, p.x1, p.y1, p.x2, p.y2) < 1.8)) crossed++;
       }
@@ -87,6 +95,7 @@ test("bola em passes curtos, sem atravessar adversários, jogadores dentro do ca
     }
   }
   assert.ok(crossed / passes < 0.06, `${((crossed / passes) * 100).toFixed(1)}% dos passes passam por um adversário`);
+  assert.ok(longOnes / passes < 0.02, `${((longOnes / passes) * 100).toFixed(1)}% de lançamentos longos`);
   // emendas raras entre dois lances no mesmo minuto (a tela suaviza)
   assert.ok(jumps / GAMES < 6, `${(jumps / GAMES).toFixed(1)} emendas por jogo`);
 });
@@ -98,7 +107,9 @@ test("depois de gol, saída de bola no meio-campo", () => {
       // se ainda houve outro lance no mesmo minuto (saída e contra-ataque), a bola já não está no meio
       const later = res.events.filter((x) => x.tick === e.tick && SHOTS.includes(x.type));
       if (later[later.length - 1] !== e) continue;
-      const fr = frameAt(plan, e.tick + 0.05);
+      // a bola rola da rede até o meio nos primeiros instantes do minuto seguinte
+      const first = plan.minutes[e.tick][0];
+      const fr = frameAt(plan, e.tick + first.from + 0.105 * (first.to - first.from));
       assert.ok(Math.abs(fr.ball.x - PITCH_W / 2) < 4 && Math.abs(fr.ball.y - PITCH_H / 2) < 4, `saída depois do gol de ${e.tick}'`);
     }
   }
@@ -142,4 +153,73 @@ test("intervalo: os times trocam de lado no 2º tempo", () => {
     assert.equal(frameAt(plan, 10.5).flipped, false);
     assert.equal(frameAt(plan, res.secondHalfTick + 0.5).flipped, true);
   }
+});
+
+test("jogadas com sentido: sem vai-e-volta, gol com construção, posse fiel ao jogo", () => {
+  let passes = 0;
+  let pingpong = 0;
+  const buildups: number[] = [];
+  let longRolls = 0;
+  let still = 0;
+  let holdSamples = 0;
+  for (const { res, plan } of all) {
+    // vai-e-volta: a bola voltar para quem acabou de passar
+    let hist: { team: number; who: number }[] = [];
+    for (const s of plan.minutes.flat()) {
+      if (hist.length && hist[hist.length - 1].team !== s.team) hist = [];
+      if (s.start >= 0 && (!hist.length || hist[hist.length - 1].who !== s.start)) hist.push({ team: s.team, who: s.start });
+      for (const p of s.passes) {
+        passes++;
+        if (hist.length >= 2 && hist[hist.length - 2].who === p.to) pingpong++;
+        hist.push({ team: s.team, who: p.to });
+      }
+    }
+    // construção: quanto tempo o time ficou com a bola antes do gol
+    res.events.forEach((e, i) => {
+      if (e.type !== "goal" || e.team === undefined) return;
+      let t = plan.eventAt[i];
+      let own = 0;
+      while (t > 0 && own < 4) {
+        const k = Math.floor(t - 1e-6);
+        const fm = t - 1e-6 - k;
+        const seg = plan.minutes[k].find((s) => fm < s.to) ?? plan.minutes[k][0];
+        if (seg.team !== e.team || seg.kind === "pause") break;
+        const dt = Math.max(0.02, fm - seg.from + 1e-6);
+        own += dt;
+        t -= dt;
+      }
+      buildups.push(own);
+    });
+    // bola rolando o campo todo numa emenda
+    plan.minutes.forEach((segs, k) =>
+      segs.forEach((sg) => {
+        if (!sg.fromBall) return;
+        const b = frameAt(plan, k + sg.from + 0.11 * (sg.to - sg.from)).ball;
+        if (Math.hypot(b.x - sg.fromBall.x, b.y - sg.fromBall.y) > 35) longRolls++;
+      }),
+    );
+    // dono da bola parado (sem conduzir)
+    for (let t = 1; t < res.length; t += 0.1) {
+      const f1 = frameAt(plan, t);
+      const f2 = frameAt(plan, t + 0.05);
+      if (!f1.pass && !f2.pass) {
+        holdSamples++;
+        if (Math.hypot(f1.ball.x - f2.ball.x, f1.ball.y - f2.ball.y) < 0.3) still++;
+      }
+    }
+    // posse mostrada no quadro ≈ posse do motor
+    let home = 0;
+    let tot = 0;
+    for (const s of plan.minutes.flat()) {
+      if (s.kind === "pause" || s.kind === "end") continue;
+      tot += s.to - s.from;
+      if (s.team === 0) home += s.to - s.from;
+    }
+    assert.ok(Math.abs(Math.round((home / tot) * 100) - res.stats[0].possession) <= 8, `posse no quadro ${Math.round((home / tot) * 100)}% × motor ${res.stats[0].possession}%`);
+  }
+  buildups.sort((a, b) => a - b);
+  assert.ok(pingpong / passes < 0.06, `${((pingpong / passes) * 100).toFixed(1)}% de vai-e-volta`);
+  assert.ok(buildups[Math.floor(buildups.length / 2)] >= 1.5, `construção antes do gol: mediana ${buildups[Math.floor(buildups.length / 2)].toFixed(2)} min`);
+  assert.ok(longRolls / GAMES < 1, `${(longRolls / GAMES).toFixed(1)} bolas rolando o campo por jogo`);
+  assert.ok(still / holdSamples < 0.2, `${((still / holdSamples) * 100).toFixed(0)}% do tempo com a bola parada no pé`);
 });

@@ -126,7 +126,7 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
   }
 
   const tags: [string, string] = [m.home.tag, m.away.tag];
-  const feed = [...visible].reverse().filter((e) => e.type !== "corner" || done);
+  const feed = [...visible].reverse();
 
   return (
     <div className="flex min-h-dvh flex-col">

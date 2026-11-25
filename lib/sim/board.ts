@@ -41,6 +41,8 @@ type MinutePlan = {
   kind: "ambient" | "attack" | "kickoff" | "pause" | "end";
   /** começa com saída de bola no meio-campo (início, 2º tempo, depois de gol) */
   kickoff?: boolean;
+  /** onde a bola estava no fim do trecho anterior: ela rola até o novo dono (sem teletransporte) */
+  fromBall?: { x: number; y: number };
   team: 0 | 1;
   /** profundidade da bola (no sentido de ataque de `team`) no começo e no fim do minuto */
   p0: number;
@@ -58,6 +60,8 @@ type MinutePlan = {
     blocker: number;
     /** quem dá o último passe (avança junto com o finalizador) */
     feeder: number;
+    /** escanteio que nasce na própria jogada: fração em que a bola sai pela linha de fundo (0 = já começa na bandeirinha) */
+    cornerAt: number;
     corner: "before" | "after" | null;
     cornerSide: number;
   };
@@ -98,6 +102,8 @@ const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
 /** fração do trecho em que sai o chute e em que a bola chega (o texto aparece aqui) */
 const SHOOT_AT = 0.68;
 const ARRIVE_AT = 0.9;
+/** fração do trecho em que a bola rola do lugar antigo até o novo dono */
+const ROLL = 0.1;
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 
@@ -153,18 +159,21 @@ export function buildPlan(result: MatchResult, home: BoardSide, away: BoardSide,
   // posse "de fundo" quando não há lance: proporção da posse final
   const possHome = (result.stats[0].possession || 50) / 100;
   const minutes: MinutePlan[][] = [];
-  let carry = { team: 0 as 0 | 1, p: 50, holder: -1, kickoff: true };
+  let carry = { team: 0 as 0 | 1, p: 50, holder: -1, kickoff: true, recent: [] as number[] };
+  /** tempo de posse mostrado no quadro até agora (para acompanhar a posse real) */
+  let shownHome = 0;
+  let shownTotal = 0;
   /** quem dá a saída de bola: o mais adiantado em campo */
   const kickerOf = (t: 0 | 1) => slots[t].reduce((best, sl, j) => (sl.role !== "GOL" && !outFrom[t].has(j) && sl.d0 > (slots[t][best]?.d0 ?? -1) ? j : best), 0);
   /** lado do último escanteio (o escanteio cobrado é o mesmo que saiu) */
-  let lastCorner = -1;
+  let lastCorner: { team: 0 | 1; side: number } | null = null;
 
   const shape = { slots } as unknown as BoardPlan;
   /**
    * Companheiro para receber o passe: perto da profundidade desejada, sem
    * passe longo demais e sem adversário no caminho da bola.
    */
-  const pickNear = (r: () => number, team: 0 | 1, depth: number, from: number, wantW?: number, time = 0) => {
+  const pickNear = (r: () => number, team: 0 | 1, depth: number, from: number, wantW?: number, time = 0, exclude: number[] = []) => {
     const at = (tm: 0 | 1, k: number) => {
       const p = slotPos(shape, tm, k, team, depth, MID_W, time);
       return toScreen(tm, p.d, p.w);
@@ -174,13 +183,13 @@ export function buildPlan(result: MatchResult, home: BoardSide, away: BoardSide,
     const a0 = from >= 0 ? at(team, from) : null;
     const cands = slots[team]
       .map((s, k) => ({ k, s }))
-      .filter(({ k, s }) => k !== from && s.role !== "GOL" && !outFrom[team].has(k))
+      .filter(({ k, s }) => k !== from && !exclude.includes(k) && s.role !== "GOL" && !outFrom[team].has(k))
       .map(({ k, s }) => {
         let score = Math.abs(s.d0 + 14 - depth) + (wantW !== undefined ? Math.abs(s.w0 - wantW) * 0.35 : 0) + r() * 9;
         if (a0) {
           const b = at(team, k);
           const len = Math.hypot(b.x - a0.x, b.y - a0.y);
-          if (len > 26) score += (len - 26) * 4; // nada de bola atravessando o campo
+          if (len > 22) score += (len - 22) * 6; // nada de bola atravessando o campo
           const block = Math.min(...opps.map((o) => distToSegment(o.x, o.y, a0.x, a0.y, b.x, b.y)));
           if (block < 3.2) score += 40; // adversário no meio do caminho
         }
@@ -199,7 +208,7 @@ export function buildPlan(result: MatchResult, home: BoardSide, away: BoardSide,
     return Math.hypot(p.x - q.x, p.y - q.y);
   };
   /** próximo dono da bola no ataque: perto, mais à frente e sem adversário no caminho */
-  const pickAhead = (r: () => number, team: 0 | 1, from: number, depth: number, time: number, exclude: number) => {
+  const pickAhead = (r: () => number, team: 0 | 1, from: number, depth: number, time: number, exclude: number[]) => {
     const opp = (1 - team) as 0 | 1;
     const a0 = posAt(team, team, from, depth, time);
     const opps = slots[opp].map((_, j) => posAt(opp, team, j, depth, time));
@@ -207,12 +216,12 @@ export function buildPlan(result: MatchResult, home: BoardSide, away: BoardSide,
     let best = -1;
     let bestScore = Infinity;
     slots[team].forEach((s, j) => {
-      if (j === from || j === exclude || s.role === "GOL" || outFrom[team].has(j)) return;
+      if (j === from || exclude.includes(j) || s.role === "GOL" || outFrom[team].has(j)) return;
       const b = posAt(team, team, j, depth, time);
       const len = Math.hypot(b.x - a0.x, b.y - a0.y);
       const gain = (b.x - a0.x) * dir;
       let score = -gain + r() * 6;
-      if (len > 24) score += (len - 24) * 5;
+      if (len > 22) score += (len - 22) * 6;
       if (len < 6) score += 10;
       if (Math.min(...opps.map((o) => distToSegment(o.x, o.y, a0.x, a0.y, b.x, b.y))) < 3.2) score += 30;
       if (score < bestScore) {
@@ -251,7 +260,7 @@ export function buildPlan(result: MatchResult, home: BoardSide, away: BoardSide,
     }
 
     // 2º tempo: saída de bola do visitante
-    if (k + 1 === result.secondHalfTick) carry = { team: 1, p: 50, holder: -1, kickoff: true };
+    if (k + 1 === result.secondHalfTick) carry = { team: 1, p: 50, holder: -1, kickoff: true, recent: [] };
 
     const attacks = evs.filter((e) => ATTACK_TYPES.has(e.type) && e.team !== undefined);
     const segs: MinutePlan[] = [];
@@ -282,19 +291,26 @@ export function buildPlan(result: MatchResult, home: BoardSide, away: BoardSide,
         // passe (de quem dá a assistência, se houver) chega ao finalizador
         plan.passes = [];
         let holder = plan.start;
-        if (!penalty && corner !== "before") {
-          const steps = [0.1, 0.28];
+        let recent = carry.team === t ? carry.recent.filter((x) => x !== holder) : [];
+        // escanteio sem chute antes (ataque desviado): mostra a jogada chegando e a bola saindo pela linha de fundo
+        // escanteio cobrado logo depois de sair (mesmo time, lance seguinte) ou nascido na própria jogada
+        const pending = lastCorner && lastCorner.team === t ? lastCorner : null;
+        const cornerBuild = corner === "before" && !pending;
+        if (!penalty && (corner !== "before" || cornerBuild)) {
+          const steps = cornerBuild ? [0.1, 0.24] : [0.1, 0.28];
           steps.forEach((at2, j) => {
             const depth = attackDepth(plan, at2);
-            let next = pickAhead(r, t, holder, depth, k + at2, shooter);
+            // sem devolver para quem acabou de passar (nada de vai-e-volta)
+            let next = pickAhead(r, t, holder, depth, k + at2, [shooter, ...recent]);
             // o penúltimo passe vai para quem dá a assistência (quando ele está por perto)
             if (j === steps.length - 1 && assist >= 0 && assist !== shooter && assist !== holder && passLen(t, holder, assist, depth, k + at2) < 34) next = assist;
             if (next >= 0 && next !== holder) {
               plan.passes.push({ at: at2, to: next, dur: 0.1 });
+              recent = [holder, ...recent].slice(0, 2);
               holder = next;
             }
           });
-          if (holder !== shooter) plan.passes.push({ at: 0.46, to: shooter, dur: 0.1 });
+          if (holder !== shooter && !cornerBuild) plan.passes.push({ at: 0.46, to: shooter, dur: 0.1 });
         }
         // lado do chute: para fora/trave, o mesmo lado do atacante (o goleiro fica do outro)
         const shooterSide = slots[t][shooter].w0 - MID_W;
@@ -305,9 +321,9 @@ export function buildPlan(result: MatchResult, home: BoardSide, away: BoardSide,
         if (attackEv.type === "post") aimW = MID_W + side * GOAL_HALF;
         if (attackEv.type === "save" || attackEv.type === "penalty_miss") aimW = MID_W + side * (0.6 + r() * 2.2);
         // escanteio: sai pelo lado do chute; cobrado do mesmo lado em que saiu
-        const cornerSide = corner === "before" && lastCorner >= 0 ? lastCorner : aimW > MID_W ? PITCH_H - 4 : 4;
-        lastCorner = corner === "after" ? cornerSide : -1;
-        plan.attack = { outcome: attackEv.type as Outcome, shooter, aimW, keeper, blocker, feeder: holder === shooter ? plan.start : holder, corner, cornerSide };
+        const cornerSide = corner === "before" && pending ? pending.side : aimW > MID_W ? PITCH_H - 4 : 4;
+        lastCorner = corner === "after" ? { team: t, side: cornerSide } : null;
+        plan.attack = { outcome: attackEv.type as Outcome, shooter, aimW, keeper, blocker, feeder: holder === shooter ? plan.start : holder, corner, cornerSide, cornerAt: cornerBuild ? 0.46 : 0 };
         segs.push(plan);
         // narração em sincronia com o quadro: o texto sai quando a bola chega
         const arrive = k + from + ARRIVE_AT * (to - from);
@@ -317,53 +333,174 @@ export function buildPlan(result: MatchResult, home: BoardSide, away: BoardSide,
         }
         evs.forEach((e, j) => {
           if (e.type !== "corner" || e.team !== t) return;
-          if (corner === "before" && j > prevAttack && j < at) showAt(e, k + from + 0.04 * (to - from));
+          if (corner === "before" && j > prevAttack && j < at) showAt(e, k + from + (cornerBuild ? 0.48 : 0.04) * (to - from));
           if (corner === "after" && j > at && j < nextAttack) showAt(e, k + from + 0.99 * (to - from));
         });
         carry =
           attackEv.type === "goal" || attackEv.type === "penalty_goal"
-            ? { team: def, p: 50, holder: -1, kickoff: true }
+            ? { team: def, p: 50, holder: -1, kickoff: true, recent: [] }
             : corner === "after"
-              ? { team: def, p: 10, holder: -1, kickoff: false } // escanteio afastado pela defesa
+              ? { team: def, p: 10, holder: -1, kickoff: false, recent: [] } // escanteio afastado pela defesa
               : attackEv.type === "block"
-              ? { team: def, p: 18, holder: blocker, kickoff: false }
-              : { team: def, p: 8, holder: keeper, kickoff: false };
+                ? { team: def, p: 18, holder: blocker, kickoff: false, recent: [] }
+                : { team: def, p: 8, holder: keeper, kickoff: false, recent: [] };
       });
     } else {
-      // minuto sem lance de ataque: troca de passes no meio-campo
-      // posse: quem está com a bola costuma continuar; senão, sorteio pela posse do jogo
+      // minuto sem lance de ataque. Se o próximo minuto tem um lance, este minuto
+      // é a construção dele: o time que vai finalizar sai do meio e chega perto da área.
+      const nextAttack = (byTick.get(k + 2) ?? []).find(
+        (e) => ATTACK_TYPES.has(e.type) && e.team !== undefined && e.type !== "penalty_goal" && e.type !== "penalty_miss",
+      );
       let t: 0 | 1 = carry.team;
-      if (!carry.kickoff && r() >= 0.62) t = r() < possHome ? 0 : 1;
+      if (!carry.kickoff) {
+        if (nextAttack) t = nextAttack.team as 0 | 1;
+        else {
+          // posse no quadro acompanha a posse real do jogo: quem está "devendo" posse fica com a bola
+          const cur = shownTotal > 0 ? shownHome / shownTotal : possHome;
+          const pHome = clamp(possHome + (possHome - cur) * 4 + (carry.team === 0 ? 0.12 : -0.12), 0.05, 0.95);
+          t = r() < pHome ? 0 : 1;
+        }
+      }
       const keep = t === carry.team;
+      const building = !!nextAttack && nextAttack.team === t;
       const plan: MinutePlan = {
         from: 0,
         to: 1,
         team: t,
         kind: carry.kickoff ? "kickoff" : "ambient",
-        p0: carry.kickoff ? 50 : keep ? carry.p : clamp(100 - carry.p, 25, 75),
+        p0: carry.kickoff ? 50 : keep ? carry.p : clamp(100 - carry.p, 18, 75),
         p1: 0,
         start: -1,
         passes: [],
       };
-      plan.p1 = clamp(plan.p0 + (r() * 30 - 10), 22, 70);
+      plan.p1 = building
+        ? clamp(Math.max(plan.p0 + 12, 56 + r() * 10), 30, 68) // construção: sobe até a entrada da área
+        : clamp(plan.p0 + (r() * 28 - 10), 20, 64); // troca de passes: avança ou recua com calma
       // saída de bola: quem está mais adiantado (perto do círculo central) dá a saída
       plan.kickoff = carry.kickoff;
       plan.start = carry.kickoff ? kickerOf(t) : keep && carry.holder >= 0 ? carry.holder : pickNear(r, t, plan.p0, -1, undefined, k);
       let prev = plan.start;
+      let recent = keep && !carry.kickoff ? carry.recent.filter((x) => x !== prev) : [];
       const n = 2 + Math.floor(r() * 2);
       for (let i = 0; i < n; i++) {
-        const at = 0.1 + (i * 0.8) / n + r() * 0.06;
+        // tempo para o dono conduzir a bola entre um passe e outro
+        const at = 0.16 + (i * 0.72) / n + r() * 0.05;
         const target = lerp(plan.p0, plan.p1, (i + 1) / n);
-        const to = pickNear(r, t, target, prev, clamp(slots[t][Math.max(prev, 0)]?.w0 ?? MID_W, 8, PITCH_H - 8) + (r() * 30 - 15), k + at);
+        const wantW = clamp(slots[t][Math.max(prev, 0)]?.w0 ?? MID_W, 8, PITCH_H - 8) + (r() * 30 - 15);
+        // nunca devolve para quem acabou de passar nem para quem passou antes dele
+        const to = pickNear(r, t, target, prev, wantW, k + at, recent);
+        if (to === prev) continue;
         plan.passes.push({ at, to, dur: 0.11 });
+        recent = [prev, ...recent].slice(0, 2);
         prev = to;
       }
       segs.push(plan);
-      carry = { team: t, p: plan.p1, holder: prev, kickoff: false };
+      lastCorner = null; // escanteio pendente não atravessa um minuto de troca de passes
+      carry = { team: t, p: plan.p1, holder: prev, kickoff: false, recent };
     }
     if (evs.some((e) => e.type === "fulltime")) carry = { ...carry, kickoff: false };
+    for (const sg of segs) {
+      shownTotal += sg.to - sg.from;
+      if (sg.team === 0) shownHome += sg.to - sg.from;
+    }
     minutes.push(segs);
   }
+  // troca de posse: quem fica com a bola é o jogador do novo time mais perto dela
+  // (roubada/interceptação), em vez de a bola "pular" para alguém longe
+  const draft = { slots, minutes, outFrom, overlays, length: result.length, secondHalfTick: result.secondHalfTick, formation: ["", ""], eventAt } as BoardPlan;
+  const fixPasses = (sg: MinutePlan, k: number) => {
+    if (sg.kind === "pause" || sg.kind === "end") return;
+    const flipped = k >= result.secondHalfTick - 1;
+    const dir = (sg.team === 0) !== flipped ? 1 : -1;
+    const span = sg.to - sg.from;
+    let holder = sg.start;
+    let recent: number[] = [];
+    sg.passes.forEach((ps, i) => {
+      const lockedTo = sg.attack && (ps.to === sg.attack.shooter || i === sg.passes.length - 2);
+      const before = frameAt(draft, k + sg.from + ps.at * span - 0.001);
+      const me = before.dots.find((d) => d.team === sg.team && d.slot === holder);
+      const target = before.dots.find((d) => d.team === sg.team && d.slot === ps.to);
+      if (!me || !target) return;
+      const opps = before.dots.filter((d) => d.team !== sg.team && !d.hidden);
+      const lane = (x: number, y: number) => Math.min(...opps.map((o) => distToSegment(o.x, o.y, me.x, me.y, x, y)));
+      const len = Math.hypot(target.x - me.x, target.y - me.y);
+      const limit = sg.kind === "attack" && sg.p0 < 35 ? 44 : 32; // contra-ataque pode ter lançamento
+      if (!lockedTo && (len > limit || lane(target.x, target.y) < 2.8)) {
+        let best = -1;
+        let bestScore = Infinity;
+        for (const d of before.dots) {
+          if (d.team !== sg.team || d.hidden || d.gk || d.slot === holder || recent.includes(d.slot)) continue;
+          if (sg.attack && d.slot === sg.attack.shooter && i < sg.passes.length - 1) continue;
+          const l = Math.hypot(d.x - me.x, d.y - me.y);
+          let score = Math.abs(l - 16) - (d.x - me.x) * dir * 0.35;
+          if (l > 30) score += 100;
+          if (lane(d.x, d.y) < 2.8) score += 60;
+          if (score < bestScore) {
+            bestScore = score;
+            best = d.slot;
+          }
+        }
+        if (best >= 0) ps.to = best;
+      }
+      // passe longo demora mais (a bola não "voa")
+      const after = before.dots.find((d) => d.team === sg.team && d.slot === ps.to);
+      if (after) ps.dur = clamp(Math.hypot(after.x - me.x, after.y - me.y) / 260, 0.08, 0.16);
+      recent = [holder, ...recent].slice(0, 2);
+      holder = ps.to;
+    });
+  };
+  let prevSeg: MinutePlan | null = null;
+  minutes.forEach((segs, k) => {
+    for (const sg of segs) {
+      const special = sg.attack && (sg.attack.corner === "before" || sg.attack.outcome.startsWith("penalty"));
+      // continuidade: se o trecho começaria com a bola longe de onde ela estava
+      // (troca de posse, bola afastada, passe corrigido), fica com ela quem está mais perto
+      const ballEnd = prevSeg ? frameAt(draft, Math.max(0, k + sg.from - 0.002)).ball : null;
+      const ballBegin = prevSeg ? frameAt(draft, k + sg.from + 0.002).ball : null;
+      const loose = !!ballEnd && !!ballBegin && Math.hypot(ballEnd.x - ballBegin.x, ballEnd.y - ballBegin.y) > 12;
+      if (prevSeg && loose && !sg.kickoff && sg.kind !== "kickoff" && sg.kind !== "pause" && !special) {
+        const ball = ballEnd!;
+        const startFrame = frameAt(draft, k + sg.from + 0.001);
+        let best = sg.start;
+        let bestD = Infinity;
+        for (const d of startFrame.dots) {
+          if (d.team !== sg.team || d.hidden || (d.gk && sg.p0 >= 14)) continue;
+          const dist = Math.hypot(d.x - ball.x, d.y - ball.y);
+          if (dist < bestD) {
+            bestD = dist;
+            best = d.slot;
+          }
+        }
+        if (best !== sg.start) {
+          sg.start = best;
+          if (sg.passes[0]?.to === best) sg.passes.shift();
+          // primeiro passe longe demais do novo dono: refaz para alguém perto
+          const first = sg.passes[0];
+          if (first && passLen(sg.team, best, first.to, sg.p0, k + first.at) > 26) {
+            const rr = rng(hash32(`quadro:${seed}:${k}:roubada`));
+            const alt = pickNear(rr, sg.team, sg.p0 + 6, best, undefined, k + first.at, sg.passes[1] ? [sg.passes[1].to] : []);
+            if (alt !== best) first.to = alt;
+            else sg.passes.shift();
+          }
+        }
+      }
+      // confere cada passe com as posições REAIS do quadro naquele instante:
+      // longe demais ou com adversário no caminho → outro companheiro perto e livre
+      fixPasses(sg, k);
+      // a bola nunca teleporta: se o trecho começa longe de onde ela estava, ela rola até lá
+      // (saída de bola: o juiz recoloca a bola no meio enquanto o time comemora — sem rolar o campo)
+      if (prevSeg && !sg.kickoff && sg.kind !== "kickoff") {
+        const end = frameAt(draft, Math.max(0, k + sg.from - 0.002)).ball;
+        const begin = frameAt(draft, k + sg.from + 0.002).ball;
+        if (Math.hypot(end.x - begin.x, end.y - begin.y) > 4) {
+          sg.fromBall = end;
+          if (sg.passes[0] && sg.passes[0].at < ROLL + 0.02) sg.passes[0].at = ROLL + 0.02;
+        }
+      }
+      prevSeg = sg;
+    }
+  });
+
   // minuto extra parado depois do apito final
   minutes.push([{ from: 0, to: 1, kind: "end", team: 0, p0: 50, p1: 50, start: -1, passes: [] }]);
   return {
@@ -448,13 +585,19 @@ export function frameAt(plan: BoardPlan, t: number): BoardFrame {
   // quem está com a bola agora e passe em andamento
   let holder = m.start;
   let pass: { from: number; to: number; p: number } | null = null;
-  for (const ps of m.passes) {
+  // condução: quem recebe a bola avança com ela até o próximo passe
+  let holdFrom = 0;
+  let holdTo = m.passes[0]?.at ?? 1;
+  for (let i = 0; i < m.passes.length; i++) {
+    const ps = m.passes[i];
     if (f < ps.at) break;
     if (f < ps.at + ps.dur) {
       pass = { from: holder, to: ps.to, p: (f - ps.at) / ps.dur };
       break;
     }
     holder = ps.to;
+    holdFrom = ps.at + ps.dur;
+    holdTo = m.passes[i + 1]?.at ?? 1;
   }
 
   const a = m.attack;
@@ -489,9 +632,21 @@ export function frameAt(plan: BoardPlan, t: number): BoardFrame {
       overrides.set(`${team}:${a.shooter}`, { d: 86, w: MID_W + 1.5 });
     }
     if (a.corner === "before") {
-      // escanteio: bola sai da bandeirinha e vem para a área
-      const cf = clamp(f / 0.62, 0, 1);
-      if (f < shootAt) ball = { d: lerp(99, shooterPos.d, ease(cf)), w: lerp(a.cornerSide, shooterPos.w, ease(cf)), team };
+      const cs = a.cornerAt;
+      const flag = { d: 99.5, w: a.cornerSide };
+      if (f < cs) {
+        // a jogada chega ao ataque e a zaga desvia a bola pela linha de fundo
+        if (f >= cs - 0.08) {
+          const hp = overrides.get(`${team}:${holder}`) ?? pos(team, holder);
+          const q = ease((f - (cs - 0.08)) / 0.08);
+          ball = { d: lerp(hp.d + 1.2, flag.d, q), w: lerp(hp.w, flag.w, q), team };
+        }
+      } else if (f < shootAt) {
+        // cobrança: a bola fica na bandeirinha e é cruzada para a área
+        const kick = cs + 0.06;
+        const q = f < kick ? 0 : ease(clamp((f - kick) / (shootAt - 0.02 - kick), 0, 1));
+        ball = { d: lerp(flag.d, shooterPos.d + 1.2, q), w: lerp(flag.w, shooterPos.w, q), team };
+      }
     }
 
     // goleiro e bloqueador do time que defende (em coordenadas do atacante)
@@ -506,7 +661,7 @@ export function frameAt(plan: BoardPlan, t: number): BoardFrame {
       const target = { d: 100 - blockPoint.d - 0.2, w: PITCH_H - blockPoint.w };
       overrides.set(`${def}:${a.blocker}`, { d: lerp(b0.d, target.d, ease(bf)), w: lerp(b0.w, target.w, ease(bf)) });
     }
-    if (a.corner === "before" && f >= 0.62 && f < shootAt) ball = { d: shooterPos.d + 1.2, w: shooterPos.w, team };
+
     // chute para fora: goleiro do lado contrário (a bola não passa por ele)
     const gkW = a.outcome === "miss" || a.outcome === "post" ? MID_W - Math.sign(a.aimW - MID_W) * 1.6 : MID_W;
     let gk = { d: keeperD, w: gkW };
@@ -544,8 +699,23 @@ export function frameAt(plan: BoardPlan, t: number): BoardFrame {
     overrides.set(`${def}:${a.keeper}`, { d: 100 - gk.d, w: PITCH_H - gk.w });
   }
 
+  // condução de bola (fora do pênalti e das bolas paradas)
+  const dribbling = (m.kind === "ambient" || m.kind === "attack" || m.kind === "kickoff") && !(a && (a.outcome === "penalty_goal" || a.outcome === "penalty_miss"));
+  if (dribbling) {
+    const runner = pass ? pass.from : holder;
+    if (runner >= 0 && plan.slots[team][runner]?.role !== "GOL" && !overrides.has(`${team}:${runner}`)) {
+      const span = Math.max(0.05, holdTo - holdFrom);
+      const prog = pass ? 1 : clamp((f - holdFrom) / span, 0, 1);
+      const dist = clamp(span * 14, 0, 5); // até ~5 metros, conforme o tempo com a bola
+      const p0 = pos(team, runner);
+      // conduz para frente e um pouco para dentro
+      overrides.set(`${team}:${runner}`, { d: p0.d + dist * ease(prog), w: p0.w + (MID_W - p0.w) * 0.12 * ease(prog) });
+    }
+  }
+
   // saída de bola: quem dá a saída está no círculo central
-  if ((m.kind === "kickoff" || m.kickoff) && m.start >= 0 && f < (m.passes[0]?.at ?? 0.3) + 0.02) {
+  // (fica lá até o primeiro passe chegar, para a bola não "pular" no meio do passe)
+  if ((m.kind === "kickoff" || m.kickoff) && m.start >= 0 && f < (m.passes[0] ? m.passes[0].at + m.passes[0].dur : 0.3)) {
     overrides.set(`${team}:${m.start}`, { d: 49, w: MID_W + (team === 0 ? 1.5 : -1.5) });
   }
 
@@ -592,6 +762,33 @@ export function frameAt(plan: BoardPlan, t: number): BoardFrame {
     by = h.y + 0.6;
   }
 
+  // passe passando por um adversário: ele "não alcança" e abre a brecha (a bola não atravessa ninguém)
+  if (passLine) {
+    const { x1, y1, x2, y2 } = passLine;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len2 = dx * dx + dy * dy || 1;
+    for (const d of dots) {
+      if (d.team === team || d.hidden) continue;
+      const u = clamp(((d.x - x1) * dx + (d.y - y1) * dy) / len2, 0, 1);
+      if (u <= 0.04 || u >= 0.96) continue;
+      const px = x1 + u * dx;
+      const py = y1 + u * dy;
+      const dist = Math.hypot(d.x - px, d.y - py);
+      if (dist >= 3) continue;
+      // empurra para o lado em que ele já está (ou para fora do campo do passe)
+      let nx = d.x - px;
+      let ny = d.y - py;
+      if (dist < 0.01) {
+        nx = -dy;
+        ny = dx;
+      }
+      const n = Math.hypot(nx, ny) || 1;
+      d.x = px + (nx / n) * 3;
+      d.y = clamp(py + (ny / n) * 3, 1, PITCH_H - 1);
+    }
+  }
+
   const overlays: BoardFrame["overlays"] = [];
   let flash: BoardFrame["flash"] = null;
   for (const o of plan.overlays) {
@@ -605,17 +802,25 @@ export function frameAt(plan: BoardPlan, t: number): BoardFrame {
   }
 
   const ballOut = { x: clamp(bx, -1, PITCH_W + 1.5), y: clamp(by, 0.5, PITCH_H - 0.5) };
+  const roll = m.fromBall && f < ROLL ? ease(f / ROLL) : null;
   // 2º tempo: os times trocam de lado (espelha tudo)
   const flipped = k >= plan.secondHalfTick - 1;
+  const fx = (x: number) => PITCH_W - x;
+  const fy = (y: number) => PITCH_H - y;
   if (flipped) {
-    const fx = (x: number) => PITCH_W - x;
-    const fy = (y: number) => PITCH_H - y;
     for (const d of dots) {
       d.x = fx(d.x);
       d.y = fy(d.y);
     }
     ballOut.x = fx(ballOut.x);
     ballOut.y = fy(ballOut.y);
+  }
+  if (roll !== null && m.fromBall) {
+    // bola rolando do lugar onde estava até o novo dono (coordenadas já na tela)
+    ballOut.x = lerp(m.fromBall.x, ballOut.x, roll);
+    ballOut.y = lerp(m.fromBall.y, ballOut.y, roll);
+  }
+  if (flipped) {
     if (passLine) passLine = { x1: fx(passLine.x1), y1: fy(passLine.y1), x2: fx(passLine.x2), y2: fy(passLine.y2) };
     for (const o of overlays) {
       o.x = fx(o.x);
