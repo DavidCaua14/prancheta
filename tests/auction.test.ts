@@ -5,7 +5,7 @@ import { evolveCard } from "@/lib/cards/evolution";
 import { clubCards } from "@/lib/cards/squad";
 import { CARD_TIERS } from "@/lib/game-config";
 import { buildLeagueData, matchAt, type LeagueClub, type LeagueRow } from "@/lib/league/core";
-import { encodeLineup, autoLineup, defaultLineup } from "@/lib/tactics/lineup";
+import { encodeLineup, decodeLineup, autoLineup, defaultLineup } from "@/lib/tactics/lineup";
 
 test("rodadas de 2 horas e raridade dos lotes", () => {
   const t = Date.UTC(2026, 10, 25, 13, 30);
@@ -72,5 +72,26 @@ test("carta arrematada depois do apito não muda o jogo (nem os já jogados)", (
   // escalação que usa a carta nova (índice 14 = "e") só vale depois de arrematar
   const squad15 = clubCards(base.id, base.squad, null, [lot]);
   const lu = autoLineup(defaultLineup(squad15), squad15);
-  assert.match(encodeLineup(lu), /^1:[0-9a-d]:[0-9a-n]{11}:/);
+  assert.match(encodeLineup(lu), /^1:[0-9a-d]:[0-9a-z]{11}:/);
+});
+
+test("sem limite de cartas: escalação v2 a partir da 37ª carta", () => {
+  const id = "c0ffee00-0000-4000-8000-0000000000cc";
+  const won: WonLot[] = Array.from({ length: 50 }, (_, k) => ({ round: 2000 + k, idx: k % 8, ends_at: new Date(Date.UTC(2026, 0, 1) + k * 60_000).toISOString() }));
+  const squad = clubCards(id, "1:21021021021012", null, won);
+  assert.equal(squad.length, 64);
+  // escala com cartas além da 36ª
+  const lu = { ...defaultLineup(squad), xi: [0, 1, 2, 3, 4, 40, 41, 50, 60, 62, 63], captain: 63, penalty: 40 };
+  const code = encodeLineup(lu);
+  assert.match(code, /^2:[0-9a-d]:[0-9a-z]{22}:[0-4][0-2][0-2]:[0-9a-z]{4}$/);
+  assert.deepEqual(decodeLineup(code, squad.length), lu);
+  // a mesma escalação num elenco que ainda não tinha essas cartas não vale (cai na padrão)
+  assert.equal(decodeLineup(code, 40), null);
+  // escalações pequenas continuam no formato antigo
+  const small = defaultLineup(squad);
+  assert.match(encodeLineup(small), /^1:/);
+  assert.deepEqual(decodeLineup(encodeLineup(small), squad.length), small);
+  // a escalação automática enxerga o elenco inteiro
+  const auto = autoLineup(defaultLineup(squad), squad);
+  assert.ok(auto.xi.some((i) => i >= 14));
 });

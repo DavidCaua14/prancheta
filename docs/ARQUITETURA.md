@@ -236,16 +236,19 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
 - **Banco**: só `auction_lots (round, idx, best_club, best_amount, bids, ends_at)` — **1 linha por lote que
   recebeu lance**, atualizada a cada lance. `place_bid()` faz tudo numa transação: confere horário e lance
   mínimo (piso da raridade: 300 / 900 / 2.500, depois +5% e pelo menos +10), **tira as moedas** de quem deu o
-  lance e **devolve** as do anterior, não deixa cobrir o próprio lance, limita a 10 cartas extras (arrematadas
-  + liderando) e **prorroga** o lote para 60 s se o lance vier no último minuto.
+  lance e **devolve** as do anterior e não deixa cobrir o próprio lance. **Cada lance novo marca o fim do lote
+  para 10 minutos depois** (se faltava mais, cai para 10; se faltava menos, volta para 10): os outros técnicos
+  sempre têm tempo de ver e cobrir. Lote sem lance fecha no fim da rodada; uma disputa pode passar do fim da
+  rodada e aparece em "Ainda em disputa".
 - **Sem "entrega"**: o lote com `ends_at` no passado é de quem deu o maior lance. O elenco é montado no
-  aparelho: 14 cartas da peneira + arrematadas em ordem de arremate (índices 14…23). Nos jogos da liga a
+  aparelho: 14 cartas da peneira + arrematadas em ordem de arremate (índices 14, 15, …), **sem limite de
+  cartas**. A escalação usa o código v1 (1 caractere por jogador) até 36 cartas e o v2 (2 caracteres, até
+  1.296 cartas) quando escala alguém além da 36ª; `clubs.xp` acompanha o tamanho do elenco. Nos jogos da liga a
   carta só conta **depois do arremate** (`wonAt(..., apito)`), então nenhum resultado antigo muda.
 - **Moedas** (`clubs.coins`, sem grant de update): 1.000 para começar + prêmio no fim de cada temporada
   (`season_prize`: 1º lugar ganha 300 na Várzea, 500 na D, 800 na C, 1.200 na B, 1.800 na A e 2.800 nas
   Lendas; o último leva 25% disso). O prêmio aparece no aviso de fim de temporada.
 - **Raridades evoluem** com o mesmo XP: Destaque até nível 20 / overall 79, Épica 35 / 89, Especial 50 / 99.
-  `clubs.xp` cresce para 24 posições.
 - **Custo**: lances = 1 linha por lote disputado (no máximo 8 a cada 2 h, ~100 por dia). A tela relê só os
   lotes da rodada a cada 8 s enquanto está aberta.
 

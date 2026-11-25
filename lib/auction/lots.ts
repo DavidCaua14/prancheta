@@ -13,10 +13,8 @@ import type { CardTier } from "@/lib/game-config";
 /** Duração da rodada (o mesmo valor está em place_bid). */
 export const ROUND_SECONDS = 7200;
 export const LOTS_PER_ROUND = 8;
-/** Lance no último minuto empurra o fim do lote para daqui a 1 minuto. */
-export const EXTEND_SECONDS = 60;
-/** Cartas que um clube pode ter além das 14 da peneira (ganhas + liderando). */
-export const MAX_EXTRA_CARDS = 10;
+/** Cada lance novo marca o fim do lote para daqui a 10 minutos (espelho de place_bid). */
+export const BID_WINDOW_SECONDS = 600;
 export const START_COINS = 1000;
 
 export type LotTier = Exclude<CardTier, "base">;
@@ -67,6 +65,5 @@ export function wonAt(won: readonly WonLot[] | null | undefined, at: number): Wo
   if (!won?.length) return [];
   return won
     .filter((w) => new Date(w.ends_at).getTime() <= at)
-    .sort((a, b) => new Date(a.ends_at).getTime() - new Date(b.ends_at).getTime() || a.round - b.round || a.idx - b.idx)
-    .slice(0, MAX_EXTRA_CARDS);
+    .sort((a, b) => new Date(a.ends_at).getTime() - new Date(b.ends_at).getTime() || a.round - b.round || a.idx - b.idx);
 }

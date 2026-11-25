@@ -8,9 +8,16 @@ export type Bidder = { id: string; name: string; tag: string; crest: string };
 
 const COLS = "round,idx,best_club,best_amount,bids,ends_at";
 
-/** Lances das rodadas pedidas (no máximo 8 linhas por rodada). */
+/**
+ * Lances das rodadas pedidas (no máximo 8 linhas por rodada) + lotes de
+ * rodadas anteriores que ainda estão em disputa (lance há menos de 10 min).
+ */
 export async function loadLots(rounds: number[]): Promise<LotState[]> {
-  const { data, error } = await supabase().from("auction_lots").select(COLS).in("round", rounds);
+  const open = new Date().toISOString();
+  const { data, error } = await supabase()
+    .from("auction_lots")
+    .select(COLS)
+    .or(`round.in.(${rounds.join(",")}),ends_at.gt.${open}`);
   if (error) throw error;
   return (data ?? []) as LotState[];
 }

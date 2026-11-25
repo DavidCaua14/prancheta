@@ -1,6 +1,9 @@
 /**
  * Escalação + tática, guardadas no banco como um código curto:
- *   "1:F:XXXXXXXXXXX:PMS:CK"  (ver supabase/migrations/0003_lineup.sql)
+ *   v1  "1:F:XXXXXXXXXXX:PMS:CK"   — 1 caractere base 36 por jogador (elenco até 36 cartas)
+ *   v2  "2:F:XX×11:PMS:CCKK"        — 2 caracteres por jogador (elenco até 1.296 cartas)
+ * Elencos pequenos continuam em v1 (códigos antigos seguem valendo).
+ * Validação no banco: lineup_ok() (supabase/migrations/0013_unlimited_cards.sql).
  */
 
 import type { BaseCard } from "@/lib/cards/generate";
@@ -39,14 +42,23 @@ export type Lineup = {
 
 const b36 = (n: number) => n.toString(36);
 
+const b36x2 = (n: number) => n.toString(36).padStart(2, "0");
+
 export function encodeLineup(l: Lineup): string {
-  return `1:${b36(l.formation)}:${l.xi.map(b36).join("")}:${l.posture}${l.marking}${l.passing}:${b36(l.captain)}${b36(l.penalty)}`;
+  const tactic = `${l.posture}${l.marking}${l.passing}`;
+  if (Math.max(...l.xi, l.captain, l.penalty) < 36) {
+    return `1:${b36(l.formation)}:${l.xi.map(b36).join("")}:${tactic}:${b36(l.captain)}${b36(l.penalty)}`;
+  }
+  return `2:${b36(l.formation)}:${l.xi.map(b36x2).join("")}:${tactic}:${b36x2(l.captain)}${b36x2(l.penalty)}`;
 }
 
 export function decodeLineup(code: string | null | undefined, squadSize: number): Lineup | null {
-  const m = /^1:([0-9a-z]):([0-9a-z]{11}):([0-4])([0-2])([0-2]):([0-9a-z])([0-9a-z])$/.exec(code ?? "");
+  const m =
+    /^1:([0-9a-z]):([0-9a-z]{11}):([0-4])([0-2])([0-2]):([0-9a-z])([0-9a-z])$/.exec(code ?? "") ??
+    /^2:([0-9a-z]):([0-9a-z]{22}):([0-4])([0-2])([0-2]):([0-9a-z]{2})([0-9a-z]{2})$/.exec(code ?? "");
   if (!m) return null;
-  const xi = m[2].split("").map((c) => parseInt(c, 36));
+  const w = m[2].length / 11;
+  const xi = Array.from({ length: 11 }, (_, i) => parseInt(m[2].slice(i * w, i * w + w), 36));
   if (new Set(xi).size !== 11 || xi.some((i) => i >= squadSize)) return null;
   const captain = parseInt(m[6], 36);
   const penalty = parseInt(m[7], 36);

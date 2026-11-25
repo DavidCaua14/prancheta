@@ -312,16 +312,14 @@ export function standings(data: LeagueData, now: number): Row[] {
   return rows.sort((x, y) => y.p - x.p || y.v - x.v || y.gp - y.gc - (x.gp - x.gc) || y.gp - x.gp || x.slot - y.slot);
 }
 
-/** Tamanho máximo do elenco (14 da peneira + cartas do leilão) = tamanho de clubs.xp. */
-export const XP_SLOTS = 24;
-
 /**
  * XP que as cartas do clube ganharam nos jogos da liga terminados até `now`
  * (só os jogos em que o próprio técnico comandou a vaga). O servidor usa
  * now = ∞ no fechamento; o aparelho usa para mostrar o "XP a receber".
  */
 export function clubMatchXp(data: LeagueData, clubId: string, now: number): { xp: number[]; games: number } {
-  const total = Array.from({ length: XP_SLOTS }, () => 0);
+  // uma posição por carta do elenco (14 da peneira + as do leilão, sem limite)
+  const total: number[] = Array.from({ length: 14 }, () => 0);
   let games = 0;
   for (let r = 1; r <= data.kickoffs.length; r++) {
     if (data.kickoffs[r - 1] > now) break;
@@ -336,7 +334,7 @@ export function clubMatchXp(data: LeagueData, clubId: string, now: number): { xp
       if (!matchDone(m, now)) break;
       const xi = side === 0 ? m.homeLineup.xi : m.awayLineup.xi;
       const squad = side === 0 ? m.home.squad : m.away.squad;
-      matchXp(m.result, side as 0 | 1, xi, squad.length).forEach((v, k) => (total[k] += v));
+      matchXp(m.result, side as 0 | 1, xi, squad.length).forEach((v, k) => (total[k] = (total[k] ?? 0) + v));
       games++;
       break;
     }

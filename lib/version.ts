@@ -8,7 +8,7 @@ export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
 export const RELEASE_NOTES: string[] = [
   "Leilão aberto: 8 cartas Destaque, Épica e Especial a cada 2 horas",
   "Você começa com 1.000 moedas e ganha mais no fim de cada temporada",
-  "Cartas arrematadas entram no elenco e também evoluem",
+  "Cada lance dá 10 minutos para os outros cobrirem; elenco sem limite de cartas",
 ];
 
 export type VersionPayload = {

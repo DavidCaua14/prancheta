@@ -9,9 +9,8 @@ import { ArtImg } from "@/components/ui/ArtImg";
 import { Icon } from "@/components/ui/Icon";
 import { loadBidders, loadLots, loadMine, placeBid, type Bidder, type BidError, type LotState } from "@/lib/auction/data";
 import {
-  EXTEND_SECONDS,
+  BID_WINDOW_SECONDS,
   LOTS_PER_ROUND,
-  MAX_EXTRA_CARDS,
   MIN_BID,
   lotCard,
   lotTier,
@@ -36,7 +35,7 @@ const BID_ERRORS: Record<BidError, string> = {
   min: "Alguém deu um lance maior antes. Confira o novo valor.",
   leader: "Você já tem o maior lance neste lote.",
   coins: "Moedas insuficientes para esse lance.",
-  full: `Elenco cheio: no máximo ${MAX_EXTRA_CARDS} cartas do leilão (contando os lances em que você lidera).`,
+  full: "Não deu para registrar o lance. Tente de novo.",
   closed: "Este lote já foi encerrado.",
   network: "Não deu para enviar o lance. Tente de novo.",
 };
@@ -115,7 +114,7 @@ export function AuctionHouse() {
   }, [toast]);
 
   const kit = useMemo(() => (club ? decodeKit(club.kit) : null), [club]);
-  const extras = club ? mine.length : 0;
+  const extras = mine.filter((l) => new Date(l.ends_at).getTime() <= now).length;
 
   if (!club || round === null || !kit) {
     return (
@@ -163,6 +162,66 @@ export function AuctionHouse() {
     }
   };
 
+  const renderLot = (r: number, idx: number) => {
+                const info = lotInfo(r, idx);
+                const card = lotCard(r, idx);
+                const who = info.leader ? names.get(info.leader) : null;
+                const canBid = !info.ended && !info.me && club.coins >= info.min;
+                return (
+                  <article key={key(r, idx)} className="flex min-w-0 flex-col rounded-[18px] border-[3px] border-[var(--ink)] bg-[var(--paper)] p-2 text-[var(--ink)] shadow-[0_4px_0_var(--ink)]">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className={`rounded-md px-1.5 py-0.5 text-[0.6rem] font-extrabold uppercase tracking-wider ${TIER_STYLE[info.tier]}`}>{CARD_TIERS[info.tier].label}</span>
+                      <span className={`t-num text-[0.68rem] ${info.ends - now < 5 * 60_000 && !info.ended ? "text-[var(--red)]" : "opacity-60"}`}>
+                        {info.ended ? "Encerrado" : fmtCountdown(info.ends - now)}
+                      </span>
+                    </div>
+                    <button type="button" onClick={() => openBid(r, idx)} className="mt-1.5 flex justify-center" aria-label={`Ver lote: ${card.name}`}>
+                      <GameCard card={card} kit={kit} tag={club.tag} className="!text-[clamp(7.5px,2.35vw,11px)]" />
+                    </button>
+                    <div className="mt-2 min-h-[2.4rem] text-xs font-bold leading-tight">
+                      {info.st ? (
+                        <>
+                          <p className="flex items-center justify-between gap-1">
+                            <span className="opacity-60">Maior lance</span>
+                            <Coins value={info.st.best_amount} className="text-sm" />
+                          </p>
+                          <p className={`mt-0.5 flex items-center gap-1 truncate ${info.me ? "text-[var(--grass-2)]" : ""}`}>
+                            {info.me ? (
+                              <>
+                                <Icon name="check" className="h-3.5 w-3.5 shrink-0" /> Você lidera
+                              </>
+                            ) : who ? (
+                              <>
+                                <CrestSvg crest={decodeCrest(who.crest)} tag={who.tag} className="h-4 w-3.5 shrink-0" />
+                                <span className="truncate">{who.name}</span>
+                              </>
+                            ) : (
+                              "—"
+                            )}
+                            <span className="ml-auto shrink-0 opacity-50">{info.st.bids} {info.st.bids === 1 ? "lance" : "lances"}</span>
+                          </p>
+                        </>
+                      ) : (
+                        <p className="flex items-center justify-between gap-1">
+                          <span className="opacity-60">Sem lances · mín.</span>
+                          <Coins value={MIN_BID[info.tier]} className="text-sm" />
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      disabled={!canBid}
+                      onClick={() => openBid(r, idx)}
+                      className={`btn btn-sm mt-2 w-full ${canBid ? "btn-green" : "btn-paper"} disabled:opacity-50`}
+                    >
+                      {info.ended ? "Encerrado" : info.me ? "Você lidera" : club.coins < info.min ? "Sem moedas" : `Lance ${info.min.toLocaleString("pt-BR")}`}
+                    </button>
+                  </article>
+                );
+  };
+
+  // disputas de rodadas anteriores que seguem abertas (lance a menos de 10 min)
+  const carry = [...lots.values()].filter((l) => l.round < round && new Date(l.ends_at).getTime() > now).sort((a, b) => a.round - b.round || a.idx - b.idx);
   const leading = mine.filter((l) => new Date(l.ends_at).getTime() > now);
   const won = mine.filter((l) => new Date(l.ends_at).getTime() <= now);
   const sel = open ? lotInfo(open.round, open.idx) : null;
@@ -214,68 +273,24 @@ export function AuctionHouse() {
             <Panel className="flex items-start gap-3 !p-3">
               <Icon name="gavel" className="mt-0.5 h-5 w-5 shrink-0 text-[var(--sun)]" />
               <p className="text-xs font-semibold text-white/80 sm:text-sm">
-                A cada 2 horas, 8 cartas novas. Suas moedas ficam reservadas no lance e voltam na hora se alguém cobrir. Lance no último minuto
-                prorroga o lote por {EXTEND_SECONDS} s. Quem tiver o maior lance no fim leva a carta para o elenco ({extras}/{MAX_EXTRA_CARDS} extras).
+                A cada 2 horas, 8 cartas novas. Suas moedas ficam reservadas no lance e voltam na hora se alguém cobrir. Cada lance novo faz o
+                lote fechar {BID_WINDOW_SECONDS / 60} minutos depois — tempo para os outros técnicos verem e cobrirem. Quem tiver o maior lance no fim leva a carta para o elenco — sem limite de cartas{extras ? ` (você já tem ${extras} do leilão)` : ""}.
               </p>
             </Panel>
+            {carry.length > 0 && (
+              <>
+                <div className="text-white">
+                  <p className="t-heading flex items-center gap-2">
+                    <Icon name="dot" className="h-3 w-3 text-[var(--red)]" /> Ainda em disputa
+                  </p>
+                  <p className="text-xs font-bold text-white/60">Lotes de rodadas anteriores com lance há menos de 10 minutos.</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{carry.map((l) => renderLot(l.round, l.idx))}</div>
+                <p className="t-heading text-white">Rodada atual</p>
+              </>
+            )}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {Array.from({ length: LOTS_PER_ROUND }, (_, idx) => {
-                const info = lotInfo(round, idx);
-                const card = lotCard(round, idx);
-                const who = info.leader ? names.get(info.leader) : null;
-                const canBid = !info.ended && !info.me && club.coins >= info.min;
-                return (
-                  <article key={idx} className="flex min-w-0 flex-col rounded-[18px] border-[3px] border-[var(--ink)] bg-[var(--paper)] p-2 text-[var(--ink)] shadow-[0_4px_0_var(--ink)]">
-                    <div className="flex items-center justify-between gap-1">
-                      <span className={`rounded-md px-1.5 py-0.5 text-[0.6rem] font-extrabold uppercase tracking-wider ${TIER_STYLE[info.tier]}`}>{CARD_TIERS[info.tier].label}</span>
-                      <span className={`t-num text-[0.68rem] ${info.ends - now < 5 * 60_000 && !info.ended ? "text-[var(--red)]" : "opacity-60"}`}>
-                        {info.ended ? "Encerrado" : fmtCountdown(info.ends - now)}
-                      </span>
-                    </div>
-                    <button type="button" onClick={() => openBid(round, idx)} className="mt-1.5 flex justify-center" aria-label={`Ver lote: ${card.name}`}>
-                      <GameCard card={card} kit={kit} tag={club.tag} className="!text-[clamp(7.5px,2.35vw,11px)]" />
-                    </button>
-                    <div className="mt-2 min-h-[2.4rem] text-xs font-bold leading-tight">
-                      {info.st ? (
-                        <>
-                          <p className="flex items-center justify-between gap-1">
-                            <span className="opacity-60">Maior lance</span>
-                            <Coins value={info.st.best_amount} className="text-sm" />
-                          </p>
-                          <p className={`mt-0.5 flex items-center gap-1 truncate ${info.me ? "text-[var(--grass-2)]" : ""}`}>
-                            {info.me ? (
-                              <>
-                                <Icon name="check" className="h-3.5 w-3.5 shrink-0" /> Você lidera
-                              </>
-                            ) : who ? (
-                              <>
-                                <CrestSvg crest={decodeCrest(who.crest)} tag={who.tag} className="h-4 w-3.5 shrink-0" />
-                                <span className="truncate">{who.name}</span>
-                              </>
-                            ) : (
-                              "—"
-                            )}
-                            <span className="ml-auto shrink-0 opacity-50">{info.st.bids} {info.st.bids === 1 ? "lance" : "lances"}</span>
-                          </p>
-                        </>
-                      ) : (
-                        <p className="flex items-center justify-between gap-1">
-                          <span className="opacity-60">Sem lances · mín.</span>
-                          <Coins value={MIN_BID[info.tier]} className="text-sm" />
-                        </p>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      disabled={!canBid}
-                      onClick={() => openBid(round, idx)}
-                      className={`btn btn-sm mt-2 w-full ${canBid ? "btn-green" : "btn-paper"} disabled:opacity-50`}
-                    >
-                      {info.ended ? "Encerrado" : info.me ? "Você lidera" : club.coins < info.min ? "Sem moedas" : `Lance ${info.min.toLocaleString("pt-BR")}`}
-                    </button>
-                  </article>
-                );
-              })}
+              {Array.from({ length: LOTS_PER_ROUND }, (_, idx) => renderLot(round, idx))}
             </div>
             <p className="text-center text-xs font-bold text-white/60">
               Destaque a partir de {MIN_BID.destaque}, Épica de {MIN_BID.epica} e Especial (a cada 8 horas) de {MIN_BID.especial} moedas. Moedas entram
