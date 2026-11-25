@@ -1,5 +1,7 @@
 "use client";
 
+import { tacticFit } from "@/lib/sim/engine";
+
 import { CARD_TIERS, type CardTier } from "@/lib/game-config";
 
 import Link from "next/link";
@@ -14,9 +16,12 @@ import { POSITION_NAMES, type BaseCard } from "@/lib/cards/generate";
 import { clubCards } from "@/lib/cards/squad";
 import { FORMATIONS, effective, fitLevel, strength } from "@/lib/tactics/formations";
 import {
+  LINES,
   MARKINGS,
   PASSES,
   POSTURES,
+  TEMPOS,
+  WIDTHS,
   autoLineup,
   encodeLineup,
   lineupFor,
@@ -57,11 +62,14 @@ function Segmented({
   options,
   value,
   onChange,
+  recommended,
 }: {
   label: string;
   options: readonly { label: string; hint: string }[];
   value: number;
   onChange: (v: number) => void;
+  /** opção que mais combina com o elenco (marcada com uma estrela) */
+  recommended?: number;
 }) {
   return (
     <fieldset>
@@ -84,6 +92,11 @@ function Segmented({
             }`}
           >
             {o.label}
+            {recommended === i && (
+              <span className="mt-0.5 flex items-center justify-center gap-0.5 text-[0.55rem] uppercase tracking-wider opacity-80">
+                <Icon name="star" className="h-2.5 w-2.5" /> indicado
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -397,12 +410,21 @@ export function LineupEditor() {
   );
 
   const xiOptions = lineup.xi.map((i) => ({ i, c: cards[i] }));
+  const advice = tacticFit(cards, lineup);
   const tacticPanel = (
     <div className="flex flex-col gap-5 rounded-[20px] border-[3px] border-[var(--ink)] bg-[var(--night-2)] p-4 shadow-[0_5px_0_var(--ink)]">
       <p className="t-heading text-white">Tática</p>
       <Segmented label="Postura" options={POSTURES} value={lineup.posture} onChange={(v) => update({ ...lineup, posture: v })} />
       <Segmented label="Marcação" options={MARKINGS} value={lineup.marking} onChange={(v) => update({ ...lineup, marking: v })} />
       <Segmented label="Passes" options={PASSES} value={lineup.passing} onChange={(v) => update({ ...lineup, passing: v })} />
+      <Segmented label="Linha defensiva" options={LINES} value={lineup.line ?? 1} recommended={advice.line} onChange={(v) => update({ ...lineup, line: v })} />
+      <Segmented label="Jogo" options={WIDTHS} value={lineup.width ?? 1} recommended={advice.width} onChange={(v) => update({ ...lineup, width: v })} />
+      <Segmented label="Ritmo" options={TEMPOS} value={lineup.tempo ?? 1} recommended={advice.tempo} onChange={(v) => update({ ...lineup, tempo: v })} />
+      <p className="-mt-2 flex items-start gap-1.5 text-xs leading-snug text-white/60">
+        <Icon name="star" className="mt-0.5 h-3 w-3 shrink-0 text-[var(--sun)]" /> &quot;Indicado&quot; = o que mais combina com os seus titulares: pontas
+        {` ${Math.round(advice.wide)}`} × meio {Math.round(advice.central)}, velocidade da zaga {Math.round(advice.back)}, fôlego {Math.round(advice.engine)}, toque{" "}
+        {Math.round(advice.touch)}.
+      </p>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
         {(
           [

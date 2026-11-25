@@ -33,7 +33,7 @@ export type TeamInput = {
 };
 
 export type Change =
-  | { minute: number; team: 0 | 1; kind: "tactic"; posture?: number; marking?: number; passing?: number }
+  | { minute: number; team: 0 | 1; kind: "tactic"; posture?: number; marking?: number; passing?: number; line?: number; width?: number; tempo?: number }
   | { minute: number; team: 0 | 1; kind: "sub"; out: number; in: number };
 
 export type MatchInput = {
@@ -163,6 +163,12 @@ type TState = {
   posture: number;
   marking: number;
   passing: number;
+  /** linha defensiva: 0 recuada, 1 normal, 2 adiantada */
+  line: number;
+  /** jogo: 0 pelo meio, 1 misto, 2 pelas pontas */
+  width: number;
+  /** ritmo: 0 cadenciado, 1 normal, 2 acelerado */
+  tempo: number;
   field: OnField[];
   bench: number[];
   subsLeft: number;
@@ -287,6 +293,81 @@ function keeper(t: TState) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Ajustes táticos (linha, jogo, ritmo) — encaixe com o elenco          */
+/* ------------------------------------------------------------------ */
+// Com os três no "normal" (1), nada aqui é usado: o jogo sai idêntico ao de
+// antes, sorteio por sorteio (tests/engine-compat.test.ts).
+
+/** Média de uma combinação de atributos dos jogadores em campo nas posições pedidas. */
+function avgOf(t: TState, roles: Position[], parts: [string, number][], empty: number) {
+  let sum = 0;
+  let n = 0;
+  for (const p of t.field) {
+    if (p.out || !roles.includes(p.role)) continue;
+    const c = t.input.squad[p.card];
+    sum += v(c, parts) * fit(c.position, p.role) * condition(p);
+    n++;
+  }
+  return n ? sum / n : empty;
+}
+const WIDE: Position[] = ["PD", "PE", "LD", "LE"];
+const CENTRAL: Position[] = ["ATA", "MEI", "MC"];
+/** qualidade de quem joga aberto (velocidade, drible, cruzamento/passe) */
+const wideQ = (t: TState) => avgOf(t, WIDE, [["VEL", 0.4], ["DRI", 0.3], ["PAS", 0.3]], 30);
+/** qualidade de quem joga por dentro (passe, drible, finalização) */
+const centralQ = (t: TState) => avgOf(t, CENTRAL, [["PAS", 0.35], ["DRI", 0.3], ["FIN", 0.35]], 30);
+/** velocidade da última linha */
+const backPace = (t: TState) => avgOf(t, ["ZAG", "LD", "LE"], [["VEL", 1]], 40);
+/** velocidade de quem ataca */
+const frontPace = (t: TState) => avgOf(t, ["ATA", "PD", "PE"], [["VEL", 1]], 45);
+/** fôlego e arrancada do time (para ritmo acelerado) */
+const engineQ = (t: TState) => avgOf(t, ["VOL", "MC", "MEI", "PD", "PE", "LD", "LE", "ATA"], [["VEL", 0.5], ["FÍS", 0.5]], 45);
+/** toque de bola do meio (para ritmo cadenciado) */
+const touchQ = (t: TState) => avgOf(t, ["VOL", "MC", "MEI"], [["PAS", 0.6], ["DRI", 0.4]], 45);
+
+/**
+ * Leitura do elenco para a tela de tática: o que cada ajuste pede e o que o
+ * time titular tem. Usa as mesmas medidas do motor (sem cansaço).
+ */
+export function tacticFit(squad: BaseCard[], lineup: Lineup) {
+  const f = FORMATIONS[lineup.formation];
+  const field: OnField[] = f.slots.map((sl, i) => ({ card: lineup.xi[i], role: sl.role, energy: 100, yellow: false, out: false }));
+  const t = { input: { squad }, field } as unknown as TState;
+  const w = wideQ(t);
+  const c = centralQ(t);
+  const back = backPace(t);
+  const eng = engineQ(t);
+  const touch = touchQ(t);
+  const width = w - c > 3 ? 2 : c - w > 3 ? 0 : 1;
+  const line = back >= 62 ? 2 : back <= 52 ? 0 : 1;
+  const tempo = eng - 55 >= touch - 56 ? (eng >= 57 ? 2 : 1) : touch >= 58 ? 0 : 1;
+  return { width, line, tempo, wide: w, central: c, back, engine: eng, touch };
+}
+
+/** Multiplicador do ataque pelo "jogo" escolhido: só rende se o elenco encaixa. */
+function widthMul(t: TState) {
+  if (t.width === 1) return 1;
+  const w = wideQ(t);
+  const c = centralQ(t);
+  return t.width === 2 ? clamp(1.01 + (w - c) / 70, 0.86, 1.14) : clamp(1.0 + (c - w) / 70, 0.86, 1.14);
+}
+
+/** Ritmo: frequência de ataques, qualidade da finalização, posse e cansaço. */
+function tempoFx(t: TState) {
+  if (t.tempo === 2) {
+    // acelerado: mais ataques para quem tem arrancada e fôlego; time lento só se cansa
+    const e = engineQ(t);
+    return { freq: clamp(1.06 + (e - 55) / 40, 0.84, 1.32), quality: 0.99, poss: -0.01, tired: 1.05 };
+  }
+  if (t.tempo === 0) {
+    // cadenciado: troca passes até achar a melhor chance — só se o meio souber tocar
+    const k = touchQ(t);
+    return { freq: 0.93, quality: clamp(1 + (k - 56) / 180, 0.92, 1.1), poss: clamp(0.005 + (k - 56) / 500, -0.02, 0.05), tired: 0.9 };
+  }
+  return { freq: 1, quality: 1, poss: 0, tired: 1 };
+}
+
+/* ------------------------------------------------------------------ */
 /* Sorteios ponderados                                                 */
 /* ------------------------------------------------------------------ */
 
@@ -321,6 +402,9 @@ function initTeam(input: TeamInput, r: () => number, boost: number): TState {
     posture: input.lineup.posture,
     marking: input.lineup.marking,
     passing: input.lineup.passing,
+    line: input.lineup.line ?? 1,
+    width: input.lineup.width ?? 1,
+    tempo: input.lineup.tempo ?? 1,
     field,
     bench,
     subsLeft: TUNING.maxSubs,
@@ -407,6 +491,9 @@ export function simulate(input: MatchInput): MatchResult {
         if (ch.posture !== undefined) st.posture = clamp(ch.posture, 0, 4);
         if (ch.marking !== undefined) st.marking = clamp(ch.marking, 0, 2);
         if (ch.passing !== undefined) st.passing = clamp(ch.passing, 0, 2);
+        if (ch.line !== undefined) st.line = clamp(ch.line, 0, 2);
+        if (ch.width !== undefined) st.width = clamp(ch.width, 0, 2);
+        if (ch.tempo !== undefined) st.tempo = clamp(ch.tempo, 0, 2);
         push("tactic", ch.team);
       } else {
         substitute(ch.team, ch.out, ch.in, "tactic");
@@ -485,6 +572,8 @@ export function simulate(input: MatchInput): MatchResult {
   function shot(t: 0 | 1, header: boolean) {
     const A = teams[t];
     const D = teams[1 - t];
+    // jogo pelas pontas: parte das finalizações vira cabeçada depois de cruzamento
+    if (!header && A.width === 2 && r() < 0.22) header = true;
     const shooters = A.field.filter((p) => !p.out && p.role !== "GOL");
     const sh = weighted(r, shooters, (p) => (header ? HEAD_W[p.role] * stat(A.input.squad[p.card], "FÍS") : SHOOT_W[p.role] * stat(A.input.squad[p.card], "FIN")) / 50);
     if (!sh) return;
@@ -496,7 +585,8 @@ export function simulate(input: MatchInput): MatchResult {
       fit(card.position, sh.role) *
       condition(sh) *
       A.form[sh.card] *
-      A.boost;
+      A.boost *
+      (A.tempo === 1 ? 1 : tempoFx(A).quality);
     A.stats.shots++;
 
     const defense = sector(D, DEF_ROLE, REF_DEF) * MARKING[D.marking].def;
@@ -509,7 +599,9 @@ export function simulate(input: MatchInput): MatchResult {
       return;
     }
     const direct = A.passing === 0 ? 0.015 : 0;
-    const onTarget = r() < clamp(TUNING.onTargetBase + (q - 50) / TUNING.onTargetSlope + direct - (header ? 0.05 : 0), 0.12, 0.72);
+    let aim = TUNING.onTargetBase + (q - 50) / TUNING.onTargetSlope + direct - (header ? 0.05 : 0);
+    if (A.tempo === 2) aim -= 0.01; // pressa: chuta mais, acerta menos
+    const onTarget = r() < clamp(aim, 0.12, 0.72);
     if (!onTarget) {
       push(r() < 0.09 ? "post" : "miss", t, sh.card);
       return;
@@ -604,6 +696,10 @@ export function simulate(input: MatchInput): MatchResult {
     const passShift = (p: number) => (p === 0 ? 0.03 : p === 2 ? -0.03 : 0);
     pH +=
       POSTURE[H.posture].poss - POSTURE[A.posture].poss + MARKING[H.marking].poss - MARKING[A.marking].poss + passShift(H.passing) - passShift(A.passing);
+    if (H.line !== 1 || A.line !== 1 || H.tempo !== 1 || A.tempo !== 1) {
+      const lineShift = (x: TState) => (x.line === 2 ? 0.02 : x.line === 0 ? -0.025 : 0);
+      pH += lineShift(H) - lineShift(A) + tempoFx(H).poss - tempoFx(A).poss;
+    }
     pH = clamp(pH, 0.22, 0.78);
 
     const t: 0 | 1 = r() < pH ? 0 : 1;
@@ -611,9 +707,18 @@ export function simulate(input: MatchInput): MatchResult {
     const D = teams[1 - t];
     T.stats.possession++;
 
-    if (r() < TUNING.attackChance * POSTURE[T.posture].freq) {
-      const att = sector(T, ATT_ROLES[T.passing], REF_ATT) * POSTURE[T.posture].att;
-      const def = sector(D, DEF_ROLE, REF_DEF) * POSTURE[D.posture].def * MARKING[D.marking].def;
+    let freq = TUNING.attackChance * POSTURE[T.posture].freq;
+    if (T.tempo !== 1) freq *= tempoFx(T).freq;
+    if (D.line === 0) freq *= 1.04; // linha recuada: o rival chega mais, mas encontra a área fechada
+    // pressão alta: rival perde a bola antes — melhor ainda com zaga rápida para cobrir o espaço
+    else if (D.line === 2) freq *= clamp(0.98 - (engineQ(D) - 52) / 250 - (backPace(D) - 58) / 220, 0.84, 1.03);
+    if (r() < freq) {
+      let att = sector(T, ATT_ROLES[T.passing], REF_ATT) * POSTURE[T.posture].att;
+      if (T.width !== 1) att *= widthMul(T);
+      let def = sector(D, DEF_ROLE, REF_DEF) * POSTURE[D.posture].def * MARKING[D.marking].def;
+      // recuada: sem espaço nas costas, atacante rápido rende menos (zaga lenta agradece)
+      if (D.line === 0) def *= clamp(1.06 + (frontPace(T) - backPace(D)) / 100, 1.02, 1.22);
+      else if (D.line === 2) def *= 1.02; // pressão alta rouba bolas antes da área
       const danger = att / Math.max(20, def);
       const direct = T.passing === 2 ? 1.12 : T.passing === 0 ? 0.97 : 1;
       if (r() < clamp(TUNING.shotBase * Math.pow(danger, TUNING.shotExp) * direct, 0.06, 0.9)) {
@@ -621,7 +726,7 @@ export function simulate(input: MatchInput): MatchResult {
       } else if (r() < TUNING.penaltyChance * clamp(danger, 0.6, 1.6) * MARKING[D.marking].fouls) {
         D.stats.fouls++;
         penalty(t);
-      } else if (r() < TUNING.cornerChance) {
+      } else if (r() < TUNING.cornerChance * (T.width === 2 ? 1.3 : 1)) {
         T.stats.corners++;
         corner(t);
       }
@@ -629,11 +734,16 @@ export function simulate(input: MatchInput): MatchResult {
 
     // contra-ataque: quem se lança ao ataque deixa espaço atrás
     const D2 = teams[1 - t];
-    const exposure = [0, 0.2, 0.5, 1.2, 2.2][T.posture] * (T.passing === 0 ? 0.85 : 1);
+    let exposure = [0, 0.2, 0.5, 1.2, 2.2][T.posture] * (T.passing === 0 ? 0.85 : 1);
+    // linha adiantada deixa espaço nas costas; recuada quase não dá contra-ataque
+    if (T.line === 2) exposure = exposure * 1.6 + 0.6;
+    else if (T.line === 0) exposure *= 0.5;
     if (r() < TUNING.counterBase * exposure) {
       const sharp = 1 + 0.15 * (2 - D2.posture); // times recuados contra-atacam melhor
       const att = sector(D2, ATT_ROLES[2], REF_ATT) * sharp;
-      const def = sector(T, DEF_ROLE, REF_DEF) * POSTURE[T.posture].def;
+      let def = sector(T, DEF_ROLE, REF_DEF) * POSTURE[T.posture].def;
+      // linha alta só se segura com zagueiros rápidos contra atacantes rápidos
+      if (T.line === 2) def *= Math.pow(clamp(backPace(T) / frontPace(D2), 0.6, 1.25), 1.6);
       if (r() < clamp(0.55 * Math.pow(att / Math.max(20, def), TUNING.shotExp), 0.1, 0.85)) shot((1 - t) as 0 | 1, false);
     }
 
@@ -660,7 +770,8 @@ export function simulate(input: MatchInput): MatchResult {
 
     // cansaço
     for (const st of teams) {
-      const k = POSTURE[st.posture].tired * MARKING[st.marking].tired;
+      let k = POSTURE[st.posture].tired * MARKING[st.marking].tired;
+      if (st.tempo !== 1) k *= tempoFx(st).tired;
       for (const p of st.field) {
         if (p.out) continue;
         const c = st.input.squad[p.card];

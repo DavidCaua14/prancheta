@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CrestSvg } from "@/components/club/CrestSvg";
 import { Feed, IconButton } from "@/components/match/parts";
 import { Icon } from "@/components/ui/Icon";
@@ -13,19 +13,22 @@ import { clubCards } from "@/lib/cards/squad";
 import { simulate, type Change, type MatchEvent, type MatchResult } from "@/lib/sim/engine";
 import { makeRival } from "@/lib/sim/rival";
 import { FORMATIONS, fitLevel } from "@/lib/tactics/formations";
-import { MARKINGS, PASSES, POSTURES, lineupFor } from "@/lib/tactics/lineup";
+import { LINES, MARKINGS, PASSES, POSTURES, TEMPOS, WIDTHS, lineupFor } from "@/lib/tactics/lineup";
+import { MatchBoard } from "@/components/match/MatchBoard";
+import { tickClock } from "@/components/match/parts";
 
+/**
+ * Velocidade do treino (ms por minuto de jogo). A liga e as copas andam a
+ * 6 s por minuto (~10 min por jogo); o treino é mais rápido: ~3 min no 1x.
+ */
 const SPEEDS = [
-  { label: "1x", ms: 650 },
-  { label: "2x", ms: 300 },
-  { label: "4x", ms: 120 },
+  { label: "1x", ms: 1800 },
+  { label: "2x", ms: 800 },
+  { label: "4x", ms: 350 },
 ];
 const COUNT_KEY = (id: string) => `prancheta:amistoso:${id}`;
 
 
-function clockText(e: { minute: number; extra?: number }) {
-  return e.extra ? `${e.minute}+${e.extra}'` : `${e.minute}'`;
-}
 
 /** Estatísticas parciais a partir dos lances já mostrados. */
 function liveStats(events: MatchEvent[]) {
@@ -109,6 +112,27 @@ export function MatchViewer() {
   }, [playing, speed, result, limit]);
 
   const visible = useMemo(() => (result ? result.events.filter((e) => e.tick <= tick) : []), [result, tick]);
+
+  // quadro animado: minuto contínuo entre um "tique" do relógio e o próximo
+  const clockRef = useRef({ tick: 0, at: 0, running: false, ms: SPEEDS[1].ms });
+  const runningNow = playing && !!result && tick < result.length && !(tick === result.secondHalfTick - 1 && !halfDone);
+  useEffect(() => {
+    clockRef.current = { tick, at: performance.now(), running: runningNow, ms: SPEEDS[speed].ms };
+  }, [tick, runningNow, speed]);
+  const getTime = useCallback(() => {
+    const c = clockRef.current;
+    return c.running ? c.tick + Math.min(0.999, (performance.now() - c.at) / c.ms) : c.tick;
+  }, []);
+  const boardSides = useMemo(
+    () =>
+      setup && club
+        ? {
+            home: { lineup: setup.lineup, squad: setup.squad, tag: club.tag },
+            away: { lineup: setup.rival.lineup, squad: setup.rival.squad, tag: setup.rival.tag },
+          }
+        : null,
+    [setup, club],
+  );
   const last = visible[visible.length - 1];
 
   if (!club || !setup || !result) {
@@ -125,13 +149,18 @@ export function MatchViewer() {
   const halftime = !ended && !halfDone && tick === result.secondHalfTick - 1;
   const running = playing && !halftime && !ended;
   const flash = running && last && (last.type === "goal" || last.type === "penalty_goal") && last.tick === tick ? last : null;
-  const nowClock = last ? clockText(last) : "0'";
+  const nowClock = tickClock(tick, result.secondHalfTick, result.length);
   const stats = liveStats(visible);
   const feed = [...visible].reverse().filter((e) => e.type !== "corner" || ended);
 
   // estado atual do meu time (para substituições e tática)
   const myPosture = [...changes].reverse().find((c) => c.kind === "tactic" && c.posture !== undefined && c.minute <= tick + 1);
   const posture = myPosture && myPosture.kind === "tactic" ? (myPosture.posture ?? lineup.posture) : lineup.posture;
+  // linha / jogo / ritmo em vigor (escalação + mudanças feitas no treino)
+  const currentOf = (key: "line" | "width" | "tempo") => {
+    const ch = [...changes].reverse().find((c) => c.kind === "tactic" && c[key] !== undefined && c.minute <= tick + 1);
+    return ch && ch.kind === "tactic" ? (ch[key] ?? 1) : (lineup[key] ?? 1);
+  };
   const formation = FORMATIONS[lineup.formation];
   const field = formation.slots.map((s, i) => ({ role: s.role, card: lineup.xi[i], out: false }));
   const usedBench = new Set<number>();
@@ -303,6 +332,21 @@ export function MatchViewer() {
             </div>
           )}
 
+          {boardSides && (
+            <div className="mb-4">
+              <MatchBoard
+                result={result}
+                home={boardSides.home}
+                away={boardSides.away}
+                seed={count}
+                getTime={getTime}
+                labels={[
+                  `${club.tag} · ${formation.name} · ${POSTURES[posture].label}`,
+                  `${rival.tag} · ${FORMATIONS[rival.lineup.formation].name} · ${POSTURES[rival.lineup.posture].label}`,
+                ]}
+              />
+            </div>
+          )}
           <Feed events={feed} tags={[club.tag, rival.tag]} mine={0} />
         </section>
 
@@ -414,6 +458,36 @@ export function MatchViewer() {
                     </button>
                   ))}
                 </div>
+                {(
+                  [
+                    ["Linha defensiva", "line", LINES],
+                    ["Jogo", "width", WIDTHS],
+                    ["Ritmo", "tempo", TEMPOS],
+                  ] as const
+                ).map(([label, key, options]) => {
+                  const current = currentOf(key);
+                  return (
+                    <div key={key} className="mt-4">
+                      <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-white/60">{label}</p>
+                      <div className="mt-1.5 grid grid-cols-3 gap-1 rounded-xl border-[3px] border-[var(--ink)] bg-black/25 p-1">
+                        {options.map((o, k) => (
+                          <button
+                            key={o.label}
+                            type="button"
+                            onClick={() => {
+                              if (k !== current) addChange({ minute: tick + 1, team: 0, kind: "tactic", [key]: k });
+                              setSheet(null);
+                              setPlaying(true);
+                            }}
+                            className={`min-h-9 rounded-lg px-1 text-xs font-extrabold ${k === current ? "bg-[var(--sun)] text-[var(--ink)]" : "text-white/80 hover:bg-white/10"}`}
+                          >
+                            {o.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </>
             ) : (
               <>

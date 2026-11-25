@@ -308,6 +308,31 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
   - `my_event_progress()` soma o que **fechou na semana**; `claim_mission()` confere a meta e paga uma vez
     (`event_claims`). O que está em andamento aparece no aparelho como "a confirmar".
 
+## Táticas avançadas e quadro animado (implementado)
+
+- **Duração**: liga e copas a 6 s por minuto de jogo (90' + acréscimos ≈ 9,3–9,8 min). Treino mais rápido:
+  1,8 s por minuto no 1x (~3 min), 0,8 s no 2x, 0,35 s no 4x. O placar mostra o minuto real (45+2', 90+3').
+- **Três ajustes novos, estilo Brasfoot** (além de formação, postura, marcação e passes):
+  linha defensiva (recuada / normal / adiantada), jogo (pelo meio / misto / pelas pontas) e ritmo
+  (cadenciado / normal / acelerado). Cada um depende de quem está em campo:
+  - pontas: rende com pontas e laterais rápidos/dribladores; pelo meio: com meias e atacantes técnicos;
+  - linha adiantada: pressão e posse, mas espaço nas costas — só aguenta com zaga rápida contra atacante
+    rápido; recuada: fecha a área (zaga lenta agradece), quase não sofre contra-ataque, cede a bola;
+  - acelerado: mais ataques para time veloz e forte; cadenciado: chances melhores para meio que toca bem.
+  - A tela de tática marca a opção "indicada" para os titulares (`tacticFit` no motor).
+- **Compatibilidade**: com os três no "normal" o motor é idêntico ao anterior, sorteio por sorteio
+  (`tests/tactics.test.ts` guarda a impressão digital de 300 jogos). Escalação ganha o trecho opcional
+  `:LWT`; mudanças ao vivo `l0-2`, `w0-2`, `t0-2` (migração 0021).
+- **Testes de encaixe** (`tests/tactics.test.ts`): times montados com perfis claros — cada opção vence quando o
+  elenco encaixa e perde quando não encaixa; num time comum nenhuma domina (diferença < 0,12 gol/jogo).
+- **Quadro animado** (`lib/sim/board.ts` + `components/match/MatchBoard.tsx`), no treino, na liga e nas copas:
+  o motor já sabe a partida inteira, então cada minuto vira um roteiro (quem tem a bola, passes, quem chuta).
+  O lance narrado no minuto T é encenado entre T−1 e T e termina junto com o texto. Coerência garantida
+  por `tests/board.test.ts` (24 partidas inteiras, quadro a quadro): gol termina na rede, defesa no goleiro,
+  chute para fora nunca atravessa o goleiro, bloqueio no zagueiro, passes curtos (≤ 40) sem passar por
+  adversário, ninguém sai do campo, saída de bola no meio depois do gol. Minuto com dois lances é dividido
+  em dois trechos. O desenho atualiza só os atributos do SVG (sem re-render por quadro) e suaviza emendas.
+
 ## Esboço do banco (Postgres)
 
 ```
@@ -342,6 +367,7 @@ friendlies(id, codigo, casa_id, fora_id, inicio_em, match_id)
 1. ~~Copa Nacional~~ ✅
 1. ~~Supercopa~~ ✅
 1. ~~Economia, loja (vitrine) e eventos semanais~~ ✅
+1. ~~Táticas avançadas e quadro animado da partida~~ ✅
 1. Copa das Lendas; pagamento da loja; amistosos entre amigos.
 2. Motor de simulação completo (`lib/sim/`) com testes de determinismo.
 3. Tela de escalação/prancheta.

@@ -10,6 +10,15 @@ export function clockText(e: { minute: number; extra?: number }) {
   return e.extra ? `${e.minute}+${e.extra}'` : `${e.minute}'`;
 }
 
+/** Minuto do relógio para um "tique" do motor (com acréscimos: 45+2', 90+3'). */
+export function tickClock(tick: number, secondHalfTick: number, length: number) {
+  const extra1 = secondHalfTick - 46;
+  const t = Math.max(0, Math.min(length, Math.floor(tick)));
+  if (t <= 45 + extra1) return t <= 45 ? `${t}'` : `45+${t - 45}'`;
+  const m = t - extra1;
+  return m <= 90 ? `${m}'` : `90+${m - 90}'`;
+}
+
 export function liveStats(events: MatchEvent[]) {
   const s = [0, 1].map(() => ({ shots: 0, onTarget: 0, corners: 0, yellows: 0, reds: 0 }));
   for (const e of events) {

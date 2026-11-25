@@ -6,10 +6,10 @@ export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
  * de atualização obrigatória que os jogadores veem.
  */
 export const RELEASE_NOTES: string[] = [
-  "Leilão com 4 cartas Base boas por rodada, a partir de 100 moedas",
-  "Eventos semanais: junte moedas jogando para buscar as cartas raras",
-  "Prêmios de liga e copa reequilibrados; nova loja de moedas (em breve)",
-  "Artes novas: loja, pacotes de moedas, eventos, liga e treino",
+  "Quadro animado da partida: veja as jogadas acontecendo junto com a narração",
+  "Novas táticas: linha defensiva, jogo pelo meio ou pelas pontas e ritmo",
+  "A tela de tática indica o que combina com os seus titulares",
+  "Treino mais longo para acompanhar as jogadas (com 2x e 4x)",
 ];
 
 export type VersionPayload = {

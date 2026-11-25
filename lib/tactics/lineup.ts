@@ -29,6 +29,24 @@ export const PASSES = [
   { label: "Ligação direta", hint: "Bola longa para os atacantes. Bom para times rápidos e fortes." },
 ] as const;
 
+export const LINES = [
+  { label: "Recuada", hint: "Defesa colada na área: fecha os espaços, quase não sofre contra-ataque, mas o rival fica mais com a bola." },
+  { label: "Normal", hint: "Linha na altura padrão." },
+  { label: "Adiantada", hint: "Marca lá em cima e fica mais com a bola. Deixa espaço nas costas: só funciona com zagueiros rápidos." },
+] as const;
+
+export const WIDTHS = [
+  { label: "Pelo meio", hint: "Tabelas e passes por dentro. Rende com meias e atacantes técnicos." },
+  { label: "Misto", hint: "Alterna meio e pontas." },
+  { label: "Pelas pontas", hint: "Abre o jogo e cruza na área: mais escanteios e cabeçadas. Rende com pontas e laterais rápidos." },
+] as const;
+
+export const TEMPOS = [
+  { label: "Cadenciado", hint: "Toca a bola com calma: menos ataques, finalizações melhores e menos cansaço. Rende com meio-campo de passe bom." },
+  { label: "Normal", hint: "Ritmo padrão." },
+  { label: "Acelerado", hint: "Verticaliza tudo: mais ataques, mas chuta pior e cansa mais. Rende com time rápido e forte." },
+] as const;
+
 export type Lineup = {
   formation: number;
   /** índice da carta no elenco para cada vaga da formação */
@@ -38,6 +56,12 @@ export type Lineup = {
   passing: number;
   captain: number;
   penalty: number;
+  /** linha defensiva: 0 recuada, 1 normal (padrão), 2 adiantada */
+  line?: number;
+  /** jogo: 0 pelo meio, 1 misto (padrão), 2 pelas pontas */
+  width?: number;
+  /** ritmo: 0 cadenciado, 1 normal (padrão), 2 acelerado */
+  tempo?: number;
 };
 
 const b36 = (n: number) => n.toString(36);
@@ -46,16 +70,18 @@ const b36x2 = (n: number) => n.toString(36).padStart(2, "0");
 
 export function encodeLineup(l: Lineup): string {
   const tactic = `${l.posture}${l.marking}${l.passing}`;
+  // linha/jogo/ritmo só entram no código quando saem do normal (códigos antigos seguem iguais)
+  const extra = (l.line ?? 1) !== 1 || (l.width ?? 1) !== 1 || (l.tempo ?? 1) !== 1 ? `:${l.line ?? 1}${l.width ?? 1}${l.tempo ?? 1}` : "";
   if (Math.max(...l.xi, l.captain, l.penalty) < 36) {
-    return `1:${b36(l.formation)}:${l.xi.map(b36).join("")}:${tactic}:${b36(l.captain)}${b36(l.penalty)}`;
+    return `1:${b36(l.formation)}:${l.xi.map(b36).join("")}:${tactic}:${b36(l.captain)}${b36(l.penalty)}${extra}`;
   }
-  return `2:${b36(l.formation)}:${l.xi.map(b36x2).join("")}:${tactic}:${b36x2(l.captain)}${b36x2(l.penalty)}`;
+  return `2:${b36(l.formation)}:${l.xi.map(b36x2).join("")}:${tactic}:${b36x2(l.captain)}${b36x2(l.penalty)}${extra}`;
 }
 
 export function decodeLineup(code: string | null | undefined, squadSize: number): Lineup | null {
   const m =
-    /^1:([0-9a-z]):([0-9a-z]{11}):([0-4])([0-2])([0-2]):([0-9a-z])([0-9a-z])$/.exec(code ?? "") ??
-    /^2:([0-9a-z]):([0-9a-z]{22}):([0-4])([0-2])([0-2]):([0-9a-z]{2})([0-9a-z]{2})$/.exec(code ?? "");
+    /^1:([0-9a-z]):([0-9a-z]{11}):([0-4])([0-2])([0-2]):([0-9a-z])([0-9a-z])(?::([0-2])([0-2])([0-2]))?$/.exec(code ?? "") ??
+    /^2:([0-9a-z]):([0-9a-z]{22}):([0-4])([0-2])([0-2]):([0-9a-z]{2})([0-9a-z]{2})(?::([0-2])([0-2])([0-2]))?$/.exec(code ?? "");
   if (!m) return null;
   const w = m[2].length / 11;
   const xi = Array.from({ length: 11 }, (_, i) => parseInt(m[2].slice(i * w, i * w + w), 36));
@@ -65,7 +91,13 @@ export function decodeLineup(code: string | null | undefined, squadSize: number)
   if (!xi.includes(captain) || !xi.includes(penalty)) return null;
   const formation = parseInt(m[1], 36);
   if (formation >= FORMATIONS.length) return null;
-  return { formation, xi, posture: +m[3], marking: +m[4], passing: +m[5], captain, penalty };
+  const out: Lineup = { formation, xi, posture: +m[3], marking: +m[4], passing: +m[5], captain, penalty };
+  if (m[8] !== undefined) {
+    out.line = +m[8];
+    out.width = +m[9];
+    out.tempo = +m[10];
+  }
+  return out;
 }
 
 /** Capitão: maior overall. Pênaltis: melhor finalização (fora o goleiro). */

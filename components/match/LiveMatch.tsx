@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
-import { Feed, Scoreboard, StatsPanel, clockText, liveStats } from "@/components/match/parts";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { MatchBoard } from "@/components/match/MatchBoard";
+import { Feed, Scoreboard, StatsPanel, liveStats, tickClock } from "@/components/match/parts";
 import { Icon } from "@/components/ui/Icon";
 import { fitLevel, FORMATIONS } from "@/lib/tactics/formations";
-import { POSTURES } from "@/lib/tactics/lineup";
+import { LINES, POSTURES, TEMPOS, WIDTHS } from "@/lib/tactics/lineup";
 import { TICK_SECONDS, fmtCountdown, fmtKickoff, matchDone, type ChangeRow, type LeagueMatch } from "@/lib/league/data";
 import { useNow } from "@/lib/league/useLeague";
 
@@ -48,6 +49,16 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
     return () => window.clearTimeout(t);
   }, [toast]);
 
+  // quadro animado: minuto contínuo da partida (6 s por minuto)
+  const getTime = useCallback(() => (Date.now() - m.kickoff) / (TICK_SECONDS * 1000), [m.kickoff]);
+  const homeSide = useMemo(() => ({ lineup: m.homeLineup, squad: m.home.squad, tag: m.home.tag }), [m.homeLineup, m.home.squad, m.home.tag]);
+  const awaySide = useMemo(() => ({ lineup: m.awayLineup, squad: m.away.squad, tag: m.away.tag }), [m.awayLineup, m.away.squad, m.away.tag]);
+  const labels = useMemo(
+    () =>
+      [m.homeLineup, m.awayLineup].map((l, i) => `${i === 0 ? m.home.tag : m.away.tag} · ${FORMATIONS[l.formation].name} · ${POSTURES[l.posture].label}`) as [string, string],
+    [m.homeLineup, m.awayLineup, m.home.tag, m.away.tag],
+  );
+
   const before = now < m.kickoff;
   const done = matchDone(m, now);
   const tick = before ? -1 : done ? m.result.length : Math.floor((now - m.kickoff) / (TICK_SECONDS * 1000));
@@ -80,6 +91,19 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
   const pending = changes.filter((c) => c.round === m.round && c.club_id === clubId && c.tick > tick);
   for (const c of changes) if (c.round === m.round && c.club_id === clubId && c.tick <= tick && c.change[0] === "p") posture = Number(c.change[1]);
   const pendingPosture = pending.find((c) => c.change[0] === "p");
+  // linha / jogo / ritmo em vigor agora (escalação + mudanças já valendo)
+  const nowOf = (letter: string, initial: number) => {
+    let v = initial;
+    for (const c of changes) if (c.round === m.round && c.club_id === clubId && c.tick <= tick && c.change[0] === letter) v = Number(c.change[1]);
+    return v;
+  };
+  const extras = me
+    ? ([
+        ["Linha defensiva", "l", LINES, nowOf("l", me.lineup.line ?? 1)],
+        ["Jogo", "w", WIDTHS, nowOf("w", me.lineup.width ?? 1)],
+        ["Ritmo", "t", TEMPOS, nowOf("t", me.lineup.tempo ?? 1)],
+      ] as const)
+    : [];
   const bench = me ? me.team.squad.map((_, k) => k).filter((k) => !me.lineup.xi.includes(k) && !used.has(k)) : [];
   const canAct = live && mySide !== null && tick < m.result.length - CHANGE_DELAY_TICKS - 1;
 
@@ -106,7 +130,7 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
         home={m.home}
         away={m.away}
         score={score}
-        status={before ? fmtKickoff(m.kickoff, false) : done ? finalStatus ?? "FIM" : last ? clockText(last) : "0'"}
+        status={before ? fmtKickoff(m.kickoff, false) : done ? finalStatus ?? "FIM" : tickClock(tick, m.result.secondHalfTick, m.result.length)}
         progress={before ? 0 : Math.max(0, tick) / m.result.length}
         left={
           <Link href={backHref} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-[3px] border-[var(--ink)] bg-white/10 font-extrabold text-white" aria-label="Voltar">
@@ -147,6 +171,7 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
             </div>
           )}
 
+          {!before && <MatchBoard result={m.result} home={homeSide} away={awaySide} seed={m.kickoff} getTime={getTime} labels={labels} />}
           {done && after}
           {!before && <Feed events={feed} tags={tags} mine={mySide ?? undefined} />}
         </section>
@@ -223,6 +248,24 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
                     </button>
                   ))}
                 </div>
+                {extras.map(([label, letter, options, current]) => (
+                  <div key={letter} className="mt-4">
+                    <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-white/60">{label}</p>
+                    <div className="mt-1.5 grid grid-cols-3 gap-1 rounded-xl border-[3px] border-[var(--ink)] bg-black/25 p-1">
+                      {options.map((o, k) => (
+                        <button
+                          key={o.label}
+                          type="button"
+                          disabled={sending}
+                          onClick={() => (k === current ? undefined : void act(`${letter}${k}`))}
+                          className={`min-h-9 rounded-lg px-1 text-xs font-extrabold ${k === current ? "bg-[var(--sun)] text-[var(--ink)]" : "text-white/80 hover:bg-white/10"}`}
+                        >
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </>
             ) : (
               <>
