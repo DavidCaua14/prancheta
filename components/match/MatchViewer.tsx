@@ -15,6 +15,7 @@ import { makeRival } from "@/lib/sim/rival";
 import { FORMATIONS, fitLevel } from "@/lib/tactics/formations";
 import { LINES, MARKINGS, PASSES, POSTURES, TEMPOS, WIDTHS, lineupFor } from "@/lib/tactics/lineup";
 import { MatchBoard } from "@/components/match/MatchBoard";
+import { buildPlan, scoreAtTime, visibleEvents } from "@/lib/sim/board";
 import { tickClock } from "@/components/match/parts";
 
 /**
@@ -111,8 +112,6 @@ export function MatchViewer() {
     return () => window.clearInterval(id);
   }, [playing, speed, result, limit]);
 
-  const visible = useMemo(() => (result ? result.events.filter((e) => e.tick <= tick) : []), [result, tick]);
-
   // quadro animado: minuto contínuo entre um "tique" do relógio e o próximo
   const clockRef = useRef({ tick: 0, at: 0, running: false, ms: SPEEDS[1].ms });
   const runningNow = playing && !!result && tick < result.length && !(tick === result.secondHalfTick - 1 && !halfDone);
@@ -133,9 +132,22 @@ export function MatchViewer() {
         : null,
     [setup, club],
   );
-  const last = visible[visible.length - 1];
+  const plan = useMemo(() => (result && boardSides ? buildPlan(result, boardSides.home, boardSides.away, count) : null), [result, boardSides, count]);
+  // minuto contínuo (atualiza a narração 8× por segundo enquanto o jogo corre)
+  const [fine, setFine] = useState(0);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- acompanha o relógio quando ele pula/para
+    setFine(getTime());
+    if (!runningNow) return;
+    const id = window.setInterval(() => setFine(getTime()), 125);
+    return () => window.clearInterval(id);
+  }, [runningNow, tick, getTime]);
+  const visible = useMemo(
+    () => (!result || !plan ? [] : tick >= result.length ? result.events : visibleEvents(plan, result.events, Math.max(fine, tick))),
+    [result, plan, tick, fine],
+  );
 
-  if (!club || !setup || !result) {
+  if (!club || !setup || !result || !plan) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <span className="h-10 w-10 animate-spin rounded-full border-4 border-[var(--ink)] border-t-[var(--sun)]" aria-label="Carregando" />
@@ -145,10 +157,14 @@ export function MatchViewer() {
 
   const { squad, lineup, rival } = setup;
   const ended = tick >= result.length;
-  const score = last ? last.score : [0, 0];
+  const score = ended ? result.score : scoreAtTime(plan, result.events, Math.max(fine, tick));
   const halftime = !ended && !halfDone && tick === result.secondHalfTick - 1;
   const running = playing && !halftime && !ended;
-  const flash = running && last && (last.type === "goal" || last.type === "penalty_goal") && last.tick === tick ? last : null;
+  // faixa de gol: durante quase um minuto depois de a bola entrar
+  const flash =
+    running && plan
+      ? (result.events.find((e, i) => (e.type === "goal" || e.type === "penalty_goal") && fine >= plan.eventAt[i] && fine < plan.eventAt[i] + 0.9) ?? null)
+      : null;
   const nowClock = tickClock(tick, result.secondHalfTick, result.length);
   const stats = liveStats(visible);
   const feed = [...visible].reverse().filter((e) => e.type !== "corner" || ended);
@@ -335,10 +351,7 @@ export function MatchViewer() {
           {boardSides && (
             <div className="mb-4">
               <MatchBoard
-                result={result}
-                home={boardSides.home}
-                away={boardSides.away}
-                seed={count}
+                plan={plan}
                 getTime={getTime}
                 labels={[
                   `${club.tag} · ${formation.name} · ${POSTURES[posture].label}`,

@@ -74,6 +74,12 @@ export type BoardPlan = {
   length: number;
   secondHalfTick: number;
   formation: [string, string];
+  /**
+   * Instante (minuto contínuo) em que cada lance da narração deve aparecer —
+   * o mesmo índice de `result.events`. Lance de ataque: quando a bola chega
+   * (rede, goleiro, fora...). Cartão/substituição: quando aparece no campo.
+   */
+  eventAt: number[];
 };
 
 export type BoardDot = { team: 0 | 1; slot: number; x: number; y: number; gk: boolean; hidden: boolean };
@@ -84,9 +90,14 @@ export type BoardFrame = {
   pass: { x1: number; y1: number; x2: number; y2: number } | null;
   overlays: { kind: Overlay["kind"]; x: number; y: number; team: 0 | 1 }[];
   flash: "goal" | null;
+  /** 2º tempo: os times trocaram de lado (mandante ataca para a esquerda) */
+  flipped: boolean;
 };
 
 const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
+/** fração do trecho em que sai o chute e em que a bola chega (o texto aparece aqui) */
+const SHOOT_AT = 0.68;
+const ARRIVE_AT = 0.9;
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 
@@ -131,6 +142,13 @@ export function buildPlan(result: MatchResult, home: BoardSide, away: BoardSide,
     byTick.set(e.tick, list);
   }
   const slotOf = (team: 0 | 1, card: number | undefined) => (card === undefined ? -1 : cardSlot[team].get(card) ?? -1);
+  // quando cada lance aparece na narração (padrão: no minuto do lance)
+  const eventAt = result.events.map((e) => e.tick);
+  const indexOf = new Map(result.events.map((e, i) => [e, i]));
+  const showAt = (e: MatchEvent, t: number) => {
+    const i = indexOf.get(e);
+    if (i !== undefined) eventAt[i] = t;
+  };
 
   // posse "de fundo" quando não há lance: proporção da posse final
   const possHome = (result.stats[0].possession || 50) / 100;
@@ -220,15 +238,16 @@ export function buildPlan(result: MatchResult, home: BoardSide, away: BoardSide,
           cardSlot[t].set(e.player, s);
           overlays.push({ kind: "sub", team: t, slot: s, from: k + 0.6, until: k + 2.2 });
         }
+        showAt(e, k + 0.6);
       }
+      if (e.type === "tactic") showAt(e, k + 0.6);
       if (e.type === "yellow" || e.type === "red" || e.type === "injury") {
         const s = slotOf(t, e.player);
         if (s >= 0) overlays.push({ kind: e.type, team: t, slot: s, from: k + 0.55, until: k + 2 });
+        showAt(e, k + 0.55);
         if (e.type === "red" && s >= 0) outFrom[t].set(s, k + 1.4);
       }
-      if ((e.type === "goal" || e.type === "penalty_goal") && e.player !== undefined) {
-        overlays.push({ kind: "goal", team: t, slot: slotOf(t, e.player), from: k + 0.9, until: k + 1.8 });
-      }
+
     }
 
     // 2º tempo: saída de bola do visitante
@@ -290,6 +309,17 @@ export function buildPlan(result: MatchResult, home: BoardSide, away: BoardSide,
         lastCorner = corner === "after" ? cornerSide : -1;
         plan.attack = { outcome: attackEv.type as Outcome, shooter, aimW, keeper, blocker, feeder: holder === shooter ? plan.start : holder, corner, cornerSide };
         segs.push(plan);
+        // narração em sincronia com o quadro: o texto sai quando a bola chega
+        const arrive = k + from + ARRIVE_AT * (to - from);
+        showAt(attackEv, arrive);
+        if (attackEv.type === "goal" || attackEv.type === "penalty_goal") {
+          overlays.push({ kind: "goal", team: t, slot: shooter, from: arrive, until: arrive + 0.9 });
+        }
+        evs.forEach((e, j) => {
+          if (e.type !== "corner" || e.team !== t) return;
+          if (corner === "before" && j > prevAttack && j < at) showAt(e, k + from + 0.04 * (to - from));
+          if (corner === "after" && j > at && j < nextAttack) showAt(e, k + from + 0.99 * (to - from));
+        });
         carry =
           attackEv.type === "goal" || attackEv.type === "penalty_goal"
             ? { team: def, p: 50, holder: -1, kickoff: true }
@@ -344,7 +374,22 @@ export function buildPlan(result: MatchResult, home: BoardSide, away: BoardSide,
     length: result.length,
     secondHalfTick: result.secondHalfTick,
     formation: [FORMATIONS[home.lineup.formation].name, FORMATIONS[away.lineup.formation].name],
+    eventAt,
   };
+}
+
+/** Lances da narração já visíveis no instante `t` (em sincronia com o quadro). */
+export function visibleEvents(plan: BoardPlan, events: MatchEvent[], t: number): MatchEvent[] {
+  return events.filter((_, i) => plan.eventAt[i] <= t);
+}
+
+/** Placar no instante `t`: só os gols que o quadro já mostrou entrando. */
+export function scoreAtTime(plan: BoardPlan, events: MatchEvent[], t: number): [number, number] {
+  const s: [number, number] = [0, 0];
+  events.forEach((e, i) => {
+    if ((e.type === "goal" || e.type === "penalty_goal") && e.team !== undefined && plan.eventAt[i] <= t) s[e.team]++;
+  });
+  return s;
 }
 
 /* ------------------------------------------------------------------ */
@@ -413,8 +458,8 @@ export function frameAt(plan: BoardPlan, t: number): BoardFrame {
   }
 
   const a = m.attack;
-  const shootAt = 0.68;
-  const arriveAt = 0.9;
+  const shootAt = SHOOT_AT;
+  const arriveAt = ARRIVE_AT;
   const overrides = new Map<string, { d: number; w: number }>();
   let ball: { d: number; w: number; team: 0 | 1 } | null = null;
 
@@ -559,7 +604,25 @@ export function frameAt(plan: BoardPlan, t: number): BoardFrame {
     if (p) overlays.push({ kind: o.kind, x: p.x, y: p.y, team: o.team });
   }
 
-  return { dots, ball: { x: clamp(bx, -1, PITCH_W + 1.5), y: clamp(by, 0.5, PITCH_H - 0.5) }, pass: passLine, overlays, flash };
+  const ballOut = { x: clamp(bx, -1, PITCH_W + 1.5), y: clamp(by, 0.5, PITCH_H - 0.5) };
+  // 2º tempo: os times trocam de lado (espelha tudo)
+  const flipped = k >= plan.secondHalfTick - 1;
+  if (flipped) {
+    const fx = (x: number) => PITCH_W - x;
+    const fy = (y: number) => PITCH_H - y;
+    for (const d of dots) {
+      d.x = fx(d.x);
+      d.y = fy(d.y);
+    }
+    ballOut.x = fx(ballOut.x);
+    ballOut.y = fy(ballOut.y);
+    if (passLine) passLine = { x1: fx(passLine.x1), y1: fy(passLine.y1), x2: fx(passLine.x2), y2: fy(passLine.y2) };
+    for (const o of overlays) {
+      o.x = fx(o.x);
+      o.y = fy(o.y);
+    }
+  }
+  return { dots, ball: ballOut, pass: passLine, overlays, flash, flipped };
 }
 
 /* ------------------------------------------------------------------ */

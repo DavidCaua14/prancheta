@@ -332,6 +332,11 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
   chute para fora nunca atravessa o goleiro, bloqueio no zagueiro, passes curtos (≤ 40) sem passar por
   adversário, ninguém sai do campo, saída de bola no meio depois do gol. Minuto com dois lances é dividido
   em dois trechos. O desenho atualiza só os atributos do SVG (sem re-render por quadro) e suaviza emendas.
+- **Narração em sincronia** (`plan.eventAt`): cada texto aparece no instante em que o seu lance termina no
+  quadro — num minuto com dois lances, o primeiro sai no meio do minuto e o segundo no fim. O placar conta só
+  os gols já mostrados (`scoreAtTime`); a narração usa `visibleEvents`. Vale para treino, liga e copas.
+- **Troca de lado**: no 2º tempo os times invertem o campo (o quadro espelha tudo a partir da saída do 2º
+  tempo) e as etiquetas dos times trocam de lado junto.
 
 ## Esboço do banco (Postgres)
 

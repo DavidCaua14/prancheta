@@ -1,16 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { buildPlan, frameAt, PITCH_H, PITCH_W, type BoardFrame, type BoardSide } from "@/lib/sim/board";
-import type { MatchResult } from "@/lib/sim/engine";
+import { useEffect, useRef, useState } from "react";
+import { frameAt, PITCH_H, PITCH_W, type BoardFrame, type BoardPlan } from "@/lib/sim/board";
 
 const COLORS = ["var(--sky)", "var(--hot)"] as const;
 
 type Props = {
-  result: MatchResult;
-  home: BoardSide & { tag: string };
-  away: BoardSide & { tag: string };
-  seed: number;
+  /** roteiro da partida (buildPlan) — o mesmo que controla a narração */
+  plan: BoardPlan;
   /** minuto "contínuo" da partida agora (ex.: 37,42); chamado a cada quadro */
   getTime: () => number;
   /** etiquetas no topo do campo (ex.: "TUV · 4-3-3 · Pra cima!") */
@@ -22,14 +19,13 @@ type Props = {
  * As posições vêm de `frameAt` (função pura do tempo); aqui só desenhamos,
  * com uma suavização curta para nenhuma bolinha "teleportar".
  */
-export function MatchBoard({ result, home, away, seed, getTime, labels }: Props) {
-  const plan = useMemo(() => buildPlan(result, home, away, seed), [result, home, away, seed]);
+export function MatchBoard({ plan, getTime, labels }: Props) {
   const dotRefs = useRef<(SVGGElement | null)[]>([]);
   const ballRef = useRef<SVGGElement | null>(null);
   const passRef = useRef<SVGLineElement | null>(null);
   const shown = useRef<{ x: number; y: number }[]>([]);
   const ballShown = useRef<{ x: number; y: number } | null>(null);
-  const [marks, setMarks] = useState<{ key: string; list: BoardFrame["overlays"]; flash: BoardFrame["flash"] }>({ key: "", list: [], flash: null });
+  const [marks, setMarks] = useState<{ key: string; list: BoardFrame["overlays"]; flash: BoardFrame["flash"]; flipped: boolean }>({ key: "", list: [], flash: null, flipped: false });
   const getTimeRef = useRef(getTime);
   useEffect(() => {
     getTimeRef.current = getTime;
@@ -74,8 +70,8 @@ export function MatchBoard({ result, home, away, seed, getTime, labels }: Props)
         } else pl.style.opacity = "0";
       }
       // cartões, substituições e "GOL!" mudam pouco: só re-renderiza quando mudam
-      const key = `${fr.flash ?? ""}|${fr.overlays.map((o) => `${o.kind}${o.team}${Math.round(o.x)}${Math.round(o.y)}`).join(",")}`;
-      setMarks((m) => (m.key === key ? m : { key, list: fr.overlays, flash: fr.flash }));
+      const key = `${fr.flipped ? 1 : 0}|${fr.flash ?? ""}|${fr.overlays.map((o) => `${o.kind}${o.team}${Math.round(o.x)}${Math.round(o.y)}`).join(",")}`;
+      setMarks((m) => (m.key === key ? m : { key, list: fr.overlays, flash: fr.flash, flipped: fr.flipped }));
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
@@ -132,16 +128,17 @@ export function MatchBoard({ result, home, away, seed, getTime, labels }: Props)
       </svg>
       {labels && (
         <div className="pointer-events-none absolute inset-x-2 top-2 flex justify-between gap-2 text-[0.6rem] font-extrabold sm:text-xs">
-          {labels.map((l, i) =>
-            l ? (
+          {(marks.flipped ? [labels[1], labels[0]] : labels).map((l, j) => {
+            const i = marks.flipped ? 1 - j : j;
+            return l ? (
               <span key={i} className="max-w-[48%] truncate rounded-md border-2 border-[var(--ink)] bg-white px-1.5 py-0.5 text-[var(--ink)]">
                 <span className="mr-1 inline-block h-2 w-2 rounded-full align-middle" style={{ background: COLORS[i] }} />
                 {l}
               </span>
             ) : (
               <span key={i} />
-            ),
-          )}
+            );
+          })}
         </div>
       )}
       {marks.flash === "goal" && (

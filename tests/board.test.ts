@@ -5,7 +5,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { botTeam } from "@/lib/league/bots";
-import { buildPlan, distToSegment, frameAt, PITCH_H, PITCH_W } from "@/lib/sim/board";
+import { buildPlan, distToSegment, frameAt, PITCH_H, PITCH_W, scoreAtTime, visibleEvents } from "@/lib/sim/board";
 import { simulate, type MatchEvent } from "@/lib/sim/engine";
 
 const SHOTS = ["goal", "save", "miss", "post", "block", "penalty_goal", "penalty_miss"];
@@ -33,8 +33,12 @@ test("cada lance termina como a narração diz (gol na rede, defesa no goleiro, 
     for (const e of res.events) {
       if (!SHOTS.includes(e.type) || e.team === undefined) continue;
       n++;
-      const fr = frameAt(plan, at(res.events, e, 0.895));
-      const goalX = e.team === 0 ? PITCH_W : 0;
+      const i = res.events.indexOf(e);
+      // o quadro no instante em que a narração mostra o lance
+      const fr = frameAt(plan, plan.eventAt[i] - 0.003);
+      // 2º tempo: os times trocam de lado
+      const flipped = e.tick - 1 >= res.secondHalfTick - 1;
+      const goalX = (e.team === 0) !== flipped ? PITCH_W : 0;
       const gk = fr.dots.find((d) => d.team !== e.team && d.gk)!;
       const inMouth = Math.abs(fr.ball.y - PITCH_H / 2) <= 3.6;
       const where = `${e.type} ${e.tick}' bola ${fr.ball.x.toFixed(1)},${fr.ball.y.toFixed(1)}`;
@@ -97,5 +101,45 @@ test("depois de gol, saída de bola no meio-campo", () => {
       const fr = frameAt(plan, e.tick + 0.05);
       assert.ok(Math.abs(fr.ball.x - PITCH_W / 2) < 4 && Math.abs(fr.ball.y - PITCH_H / 2) < 4, `saída depois do gol de ${e.tick}'`);
     }
+  }
+});
+
+test("narração em sincronia: cada lance aparece quando a bola chega, na ordem do minuto", () => {
+  let doubles = 0;
+  for (const { res, plan } of all) {
+    res.events.forEach((e, i) => {
+      // nunca depois do minuto do lance, nunca antes do minuto anterior
+      assert.ok(plan.eventAt[i] <= e.tick + 1e-9 && plan.eventAt[i] >= e.tick - 1, `${e.type} ${e.tick}'`);
+    });
+    const byTick = new Map<number, number[]>();
+    res.events.forEach((e, i) => {
+      if (SHOTS.includes(e.type)) byTick.set(e.tick, [...(byTick.get(e.tick) ?? []), i]);
+    });
+    for (const list of byTick.values()) {
+      if (list.length < 2) continue;
+      doubles++;
+      for (let j = 1; j < list.length; j++) assert.ok(plan.eventAt[list[j]] > plan.eventAt[list[j - 1]] + 0.3, "dois lances no mesmo minuto aparecem em sequência");
+    }
+    // o placar nunca mostra o gol antes de a bola entrar
+    res.events.forEach((e, i) => {
+      if ((e.type !== "goal" && e.type !== "penalty_goal") || e.team === undefined) return;
+      const before = scoreAtTime(plan, res.events, plan.eventAt[i] - 0.01);
+      const after = scoreAtTime(plan, res.events, plan.eventAt[i]);
+      assert.equal(after[e.team], before[e.team] + 1);
+      assert.ok(visibleEvents(plan, res.events, plan.eventAt[i] - 0.01).indexOf(e) < 0);
+    });
+    assert.deepEqual(scoreAtTime(plan, res.events, res.length + 1), res.score);
+  }
+  assert.ok(doubles > 5, `${doubles} minutos com dois lances conferidos`);
+});
+
+test("intervalo: os times trocam de lado no 2º tempo", () => {
+  for (const { res, plan } of all) {
+    const gk1 = frameAt(plan, 10.5).dots.find((d) => d.team === 0 && d.gk)!;
+    const gk2 = frameAt(plan, res.secondHalfTick + 0.5).dots.find((d) => d.team === 0 && d.gk)!;
+    assert.ok(gk1.x < 10, "1º tempo: goleiro do mandante na esquerda");
+    assert.ok(gk2.x > PITCH_W - 10, "2º tempo: goleiro do mandante na direita");
+    assert.equal(frameAt(plan, 10.5).flipped, false);
+    assert.equal(frameAt(plan, res.secondHalfTick + 0.5).flipped, true);
   }
 });

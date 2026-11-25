@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { MatchBoard } from "@/components/match/MatchBoard";
+import { buildPlan, scoreAtTime, visibleEvents } from "@/lib/sim/board";
 import { Feed, Scoreboard, StatsPanel, liveStats, tickClock } from "@/components/match/parts";
 import { Icon } from "@/components/ui/Icon";
 import { fitLevel, FORMATIONS } from "@/lib/tactics/formations";
@@ -37,7 +38,8 @@ export type LiveMatchProps = {
 
 /** Partida ao vivo (liga ou copa): placar, narração, estatísticas e mudanças do técnico. */
 export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalStatus, after }: LiveMatchProps) {
-  const now = useNow(1000);
+  // 4× por segundo: a narração aparece junto com o lance no quadro
+  const now = useNow(250);
   const [sheet, setSheet] = useState<null | "tatica" | "subs">(null);
   const [subOut, setSubOut] = useState<number | null>(null);
   const [sending, setSending] = useState(false);
@@ -53,6 +55,7 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
   const getTime = useCallback(() => (Date.now() - m.kickoff) / (TICK_SECONDS * 1000), [m.kickoff]);
   const homeSide = useMemo(() => ({ lineup: m.homeLineup, squad: m.home.squad, tag: m.home.tag }), [m.homeLineup, m.home.squad, m.home.tag]);
   const awaySide = useMemo(() => ({ lineup: m.awayLineup, squad: m.away.squad, tag: m.away.tag }), [m.awayLineup, m.away.squad, m.away.tag]);
+  const plan = useMemo(() => buildPlan(m.result, homeSide, awaySide, m.kickoff), [m.result, homeSide, awaySide, m.kickoff]);
   const labels = useMemo(
     () =>
       [m.homeLineup, m.awayLineup].map((l, i) => `${i === 0 ? m.home.tag : m.away.tag} · ${FORMATIONS[l.formation].name} · ${POSTURES[l.posture].label}`) as [string, string],
@@ -62,9 +65,10 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
   const before = now < m.kickoff;
   const done = matchDone(m, now);
   const tick = before ? -1 : done ? m.result.length : Math.floor((now - m.kickoff) / (TICK_SECONDS * 1000));
-  const visible = m.result.events.filter((e) => e.tick <= tick);
-  const last = visible[visible.length - 1];
-  const score: [number, number] = last ? last.score : [0, 0];
+  // narração e placar em sincronia com o quadro (minuto contínuo)
+  const tNow = (now - m.kickoff) / (TICK_SECONDS * 1000);
+  const visible = before ? [] : done ? m.result.events : visibleEvents(plan, m.result.events, tNow);
+  const score: [number, number] = before ? [0, 0] : done ? m.result.score : scoreAtTime(plan, m.result.events, tNow);
   const mySide: 0 | 1 | null = m.home.clubId === clubId ? 0 : m.away.clubId === clubId ? 1 : null;
   const live = !before && !done;
   const stats = liveStats(visible);
@@ -171,7 +175,7 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
             </div>
           )}
 
-          {!before && <MatchBoard result={m.result} home={homeSide} away={awaySide} seed={m.kickoff} getTime={getTime} labels={labels} />}
+          {!before && <MatchBoard plan={plan} getTime={getTime} labels={labels} />}
           {done && after}
           {!before && <Feed events={feed} tags={tags} mine={mySide ?? undefined} />}
         </section>
