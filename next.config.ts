@@ -44,8 +44,10 @@ const nextConfig: NextConfig = {
   },
   cacheComponents: true,
   partialPrefetching: true,
-  // Também protege navegações contra "version skew" entre deploys.
-  deploymentId: APP_VERSION,
+  // Fora da Vercel, protege navegações contra "version skew" entre deploys.
+  // Na Vercel não definimos: ela gera um ID próprio por deploy (e exige que
+  // seja único — o mesmo commit publicado em dois branches daria conflito).
+  deploymentId: process.env.VERCEL ? undefined : APP_VERSION,
   env: {
     NEXT_PUBLIC_APP_VERSION: APP_VERSION,
     NEXT_PUBLIC_BUILD_YEAR: String(new Date().getFullYear()),
