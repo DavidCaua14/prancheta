@@ -5,6 +5,7 @@ import { DRAFT_SLOTS } from "@/lib/cards/squad";
 import type { Kit } from "@/lib/club/identity";
 import { effective, fitLevel } from "@/lib/tactics/formations";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
+import { Icon } from "@/components/ui/Icon";
 import { cardLook } from "./GameCard";
 
 type Slot = { role: Position; spot: [number, number]; label?: string };
@@ -18,9 +19,9 @@ const DRAFT_PITCH: Slot[] = DRAFT_SLOTS.filter((s) => s.spot).map((s) => ({
 const FIT_COLORS = { ok: "bg-[var(--grass)]", adapted: "bg-[var(--sun)]", bad: "bg-[var(--red)] text-white" };
 const FIT_RING = { ok: "", adapted: "outline outline-[0.18em] outline-[var(--sun)]", bad: "outline outline-[0.2em] outline-[var(--red)]" };
 const PREVIEW = {
-  ok: { cls: "bg-[var(--grass)] text-[var(--ink)]", icon: "✓" },
-  adapted: { cls: "bg-[var(--sun)] text-[var(--ink)]", icon: "~" },
-  bad: { cls: "bg-[var(--red)] text-white", icon: "✕" },
+  ok: { cls: "bg-[var(--grass)] text-[var(--ink)]", icon: "check" as const },
+  adapted: { cls: "bg-[var(--sun)] text-[var(--ink)]", icon: "warning" as const },
+  bad: { cls: "bg-[var(--red)] text-white", icon: "close" as const },
 };
 
 /**
@@ -111,7 +112,7 @@ export function MiniPitch({
               <span
                 className={`absolute -bottom-[0.2em] -right-[0.5em] flex h-[1.7em] w-[1.7em] items-center justify-center rounded-full border-[0.14em] border-[var(--ink)] text-[0.8em] font-extrabold leading-none shadow-[0_0.1em_0_var(--ink)] ${preview.cls}`}
               >
-                {preview.icon}
+                <Icon name={preview.icon} className="h-[0.85em] w-[0.85em]" strokeWidth={3.2} />
               </span>
             )}
             {card && captain && card.key === captain.key && (

@@ -2,24 +2,9 @@
 
 import type { ReactNode } from "react";
 import { CrestSvg } from "@/components/club/CrestSvg";
+import { EventIcon, Icon } from "@/components/ui/Icon";
 import type { Crest } from "@/lib/club/identity";
 import type { MatchEvent } from "@/lib/sim/engine";
-
-export const EVENT_ICON: Partial<Record<MatchEvent["type"], string>> = {
-  goal: "⚽",
-  penalty_goal: "⚽",
-  penalty_miss: "❌",
-  save: "🧤",
-  post: "🥅",
-  yellow: "🟨",
-  red: "🟥",
-  sub: "🔁",
-  injury: "🚑",
-  tactic: "📋",
-  halftime: "⏸",
-  fulltime: "🏁",
-  kickoff: "▶",
-};
 
 export function clockText(e: { minute: number; extra?: number }) {
   return e.extra ? `${e.minute}+${e.extra}'` : `${e.minute}'`;
@@ -60,26 +45,26 @@ export function Scoreboard({
     <header className="sticky top-0 z-30 border-b-[3px] border-[var(--ink)] bg-[var(--night-2)]">
       <div className="mx-auto flex max-w-5xl items-center gap-2 px-3 py-2 sm:px-6">
         {left}
-        <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-2">
-          <div className="flex min-w-0 items-center justify-end gap-2">
+        <div className="grid min-w-0 flex-1 grid-cols-[1fr_auto_1fr] items-center gap-1.5 sm:gap-2">
+          <div className="flex min-w-0 items-center justify-end gap-1.5 sm:gap-2">
             <span className="truncate text-right text-sm font-extrabold text-white sm:text-base">
-              <span className="sm:hidden">{home.tag}</span>
+              <span className="whitespace-nowrap sm:hidden">{home.tag}</span>
               <span className="hidden sm:inline">{home.name}</span>
             </span>
-            <CrestSvg crest={home.crest} tag={home.tag} className="h-10 w-9 shrink-0" />
+            <CrestSvg crest={home.crest} tag={home.tag} className="h-8 w-7 shrink-0 sm:h-10 sm:w-9" />
           </div>
           <div className="flex flex-col items-center">
-            <span className="t-num rounded-lg bg-[var(--ink)] px-3 py-0.5 text-2xl leading-tight text-white sm:text-3xl" aria-live="polite">
+            <span className="t-num whitespace-nowrap rounded-lg bg-[var(--ink)] px-2 py-0.5 text-xl leading-tight text-white sm:px-3 sm:text-3xl" aria-live="polite">
               {score[0]}
-              <span className="mx-1.5 text-[var(--sun)]">×</span>
+              <span className="mx-1 text-[var(--sun)] sm:mx-1.5">×</span>
               {score[1]}
             </span>
             <span className="t-num mt-0.5 text-xs text-[var(--sun)]">{status}</span>
           </div>
-          <div className="flex min-w-0 items-center gap-2">
-            <CrestSvg crest={away.crest} tag={away.tag} className="h-10 w-9 shrink-0" />
+          <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+            <CrestSvg crest={away.crest} tag={away.tag} className="h-8 w-7 shrink-0 sm:h-10 sm:w-9" />
             <span className="truncate text-sm font-extrabold text-white sm:text-base">
-              <span className="sm:hidden">{away.tag}</span>
+              <span className="whitespace-nowrap sm:hidden">{away.tag}</span>
               <span className="hidden sm:inline">{away.name}</span>
             </span>
           </div>
@@ -104,12 +89,12 @@ export function Feed({ events, tags, mine }: { events: MatchEvent[]; tags: [stri
         return (
           <li
             key={`${e.tick}-${i}-${e.type}`}
-            className={`flex gap-3 border-b border-[var(--ink)]/10 px-3 py-2 text-sm last:border-0 sm:px-4 ${
+            className={`flex items-start gap-2 border-b border-[var(--ink)]/10 px-3 py-2 text-sm last:border-0 sm:gap-3 sm:px-4 ${
               goal ? (good ? "bg-[var(--grass)]/30 font-extrabold" : "bg-[var(--red)]/15 font-extrabold") : e.type === "halftime" || e.type === "fulltime" ? "bg-[var(--cream)] font-bold" : ""
             }`}
           >
-            <span className="t-num w-11 shrink-0 text-[var(--hot)]">{e.type === "kickoff" && e.tick === 0 ? "" : clockText(e)}</span>
-            <span className="w-5 shrink-0 text-center">{EVENT_ICON[e.type] ?? ""}</span>
+            <span className="t-num w-10 shrink-0 text-[var(--hot)] sm:w-11">{e.type === "kickoff" && e.tick === 0 ? "" : clockText(e)}</span>
+            <EventIcon type={e.type} className="mt-px h-[18px] w-[18px] shrink-0" />
             <span className="min-w-0 flex-1">
               {e.team !== undefined && (
                 <span className={`mr-1.5 rounded px-1 text-[0.62rem] font-extrabold ${e.team === 0 ? "bg-[var(--sky)]" : "bg-[var(--hot)] text-white"}`}>{tags[e.team]}</span>
@@ -135,5 +120,41 @@ export function StatsPanel({ rows }: { rows: [string, string | number, string | 
         </div>
       ))}
     </div>
+  );
+}
+
+/** Botão quadrado só com ícone (barras de controle no celular). */
+export function IconButton({
+  icon,
+  label,
+  onClick,
+  disabled,
+  tone = "paper",
+  showLabel = false,
+}: {
+  icon: Parameters<typeof Icon>[0]["name"];
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  tone?: "paper" | "green" | "ghost";
+  showLabel?: boolean;
+}) {
+  const tones = {
+    paper: "bg-[var(--paper)] text-[var(--ink)] border-[var(--ink)] shadow-[0_3px_0_var(--ink)]",
+    green: "bg-[var(--grass)] text-[var(--ink)] border-[var(--ink)] shadow-[0_3px_0_var(--ink)]",
+    ghost: "bg-transparent text-white border-white/35",
+  };
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className={`flex h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-xl border-[3px] px-2.5 text-sm font-extrabold transition-transform active:translate-y-0.5 disabled:opacity-45 ${tones[tone]}`}
+    >
+      <Icon name={icon} className="h-5 w-5" />
+      {showLabel && <span className="hidden sm:inline">{label}</span>}
+    </button>
   );
 }

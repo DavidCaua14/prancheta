@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Feed, Scoreboard, StatsPanel, clockText, liveStats } from "@/components/match/parts";
+import { Icon } from "@/components/ui/Icon";
 import { fitLevel, FORMATIONS } from "@/lib/tactics/formations";
 import { POSTURES } from "@/lib/tactics/lineup";
 import {
@@ -119,7 +120,7 @@ export function LeagueMatchView() {
         progress={before ? 0 : Math.max(0, tick) / m.result.length}
         left={
           <Link href="/liga?aba=rodadas" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-[3px] border-[var(--ink)] bg-white/10 font-extrabold text-white" aria-label="Voltar">
-            ←
+            <Icon name="back" className="h-5 w-5" />
           </Link>
         }
       />
@@ -128,7 +129,11 @@ export function LeagueMatchView() {
         <section className="flex min-w-0 flex-col gap-4">
           <p className="text-center text-xs font-extrabold uppercase tracking-[0.15em] text-white/70">
             Liga da Várzea · Rodada {m.round} · {fmtKickoff(m.kickoff)}
-            {live && <span className="ml-2 rounded bg-[var(--red)] px-1.5 py-0.5 text-white">● AO VIVO</span>}
+            {live && (
+              <span className="ml-2 inline-flex items-center gap-1 rounded bg-[var(--red)] px-1.5 py-0.5 align-middle text-white">
+                <Icon name="dot" className="h-2.5 w-2.5" /> AO VIVO
+              </span>
+            )}
           </p>
 
           {before && (
@@ -173,11 +178,17 @@ export function LeagueMatchView() {
               <p className="t-heading">Seu time</p>
               <p className="mt-1 text-sm text-white/70">
                 {POSTURES[posture].label}
-                {pendingPosture ? ` → ${POSTURES[Number(pendingPosture.change[1])].label} (aos ${pendingPosture.tick}')` : ""} · Substituições: {subsDone}/5
+                {pendingPosture ? ` (muda para ${POSTURES[Number(pendingPosture.change[1])].label} aos ${pendingPosture.tick}')` : ""} · Substituições: {subsDone}/5
               </p>
               <div className="mt-3 flex gap-2">
-                <button type="button" disabled={!canAct || sending} onClick={() => setSheet("tatica")} className="btn btn-paper btn-sm flex-1 disabled:opacity-50">📋 Tática</button>
-                <button type="button" disabled={!canAct || sending || subsDone >= 5} onClick={() => setSheet("subs")} className="btn btn-paper btn-sm flex-1 disabled:opacity-50">🔁 Substituir</button>
+                <button type="button" disabled={!canAct || sending} onClick={() => setSheet("tatica")} className="btn btn-paper btn-sm flex-1 disabled:opacity-50">
+                  <Icon name="clipboard" className="h-4 w-4" />
+                  Tática
+                </button>
+                <button type="button" disabled={!canAct || sending || subsDone >= 5} onClick={() => setSheet("subs")} className="btn btn-paper btn-sm flex-1 disabled:opacity-50">
+                  <Icon name="swap" className="h-4 w-4" />
+                  Substituir
+                </button>
               </div>
             </div>
           )}
@@ -187,8 +198,15 @@ export function LeagueMatchView() {
       {mySide !== null && live && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t-[3px] border-[var(--ink)] bg-[var(--night-2)] px-3 pb-[calc(0.6rem+env(safe-area-inset-bottom))] pt-2.5 lg:hidden">
           <div className="mx-auto flex max-w-lg gap-2">
-            <button type="button" disabled={!canAct || sending} onClick={() => setSheet("tatica")} className="btn btn-paper flex-1 disabled:opacity-50">📋 {POSTURES[posture].label}</button>
-            <button type="button" disabled={!canAct || sending || subsDone >= 5} onClick={() => setSheet("subs")} className="btn btn-paper flex-1 disabled:opacity-50">🔁 Substituir ({subsDone}/5)</button>
+            <button type="button" disabled={!canAct || sending} onClick={() => setSheet("tatica")} className="btn btn-paper min-w-0 flex-1 !px-2 disabled:opacity-50">
+              <Icon name="clipboard" className="h-5 w-5 shrink-0" />
+              <span className="truncate">{POSTURES[posture].label}</span>
+            </button>
+            <button type="button" disabled={!canAct || sending || subsDone >= 5} onClick={() => setSheet("subs")} className="btn btn-paper min-w-0 flex-1 !px-2 disabled:opacity-50">
+              <Icon name="swap" className="h-5 w-5 shrink-0" />
+              <span className="truncate">Substituir</span>
+              <span className="t-num shrink-0 rounded bg-[var(--ink)] px-1 text-[0.65rem] text-white">{subsDone}/5</span>
+            </button>
           </div>
         </div>
       )}

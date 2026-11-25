@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { MiniPitch } from "@/components/cards/MiniPitch";
+import { Icon } from "@/components/ui/Icon";
 import { getMyClub, getSession, saveLineup, type Club } from "@/lib/club/api";
 import { decodeKit } from "@/lib/club/identity";
 import { POSITION_NAMES, type BaseCard } from "@/lib/cards/generate";
@@ -218,7 +219,8 @@ export function LineupEditor() {
             }}
             className="btn btn-paper btn-sm"
           >
-            ⚡ Escalação automática
+            <Icon name="bolt" className="h-4 w-4 text-[var(--orange)]" />
+            Escalação automática
           </button>
         </div>
         <div className="mt-2 grid grid-cols-3 gap-1.5" role="radiogroup" aria-label="Formação">
@@ -272,8 +274,9 @@ export function LineupEditor() {
         </div>
         {outOfPlace.length > 0 && (
           <div className={`mt-3 rounded-xl border-2 px-3 py-2.5 text-xs font-bold text-white ${misplaced > 0 ? "border-[var(--red)] bg-[var(--red)]/20" : "border-[var(--sun)] bg-[var(--sun)]/10"}`}>
-            <p className="text-sm font-extrabold">
-              ⚠️ {outOfPlace.length} {outOfPlace.length === 1 ? "jogador fora de posição" : "jogadores fora de posição"}
+            <p className="flex items-center gap-1.5 text-sm font-extrabold">
+              <Icon name="warning" className="h-4 w-4 shrink-0 text-[var(--sun)]" />
+              {outOfPlace.length} {outOfPlace.length === 1 ? "jogador fora de posição" : "jogadores fora de posição"}
             </p>
             <ul className="mt-1.5 grid gap-1">
               {outOfPlace.map((o) => (
@@ -282,7 +285,9 @@ export function LineupEditor() {
                     {o.card.name} <span className="opacity-60">({o.card.position})</span> jogando de {o.role}
                   </span>
                   <span className={`t-num shrink-0 rounded px-1.5 ${o.level === "bad" ? "bg-[var(--red)]" : "bg-[var(--sun)] text-[var(--ink)]"}`}>
-                    {o.card.overall} → {o.value}
+                    {o.card.overall}
+                    <Icon name="arrow-right" className="mx-0.5 inline h-3 w-3 align-[-1px]" />
+                    {o.value}
                   </span>
                 </li>
               ))}
@@ -426,7 +431,7 @@ export function LineupEditor() {
             className="flex h-10 w-10 items-center justify-center rounded-xl border-[3px] border-[var(--ink)] bg-white/10 text-lg font-extrabold text-white"
             aria-label="Voltar"
           >
-            ←
+            <Icon name="back" className="h-5 w-5" />
           </Link>
           <div className="min-w-0 flex-1">
             <p className="t-heading truncate text-white">Escalação</p>
@@ -439,7 +444,8 @@ export function LineupEditor() {
             <span className="t-num text-lg leading-none">{power.ovr}</span>
           </span>
           <button type="button" onClick={save} disabled={!dirty || saving} className="btn btn-green btn-sm hidden disabled:opacity-50 lg:inline-flex">
-            {saving ? "Salvando..." : dirty ? "Salvar" : "Salvo ✓"}
+            {saving ? "Salvando..." : dirty ? "Salvar" : "Salvo"}
+            {!saving && !dirty && <Icon name="check" className="h-4 w-4" />}
           </button>
         </div>
         {/* abas (celular) */}
@@ -487,7 +493,8 @@ export function LineupEditor() {
       {/* salvar (celular) */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t-[3px] border-[var(--ink)] bg-[var(--night-2)] px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 lg:hidden">
         <button type="button" onClick={save} disabled={!dirty || saving} className="btn btn-green btn-lg w-full disabled:opacity-50">
-          {saving ? "Salvando..." : dirty ? "Salvar escalação" : "Escalação salva ✓"}
+          {saving ? "Salvando..." : dirty ? "Salvar escalação" : "Escalação salva"}
+          {!saving && !dirty && <Icon name="check" className="h-5 w-5" />}
         </button>
       </div>
 

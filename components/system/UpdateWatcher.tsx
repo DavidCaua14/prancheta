@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { APP_VERSION, type VersionPayload } from "@/lib/version";
+import { Icon } from "@/components/ui/Icon";
 
 /** Intervalo entre verificações enquanto a aba está aberta. */
 const CHECK_INTERVAL_MS = 60_000;
@@ -96,7 +97,7 @@ export function UpdateWatcher() {
           <ul className="mt-4 space-y-1 rounded-xl border-[3px] border-[var(--ink)] bg-white px-4 py-3 text-left text-sm font-semibold">
             {update.notes.map((note) => (
               <li key={note} className="flex gap-2">
-                <span aria-hidden className="text-[var(--grass-2)]">★</span>
+                <Icon name="star" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--grass-2)]" />
                 {note}
               </li>
             ))}

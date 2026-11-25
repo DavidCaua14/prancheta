@@ -27,6 +27,7 @@ import {
   type Kit,
 } from "@/lib/club/identity";
 import { supabase } from "@/lib/supabase/client";
+import { Icon } from "@/components/ui/Icon";
 import { CrestSvg } from "./CrestSvg";
 import { KitSvg } from "./KitSvg";
 
@@ -296,7 +297,7 @@ export function CreateClubWizard({ mascot, banner }: { mascot: ReactNode; banner
                     i === step ? "bg-[var(--sun)]" : i < step ? "bg-[var(--grass)]" : "bg-white/85"
                   }`}
                 >
-                  <span className="t-num">{i < step ? "✓" : i + 1}</span>
+                  <span className="t-num">{i < step ? <Icon name="check" className="h-3.5 w-3.5" /> : i + 1}</span>
                   <span className="hidden min-[420px]:inline">{s}</span>
                 </li>
               ))}
@@ -367,7 +368,8 @@ export function CreateClubWizard({ mascot, banner }: { mascot: ReactNode; banner
                   <div className="flex items-center justify-between gap-3">
                     <h1 className="t-heading text-2xl">Monte o escudo</h1>
                     <button type="button" onClick={() => setCrest(randomCrest())} className="btn btn-paper btn-sm" aria-label="Sortear escudo">
-                      🎲 Sortear
+                      <Icon name="dice" className="h-4 w-4" />
+                      Sortear
                     </button>
                   </div>
                   <div className="mt-4">
@@ -481,7 +483,8 @@ export function CreateClubWizard({ mascot, banner }: { mascot: ReactNode; banner
                     </button>
                   ) : (
                     <button type="button" onClick={found} disabled={busy} className="btn btn-green btn-lg">
-                      {busy ? "Fundando..." : "🏆 Fundar o clube"}
+                      {!busy && <Icon name="trophy" className="h-5 w-5" />}
+                      {busy ? "Fundando..." : "Fundar o clube"}
                     </button>
                   )}
                 </div>

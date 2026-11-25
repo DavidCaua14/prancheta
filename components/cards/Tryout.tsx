@@ -11,6 +11,7 @@ import { POSITION_NAMES, type BaseCard } from "@/lib/cards/generate";
 import { DRAFT_SLOTS, STARTERS, draftOption, draftOptions, encodeSquad, teamOverall } from "@/lib/cards/squad";
 import { GameCard } from "./GameCard";
 import { MiniPitch } from "./MiniPitch";
+import { Icon } from "@/components/ui/Icon";
 
 const TOTAL = DRAFT_SLOTS.length;
 const progressKey = (clubId: string) => `prancheta:peneira:${clubId}`;
@@ -180,7 +181,12 @@ export function Tryout({ mascot }: { mascot: ReactNode }) {
               </div>
               <p className="text-sm font-semibold text-white/60">
                 {slot.options} opções · toque para escolher
-                {slot.reserve && <span className="sm:hidden"> · arraste para o lado →</span>}
+                {slot.reserve && (
+                  <span className="sm:hidden">
+                    {" "}
+                    · arraste para o lado <Icon name="arrow-right" className="inline h-3.5 w-3.5 align-[-2px]" />
+                  </span>
+                )}
               </p>
             </header>
 
@@ -270,7 +276,8 @@ export function Tryout({ mascot }: { mascot: ReactNode }) {
             )}
             <div className="fixed inset-x-0 bottom-0 z-30 border-t-[3px] border-[var(--ink)] bg-[var(--night-2)] px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 lg:static lg:mt-6 lg:border-0 lg:bg-transparent lg:p-0">
               <button type="button" onClick={finish} disabled={saving} className="btn btn-green btn-lg mx-auto flex w-full max-w-3xl">
-                {saving ? "Salvando..." : "✔ Confirmar elenco"}
+                {!saving && <Icon name="check" className="h-5 w-5" />}
+                {saving ? "Salvando..." : "Confirmar elenco"}
               </button>
             </div>
           </section>

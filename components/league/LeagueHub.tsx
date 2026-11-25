@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { CrestSvg } from "@/components/club/CrestSvg";
 import { ArtImg } from "@/components/ui/ArtImg";
+import { Icon } from "@/components/ui/Icon";
 import {
   clockAt,
   fmtCountdown,
@@ -121,7 +122,7 @@ export function LeagueHub() {
       <header className="sticky top-0 z-30 border-b-[3px] border-[var(--ink)] bg-[var(--night-2)]">
         <div className="mx-auto flex h-16 max-w-5xl items-center gap-3 px-3 sm:px-6">
           <Link href="/jogo" className="flex h-10 w-10 items-center justify-center rounded-xl border-[3px] border-[var(--ink)] bg-white/10 font-extrabold text-white" aria-label="Voltar">
-            ←
+            <Icon name="back" className="h-5 w-5" />
           </Link>
           <ArtImg name="icon-liga" className="h-10 w-10 object-contain" fallback={<ArtImg name="trophy-copa-varzea" className="h-10 w-10 object-contain" fallback={null} />} />
           <div className="min-w-0 flex-1">
@@ -163,11 +164,15 @@ export function LeagueHub() {
         {/* destaque: ao vivo / próximo jogo / fim da temporada */}
         {liveMine && !matchDone(liveMine, now) ? (
           <Link href={`/liga/jogo?r=${liveMine.round}&i=${liveMine.index}`} className="block rounded-[20px] border-[3px] border-[var(--ink)] bg-[var(--red)] p-4 text-white shadow-[0_5px_0_var(--ink)]">
-            <p className="text-xs font-extrabold uppercase tracking-[0.15em]">● Seu jogo está ao vivo</p>
+            <p className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-[0.15em]">
+              <Icon name="dot" className="h-3 w-3" /> Seu jogo está ao vivo
+            </p>
             <p className="t-heading mt-1 text-xl">
               {liveMine.home.tag} {scoreAt(liveMine, now).score.join(" × ")} {liveMine.away.tag} · {scoreAt(liveMine, now).clock}
             </p>
-            <p className="mt-1 text-sm font-bold underline">Assistir e mexer no time →</p>
+            <p className="mt-1 flex items-center gap-1 text-sm font-bold underline">
+              Assistir e mexer no time <Icon name="arrow-right" className="h-4 w-4" />
+            </p>
           </Link>
         ) : clock.ended ? (
           <div className="rounded-[20px] border-[3px] border-[var(--ink)] bg-[var(--sun)] p-4 text-[var(--ink)] shadow-[0_5px_0_var(--ink)]">
@@ -259,14 +264,14 @@ export function LeagueHub() {
           <Panel>
             <div className="flex items-center justify-between gap-2 bg-[var(--ink)] px-3 py-2 text-white">
               <button type="button" disabled={shownRound <= 1} onClick={() => setRound(shownRound - 1)} className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 font-extrabold disabled:opacity-30" aria-label="Rodada anterior">
-                ◀
+                <Icon name="chevron-left" className="h-5 w-5" />
               </button>
               <div className="text-center">
                 <p className="t-heading">Rodada {shownRound}</p>
                 <p className="text-xs font-bold text-white/70">{fmtKickoff(data.kickoffs[shownRound - 1])}</p>
               </div>
               <button type="button" disabled={shownRound >= total} onClick={() => setRound(shownRound + 1)} className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 font-extrabold disabled:opacity-30" aria-label="Próxima rodada">
-                ▶
+                <Icon name="chevron-right" className="h-5 w-5" />
               </button>
             </div>
             {data.fixtures[shownRound - 1].map((_, i) => (
@@ -302,7 +307,7 @@ export function LeagueHub() {
                       s.status === "vivo" ? "bg-[var(--red)] text-white" : res === "V" ? "bg-[var(--grass)]" : res === "D" ? "bg-[var(--red)] text-white" : res === "E" ? "bg-[var(--ink)]/15" : ""
                     }`}
                   >
-                    {s.status === "vivo" ? "●" : res ?? ""}
+                    {s.status === "vivo" ? <Icon name="dot" className="h-3 w-3" /> : res ?? ""}
                   </span>
                 </Link>
               );

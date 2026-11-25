@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { CrestSvg } from "@/components/club/CrestSvg";
+import { Feed, IconButton } from "@/components/match/parts";
+import { Icon } from "@/components/ui/Icon";
 import { getMyClub, getSession, type Club } from "@/lib/club/api";
 import { decodeCrest } from "@/lib/club/identity";
 import { hash32 } from "@/lib/cards/generate";
@@ -20,21 +22,6 @@ const SPEEDS = [
 ];
 const COUNT_KEY = (id: string) => `prancheta:amistoso:${id}`;
 
-const ICON: Partial<Record<MatchEvent["type"], string>> = {
-  goal: "⚽",
-  penalty_goal: "⚽",
-  penalty_miss: "❌",
-  save: "🧤",
-  post: "🥅",
-  yellow: "🟨",
-  red: "🟥",
-  sub: "🔁",
-  injury: "🚑",
-  tactic: "📋",
-  halftime: "⏸",
-  fulltime: "🏁",
-  kickoff: "▶",
-};
 
 function clockText(e: { minute: number; extra?: number }) {
   return e.extra ? `${e.minute}+${e.extra}'` : `${e.minute}'`;
@@ -212,28 +199,28 @@ export function MatchViewer() {
       <header className="sticky top-0 z-30 border-b-[3px] border-[var(--ink)] bg-[var(--night-2)]">
         <div className="mx-auto flex max-w-5xl items-center gap-2 px-3 py-2 sm:px-6">
           <Link href="/jogo" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-[3px] border-[var(--ink)] bg-white/10 font-extrabold text-white" aria-label="Voltar">
-            ←
+            <Icon name="back" className="h-5 w-5" />
           </Link>
-          <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-2">
-            <div className="flex min-w-0 items-center justify-end gap-2">
+          <div className="grid min-w-0 flex-1 grid-cols-[1fr_auto_1fr] items-center gap-1.5 sm:gap-2">
+            <div className="flex min-w-0 items-center justify-end gap-1.5 sm:gap-2">
               <span className="truncate text-right text-sm font-extrabold text-white sm:text-base">
-                <span className="sm:hidden">{club.tag}</span>
+                <span className="whitespace-nowrap sm:hidden">{club.tag}</span>
                 <span className="hidden sm:inline">{club.name}</span>
               </span>
-              <CrestSvg crest={decodeCrest(club.crest)} tag={club.tag} className="h-10 w-9 shrink-0" />
+              <CrestSvg crest={decodeCrest(club.crest)} tag={club.tag} className="h-8 w-7 shrink-0 sm:h-10 sm:w-9" />
             </div>
             <div className="flex flex-col items-center">
-              <span className="t-num rounded-lg bg-[var(--ink)] px-3 py-0.5 text-2xl leading-tight text-white sm:text-3xl" aria-live="polite">
+              <span className="t-num whitespace-nowrap rounded-lg bg-[var(--ink)] px-2 py-0.5 text-xl leading-tight text-white sm:px-3 sm:text-3xl" aria-live="polite">
                 {score[0]}
-                <span className="mx-1.5 text-[var(--sun)]">×</span>
+                <span className="mx-1 text-[var(--sun)] sm:mx-1.5">×</span>
                 {score[1]}
               </span>
               <span className="t-num mt-0.5 text-xs text-[var(--sun)]">{ended ? "FIM" : halftime ? "INTERVALO" : nowClock}</span>
             </div>
-            <div className="flex min-w-0 items-center gap-2">
-              <CrestSvg crest={rival.crest} tag={rival.tag} className="h-10 w-9 shrink-0" />
+            <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+              <CrestSvg crest={rival.crest} tag={rival.tag} className="h-8 w-7 shrink-0 sm:h-10 sm:w-9" />
               <span className="truncate text-sm font-extrabold text-white sm:text-base">
-                <span className="sm:hidden">{rival.tag}</span>
+                <span className="whitespace-nowrap sm:hidden">{rival.tag}</span>
                 <span className="hidden sm:inline">{rival.name}</span>
               </span>
             </div>
@@ -258,7 +245,8 @@ export function MatchViewer() {
                 pontos.
               </p>
               <button type="button" onClick={() => setPlaying(true)} className="btn btn-green btn-lg mt-4 w-full sm:w-auto">
-                ▶ Começar partida
+                <Icon name="play" className="h-5 w-5" />
+                Começar partida
               </button>
             </div>
           )}
@@ -267,18 +255,25 @@ export function MatchViewer() {
             <div className="mb-4 rounded-[20px] border-[3px] border-[var(--ink)] bg-[var(--sun)] p-4 text-[var(--ink)] shadow-[0_5px_0_var(--ink)]">
               <p className="t-heading text-lg">Intervalo!</p>
               <p className="text-sm font-semibold">Hora de mexer no time: troque a postura ou faça substituições antes do segundo tempo.</p>
-              <div className="mt-3 flex gap-2">
-                <button type="button" onClick={() => setSheet("tatica")} className="btn btn-paper btn-sm">📋 Tática</button>
-                <button type="button" onClick={() => setSheet("subs")} className="btn btn-paper btn-sm">🔁 Substituir</button>
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1fr_1.3fr]">
+                <button type="button" onClick={() => setSheet("tatica")} className="btn btn-paper btn-sm w-full">
+                  <Icon name="clipboard" className="h-4 w-4" />
+                  Tática
+                </button>
+                <button type="button" onClick={() => setSheet("subs")} className="btn btn-paper btn-sm w-full">
+                  <Icon name="swap" className="h-4 w-4" />
+                  Substituir
+                </button>
                 <button
                   type="button"
                   onClick={() => {
                     setHalfDone(true);
                     setPlaying(true);
                   }}
-                  className="btn btn-green btn-sm ml-auto"
+                  className="btn btn-green btn-sm col-span-2 w-full sm:col-span-1"
                 >
-                  ▶ 2º tempo
+                  <Icon name="play" className="h-4 w-4" />
+                  Começar o 2º tempo
                 </button>
               </div>
             </div>
@@ -299,36 +294,16 @@ export function MatchViewer() {
                 ) : null;
               })()}
               <div className="mt-4 flex flex-wrap gap-2">
-                <button type="button" onClick={restart} className="btn btn-green">↻ Jogar outro treino</button>
+                <button type="button" onClick={restart} className="btn btn-green">
+                  <Icon name="restart" className="h-4 w-4" />
+                  Jogar outro treino
+                </button>
                 <Link href="/escalacao" className="btn btn-paper">Ajustar escalação</Link>
               </div>
             </div>
           )}
 
-          <ol className="overflow-hidden rounded-[20px] border-[3px] border-[var(--ink)] bg-[var(--paper)] text-[var(--ink)] shadow-[0_5px_0_var(--ink)]" aria-label="Narração">
-            {feed.length === 0 && <li className="px-4 py-6 text-center text-sm opacity-60">A narração aparece aqui, lance a lance.</li>}
-            {feed.map((e, i) => {
-              const goal = e.type === "goal" || e.type === "penalty_goal";
-              const mine = e.team === 0;
-              return (
-                <li
-                  key={`${e.tick}-${i}-${e.type}`}
-                  className={`flex gap-3 border-b border-[var(--ink)]/10 px-3 py-2 text-sm last:border-0 sm:px-4 ${
-                    goal ? (mine ? "bg-[var(--grass)]/30 font-extrabold" : "bg-[var(--red)]/15 font-extrabold") : e.type === "halftime" || e.type === "fulltime" ? "bg-[var(--cream)] font-bold" : ""
-                  }`}
-                >
-                  <span className="t-num w-11 shrink-0 text-[var(--hot)]">{e.type === "kickoff" && e.tick === 0 ? "" : clockText(e)}</span>
-                  <span className="w-5 shrink-0 text-center">{ICON[e.type] ?? ""}</span>
-                  <span className="min-w-0 flex-1">
-                    {e.team !== undefined && (
-                      <span className={`mr-1.5 rounded px-1 text-[0.62rem] font-extrabold ${mine ? "bg-[var(--sky)]" : "bg-[var(--hot)] text-white"}`}>{teamName(e.team)}</span>
-                    )}
-                    {e.text}
-                  </span>
-                </li>
-              );
-            })}
-          </ol>
+          <Feed events={feed} tags={[club.tag, rival.tag]} mine={0} />
         </section>
 
         {/* lado: estatísticas e tática (desktop) */}
@@ -341,8 +316,14 @@ export function MatchViewer() {
             </p>
             <p className="mt-1 text-sm text-white/70">Substituições: {subsDone}/5</p>
             <div className="mt-3 flex gap-2">
-              <button type="button" disabled={!canChange} onClick={() => setSheet("tatica")} className="btn btn-paper btn-sm flex-1 disabled:opacity-50">📋 Tática</button>
-              <button type="button" disabled={!canChange || subsDone >= 5} onClick={() => setSheet("subs")} className="btn btn-paper btn-sm flex-1 disabled:opacity-50">🔁 Substituir</button>
+              <button type="button" disabled={!canChange} onClick={() => setSheet("tatica")} className="btn btn-paper btn-sm flex-1 disabled:opacity-50">
+                <Icon name="clipboard" className="h-4 w-4" />
+                Tática
+              </button>
+              <button type="button" disabled={!canChange || subsDone >= 5} onClick={() => setSheet("subs")} className="btn btn-paper btn-sm flex-1 disabled:opacity-50">
+                <Icon name="swap" className="h-4 w-4" />
+                Substituir
+              </button>
             </div>
           </div>
         </aside>
@@ -353,18 +334,25 @@ export function MatchViewer() {
       {!ended && tick > 0 && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t-[3px] border-[var(--ink)] bg-[var(--night-2)] px-3 pb-[calc(0.6rem+env(safe-area-inset-bottom))] pt-2.5 lg:static lg:mx-auto lg:mb-8 lg:w-full lg:max-w-5xl lg:rounded-[20px] lg:border-[3px] lg:px-4 lg:py-3">
           <div className="mx-auto flex max-w-3xl items-center gap-2">
-            <button
-              type="button"
+            <IconButton
+              icon={running ? "pause" : "play"}
+              label={running ? "Pausar" : "Continuar"}
+              tone="green"
               onClick={() => {
                 if (halftime) setHalfDone(true);
                 setPlaying(!running);
               }}
-              className="btn btn-green w-14 !px-0"
-              aria-label={running ? "Pausar" : "Continuar"}
+            />
+            {/* velocidade: 1 toque alterna no celular; segmentado a partir de 640px */}
+            <button
+              type="button"
+              onClick={() => setSpeed((speed + 1) % SPEEDS.length)}
+              aria-label={`Velocidade ${SPEEDS[speed].label}`}
+              className="t-num flex h-11 w-12 shrink-0 items-center justify-center rounded-xl border-[3px] border-[var(--ink)] bg-black/25 text-sm text-[var(--sun)] sm:hidden"
             >
-              {running ? "❚❚" : "▶"}
+              {SPEEDS[speed].label}
             </button>
-            <div className="flex rounded-xl border-[3px] border-[var(--ink)] bg-black/25 p-0.5" role="radiogroup" aria-label="Velocidade">
+            <div className="hidden rounded-xl border-[3px] border-[var(--ink)] bg-black/25 p-0.5 sm:flex" role="radiogroup" aria-label="Velocidade">
               {SPEEDS.map((s, i) => (
                 <button
                   key={s.label}
@@ -372,24 +360,27 @@ export function MatchViewer() {
                   role="radio"
                   aria-checked={speed === i}
                   onClick={() => setSpeed(i)}
-                  className={`t-num h-9 w-9 rounded-lg text-xs ${speed === i ? "bg-[var(--sun)] text-[var(--ink)]" : "text-white/80"}`}
+                  className={`t-num h-9 w-10 rounded-lg text-xs ${speed === i ? "bg-[var(--sun)] text-[var(--ink)]" : "text-white/80"}`}
                 >
                   {s.label}
                 </button>
               ))}
             </div>
-            <button type="button" disabled={!canChange} onClick={() => setSheet("tatica")} className="btn btn-paper btn-sm lg:hidden disabled:opacity-50" aria-label="Tática">📋</button>
-            <button type="button" disabled={!canChange || subsDone >= 5} onClick={() => setSheet("subs")} className="btn btn-paper btn-sm lg:hidden disabled:opacity-50" aria-label="Substituir">🔁</button>
-            <button
-              type="button"
+            <div className="flex flex-1 justify-center gap-2 lg:hidden">
+              <IconButton icon="clipboard" label="Tática" showLabel disabled={!canChange} onClick={() => setSheet("tatica")} />
+              <IconButton icon="swap" label="Substituir" showLabel disabled={!canChange || subsDone >= 5} onClick={() => setSheet("subs")} />
+            </div>
+            <span className="hidden flex-1 lg:block" />
+            <IconButton
+              icon="skip"
+              label="Ir para o fim"
+              tone="ghost"
+              showLabel
               onClick={() => {
                 setHalfDone(true);
                 setTick(result.length);
               }}
-              className="btn btn-ghost btn-sm ml-auto"
-            >
-              Fim ⏭
-            </button>
+            />
           </div>
         </div>
       )}

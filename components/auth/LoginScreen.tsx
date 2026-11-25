@@ -6,6 +6,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { MascotTipInline, MascotTipSide } from "@/components/game/MascotTip";
 import { getSession, isGoogleEnabled, routeForSession, signInWithGoogle } from "@/lib/club/api";
 import { GoogleLogo } from "./GoogleLogo";
+import { Icon } from "@/components/ui/Icon";
 
 type Status = "checking" | "idle" | "redirecting" | "disabled" | "error";
 
@@ -96,7 +97,7 @@ export function LoginScreen({ mascot, banner }: { mascot: ReactNode; banner: Rea
             <ul className="mt-6 grid gap-2 text-sm font-semibold sm:grid-cols-3">
               {["Grátis para jogar", "1 clube por conta", "Progresso salvo"].map((t) => (
                 <li key={t} className="flex items-center gap-2 rounded-xl bg-[var(--cream)] px-3 py-2">
-                  <span aria-hidden className="text-[var(--grass-2)]">✔</span>
+                  <Icon name="check" className="h-4 w-4 shrink-0 text-[var(--grass-2)]" />
                   {t}
                 </li>
               ))}
@@ -112,7 +113,8 @@ export function LoginScreen({ mascot, banner }: { mascot: ReactNode; banner: Rea
 
         <p className="mt-5 text-center">
           <Link href="/" className="text-sm font-bold text-white/80 underline-offset-4 hover:text-white hover:underline">
-            ← Voltar para o início
+            <Icon name="back" className="mr-1 inline h-4 w-4 align-[-3px]" />
+            Voltar para o início
           </Link>
         </p>
       </div>

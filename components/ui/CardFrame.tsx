@@ -1,6 +1,7 @@
 import { CARD_TIERS, TIER_ORDER, type CardTier } from "@/lib/game-config";
 import type { ReactNode } from "react";
 import type { AvatarLook } from "./PlayerAvatar";
+import { Icon } from "./Icon";
 
 export type CardPlayer = {
   /** Identificador da arte: public/art/player-<id>.webp substitui o avatar SVG. */
@@ -102,9 +103,10 @@ export function CardFrame({
               Nv {player.level}
               <span className="opacity-60">/{tier.maxLevel}</span>
             </span>
-            <span aria-hidden className="tracking-[0.1em] text-[var(--ink)]">
-              {"★".repeat(stars)}
-              <span className="opacity-25">{"★".repeat(4 - stars)}</span>
+            <span aria-hidden className="flex gap-[0.08em] text-[var(--ink)]">
+              {[0, 1, 2, 3].map((k) => (
+                <Icon key={k} name="star" className={`h-[1em] w-[1em] ${k < stars ? "" : "opacity-25"}`} strokeWidth={0} />
+              ))}
             </span>
           </div>
           <div className="mt-[0.25em] h-[0.5em] overflow-hidden rounded-full border-[0.1em] border-[var(--ink)] bg-white/60">

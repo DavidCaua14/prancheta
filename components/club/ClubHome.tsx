@@ -6,6 +6,7 @@ import { MascotTipInline } from "@/components/game/MascotTip";
 import { GameCard } from "@/components/cards/GameCard";
 import { MiniPitch } from "@/components/cards/MiniPitch";
 import { ArtImg } from "@/components/ui/ArtImg";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import { Logo } from "@/components/ui/Logo";
 import { signOut } from "@/lib/club/api";
 import { decodeCrest, decodeKit } from "@/lib/club/identity";
@@ -20,17 +21,21 @@ import { KitSvg } from "./KitSvg";
 
 type Tab = "inicio" | "elenco" | "jogos" | "leilao" | "clube";
 
-const NAV: { id: Tab; label: string; icon: string; fallback: string }[] = [
-  { id: "inicio", label: "Início", icon: "icon-inicio", fallback: "🏟️" },
-  { id: "elenco", label: "Elenco", icon: "icon-elenco", fallback: "🃏" },
-  { id: "jogos", label: "Jogos", icon: "icon-ao-vivo", fallback: "📺" },
-  { id: "leilao", label: "Leilão", icon: "icon-leilao", fallback: "🔨" },
-  { id: "clube", label: "Clube", icon: "icon-clube", fallback: "🛡️" },
+const NAV: { id: Tab; label: string; icon: string; fallback: IconName }[] = [
+  { id: "inicio", label: "Início", icon: "icon-inicio", fallback: "home" },
+  { id: "elenco", label: "Elenco", icon: "icon-elenco", fallback: "cards" },
+  { id: "jogos", label: "Jogos", icon: "icon-ao-vivo", fallback: "tv" },
+  { id: "leilao", label: "Leilão", icon: "icon-leilao", fallback: "gavel" },
+  { id: "clube", label: "Clube", icon: "icon-clube", fallback: "shield" },
 ];
 
-/** Ícone com reserva: arte própria → arte alternativa → emoji. */
-function NavIcon({ icon, alt, fallback, className }: { icon: string; alt?: string; fallback: string; className: string }) {
-  const emoji = <span className={`${className} flex items-center justify-center text-[1.6em] leading-none`}>{fallback}</span>;
+/** Ícone com reserva: arte própria, depois arte alternativa, depois ícone SVG. */
+function NavIcon({ icon, alt, fallback, className }: { icon: string; alt?: string; fallback: IconName; className: string }) {
+  const emoji = (
+    <span className={`${className} flex items-center justify-center`}>
+      <Icon name={fallback} className="h-[70%] w-[70%]" />
+    </span>
+  );
   return (
     <ArtImg
       name={icon}
@@ -110,13 +115,13 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
   const goLineup = () => router.push("/escalacao");
   const soon = (what: string) => setToast(`${what} chega nas próximas atualizações!`);
 
-  const tiles: { label: string; icon: string; alt?: string; fallback: string; action: () => void; ready?: boolean }[] = [
-    { label: "Elenco", icon: "icon-elenco", fallback: "🃏", action: () => setTab("elenco"), ready: true },
-    { label: "Escalação", icon: "icon-tatica", fallback: "📋", action: goLineup, ready: true },
-    { label: "Liga", icon: "icon-liga", alt: "trophy-copa-varzea", fallback: "🏆", action: () => router.push("/liga"), ready: true },
-    { label: "Treino", icon: "icon-treino", alt: "icon-pvp", fallback: "🤝", action: () => router.push("/partida"), ready: true },
-    { label: "Leilão", icon: "icon-leilao", fallback: "🔨", action: () => soon("O leilão") },
-    { label: "Copas", icon: "trophy-copa-nacional", fallback: "🏆", action: () => soon("As copas") },
+  const tiles: { label: string; icon: string; alt?: string; fallback: IconName; action: () => void; ready?: boolean }[] = [
+    { label: "Elenco", icon: "icon-elenco", fallback: "cards", action: () => setTab("elenco"), ready: true },
+    { label: "Escalação", icon: "icon-tatica", fallback: "clipboard", action: goLineup, ready: true },
+    { label: "Liga", icon: "icon-liga", alt: "trophy-copa-varzea", fallback: "trophy", action: () => router.push("/liga"), ready: true },
+    { label: "Treino", icon: "icon-treino", alt: "icon-pvp", fallback: "whistle", action: () => router.push("/partida"), ready: true },
+    { label: "Leilão", icon: "icon-leilao", fallback: "gavel", action: () => soon("O leilão") },
+    { label: "Copas", icon: "trophy-copa-nacional", fallback: "trophy", action: () => soon("As copas") },
   ];
 
   return (
@@ -188,7 +193,13 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
                   return (
                     <div className="relative p-4 sm:p-5">
                       <div className="flex items-center justify-between gap-2">
-                        <span className={`tag ${live ? "bg-[var(--red)] text-white" : "bg-[var(--sky)]"}`}>{live ? "● Ao vivo" : "Próximo jogo"}</span>
+                        <span className={`tag ${live ? "bg-[var(--red)] text-white" : "bg-[var(--sky)]"}`}>{live ? (
+                            <>
+                              <Icon name="dot" className="h-2.5 w-2.5" /> Ao vivo
+                            </>
+                          ) : (
+                            "Próximo jogo"
+                          )}</span>
                         <span className="text-xs font-extrabold text-white/70">
                           Liga da Várzea · Rodada {m.round}/{leagueInfo.total}
                         </span>
@@ -255,7 +266,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
               <div className="mb-2 flex items-center justify-between">
                 <p className="t-heading">Time titular</p>
                 <button type="button" onClick={goLineup} className="text-xs font-extrabold text-[var(--sun)]">
-                  Editar escalação →
+                  Editar escalação <Icon name="arrow-right" className="inline h-3.5 w-3.5 align-[-2px]" />
                 </button>
               </div>
               <MiniPitch
