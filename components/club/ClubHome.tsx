@@ -147,7 +147,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
   const tiles: { label: string; icon: string; alt?: string; fallback: IconName; action: () => void; ready?: boolean }[] = [
     { label: "Elenco", icon: "icon-elenco", fallback: "cards", action: () => setTab("elenco"), ready: true },
     { label: "Escalação", icon: "icon-tatica", fallback: "clipboard", action: goLineup, ready: true },
-    { label: "Liga", icon: div.art, alt: "icon-liga", fallback: "trophy", action: () => router.push("/liga"), ready: true },
+    { label: "Liga", icon: "icon-liga", alt: div.art, fallback: "trophy", action: () => router.push("/liga"), ready: true },
     { label: "Treino", icon: "icon-treino", alt: "icon-pvp", fallback: "whistle", action: () => router.push("/partida"), ready: true },
     { label: "Leilão", icon: "icon-leilao", fallback: "gavel", action: () => router.push("/leilao"), ready: true },
     { label: "Copas", icon: "trophy-copa-varzea", fallback: "trophy", action: () => router.push("/copas"), ready: true },

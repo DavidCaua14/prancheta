@@ -9,6 +9,7 @@ export const RELEASE_NOTES: string[] = [
   "Leilão com 4 cartas Base boas por rodada, a partir de 100 moedas",
   "Eventos semanais: junte moedas jogando para buscar as cartas raras",
   "Prêmios de liga e copa reequilibrados; nova loja de moedas (em breve)",
+  "Artes novas: loja, pacotes de moedas, eventos, liga e treino",
 ];
 
 export type VersionPayload = {
