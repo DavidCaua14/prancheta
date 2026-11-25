@@ -11,7 +11,7 @@ import { divisionInfo } from "./divisions";
 
 export type BotTeam = { name: string; tag: string; crest: Crest; kit: Kit; squad: BaseCard[]; lineup: Lineup };
 
-function tagOf(name: string) {
+export function tagOf(name: string) {
   const words = name
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
@@ -20,7 +20,10 @@ function tagOf(name: string) {
     .split(" ")
     .filter(Boolean);
   const initials = words.filter((w) => w.length > 2).map((w) => w[0]).join("");
-  return initials.length >= 3 ? initials.slice(0, 3) : words[0].slice(0, 3);
+  if (initials.length >= 3) return initials.slice(0, 3);
+  // "EC Vila Serrana" → EVS (antes de cair na 1ª palavra)
+  const all = words.map((w) => w[0]).join("");
+  return all.length >= 3 ? all.slice(0, 3) : words[0].slice(0, 3);
 }
 
 const NAMES: Record<number, string[]> = { 0: VARZEA_CLUBS, 1: SERIE_D_CLUBS, 2: SERIE_C_CLUBS, 3: SERIE_B_CLUBS, 4: SERIE_A_CLUBS, 5: LENDAS_CLUBS };

@@ -1,13 +1,16 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildCupData, CUP_KINDS, cupMatch, cupReach, pathOf, roundName, slotsIn, type CupEntry, type CupRow } from "@/lib/cup/core";
+import { buildCupData, CUP_KINDS, cupMatch, cupReach, cupTeam, pathOf, roundName, slotsIn, type CupEntry, type CupRow } from "@/lib/cup/core";
+import { nextEditionStart } from "@/lib/cup/data";
+import { FORMATIONS, strength } from "@/lib/tactics/formations";
 import { shootout } from "@/lib/cup/shootout";
 import { botTeam } from "@/lib/league/bots";
 import { simulate } from "@/lib/sim/engine";
 
-function cup(id: number, entries: CupEntry[] = []) {
+function cup(id: number, entries: CupEntry[] = [], kind = 0) {
   const start = Date.UTC(2026, 0, 1, 16);
-  const row: CupRow = { id, kind: 0, size: 32, starts_at: new Date(start).toISOString(), ends_at: new Date(start + 8.25 * 3600_000).toISOString(), closed_at: null, champion: null };
+  const size = CUP_KINDS[kind].size;
+  const row: CupRow = { id, kind, size, starts_at: new Date(start).toISOString(), ends_at: new Date(start + 8.25 * 3600_000).toISOString(), closed_at: null, champion: null };
   return buildCupData({ cup: row, entries, logs: [], changes: [] });
 }
 
@@ -89,4 +92,35 @@ test("clube inscrito joga com a força congelada na inscrição", () => {
   }
   assert.ok(far[1] > far[0], `base ${far[0] / 30} fases × evoluído ${far[1] / 30}`);
   assert.equal(CUP_KINDS[0].prizes[5], 600);
+});
+
+test("Copa Nacional: 64 clubes, 6 fases, CPU da Série C e nomes sem repetir", () => {
+  const d = cup(21, [], 1);
+  assert.deepEqual([1, 2, 3, 4, 5, 6].map((r) => slotsIn(d, r).length), [64, 32, 16, 8, 4, 2]);
+  const reach = cupReach(d);
+  assert.deepEqual([0, 1, 2, 3, 4, 5, 6].map((r) => reach.filter((x) => x === r).length), [32, 16, 8, 4, 2, 1, 1]);
+  assert.deepEqual([1, 2, 3, 6].map((r) => roundName(r, 6)), ["1ª fase", "2ª fase", "Oitavas", "Final"]);
+  const names = Array.from({ length: 64 }, (_, s) => cupTeam(d, s, d.kickoffs[0]).name);
+  assert.equal(new Set(names).size, 64);
+  const v = cup(22, [], 0);
+  assert.equal(new Set(Array.from({ length: 32 }, (_, s) => cupTeam(v, s, v.kickoffs[0]).name)).size, 32);
+  // CPU da Nacional (Série C) é mais forte que a da Copa da Várzea
+  const avg = (dd: typeof d, n: number) =>
+    Array.from({ length: n }, (_, s) => {
+      const t = cupTeam(dd, s, dd.kickoffs[0]);
+      const m = cupMatch(dd, 1, Math.floor(s / 2));
+      const lu = m.home.slot === s ? m.homeLineup : m.awayLineup;
+      return strength(FORMATIONS[lu.formation], lu.xi.map((i) => t.squad[i])).ovr;
+    }).reduce((a, b) => a + b, 0) / n;
+  assert.ok(avg(d, 64) > avg(v, 32) + 3);
+  assert.equal(CUP_KINDS[1].prizes.length, 7);
+  assert.equal(CUP_KINDS[1].prizes[6], 1600);
+});
+
+test("próxima edição: hoje antes do prazo, amanhã depois", () => {
+  const brt = (h: number, m: number) => Date.UTC(2026, 5, 10, h + 3, m); // Brasília = UTC-3
+  assert.equal(nextEditionStart(brt(9, 0), CUP_KINDS[1]), brt(11, 30));
+  assert.equal(nextEditionStart(brt(11, 20), CUP_KINDS[1]), brt(11, 30) + 86400_000);
+  assert.equal(nextEditionStart(brt(12, 44), CUP_KINDS[0]), brt(13, 0));
+  assert.equal(nextEditionStart(brt(12, 45), CUP_KINDS[0]), brt(13, 0) + 86400_000);
 });

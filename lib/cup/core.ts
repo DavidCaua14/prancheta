@@ -8,33 +8,81 @@
  * Fases seguintes: vencedor do jogo 2i × vencedor do jogo 2i+1.
  */
 import { wonAt, type WonLot } from "@/lib/auction/lots";
-import { hash32, type BaseCard } from "@/lib/cards/generate";
+import { hash32, rng, type BaseCard } from "@/lib/cards/generate";
+import { SERIE_B_CLUBS, SERIE_C_CLUBS, SERIE_D_CLUBS, VARZEA_CLUBS } from "@/lib/cards/names";
 import { clubCards } from "@/lib/cards/squad";
 import { decodeCrest, decodeKit } from "@/lib/club/identity";
-import { botTeam } from "@/lib/league/bots";
+import { botTeam, tagOf } from "@/lib/league/bots";
 import type { ChangeRow, LogRow, LotRow, TeamView } from "@/lib/league/core";
 import { simulate, type Change, type MatchResult, type TeamInput } from "@/lib/sim/engine";
 import { lineupFor, type Lineup } from "@/lib/tactics/lineup";
 import { shootout, type Shootout } from "./shootout";
 
-/** Copas do jogo (o número é cups.kind no banco). */
-export const CUP_KINDS = {
+export type CupConfig = {
+  id: string;
+  name: string;
+  art: string;
+  size: number;
+  /** horário (Brasília, em minutos desde 0h) da 1ª fase; uma fase a cada 2 h */
+  firstMinute: number;
+  /** inscrições fecham 15 min antes da 1ª fase */
+  deadlineMinute: number;
+  /** divisão mínima para se inscrever (0 = Várzea, 2 = Série C) */
+  minDivision: number;
+  /** divisão da CPU que completa a chave */
+  botDivision: number;
+  /** nomes dos times da CPU (sem repetir na chave) */
+  botNames: readonly string[];
+  /** moedas por fase alcançada: 0 = caiu na 1ª fase ... última = campeão (espelho de cup_prize) */
+  prizes: readonly number[];
+  tagline: string;
+};
+
+/** Copas do jogo (a chave é cups.kind no banco; espelho de cup_config() no SQL). */
+export const CUP_KINDS: Record<number, CupConfig> = {
   0: {
     id: "copa-varzea",
     name: "Copa da Várzea",
     art: "trophy-copa-varzea",
     size: 32,
-    /** horário (Brasília) da 1ª fase; uma fase a cada 2 h */
-    firstHour: 13,
-    /** inscrições fecham 15 min antes */
-    deadline: "12:45",
-    /** divisão da CPU que completa a chave */
+    firstMinute: 13 * 60,
+    deadlineMinute: 12 * 60 + 45,
+    minDivision: 0,
     botDivision: 0,
-    /** moedas por fase alcançada: 0 = caiu na 1ª fase ... 5 = campeão (espelho de cup_prize) */
+    botNames: [...VARZEA_CLUBS, ...SERIE_D_CLUBS],
     prizes: [0, 30, 60, 150, 300, 600],
+    tagline: "Mata-mata diário · 32 clubes · aberta a todos",
   },
-} as const;
-export type CupKind = keyof typeof CUP_KINDS;
+  1: {
+    id: "copa-nacional",
+    name: "Copa Nacional",
+    art: "trophy-copa-nacional",
+    size: 64,
+    firstMinute: 11 * 60 + 30,
+    deadlineMinute: 11 * 60 + 15,
+    minDivision: 2,
+    botDivision: 2,
+    botNames: [...SERIE_C_CLUBS, ...SERIE_B_CLUBS, ...SERIE_D_CLUBS],
+    prizes: [0, 25, 50, 100, 250, 600, 1600],
+    tagline: "Mata-mata diário · 64 clubes · a partir da Série C",
+  },
+};
+export type CupKind = number;
+
+export function cupConfig(kind: number): CupConfig {
+  return CUP_KINDS[kind] ?? CUP_KINDS[0];
+}
+
+/** Nome do time da CPU na vaga: lista própria da copa, embaralhada por edição, sem repetir. */
+function botName(cup: CupRow, slot: number) {
+  const pool = [...cupConfig(cup.kind).botNames];
+  const r = rng(hash32(`copa:${cup.id}:nomes`));
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(r() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool[slot % pool.length];
+}
 
 export const CUP_ROUND_GAP_MS = 2 * 3600_000;
 export const CUP_COLS = "id,kind,size,starts_at,ends_at,closed_at,champion";
@@ -99,15 +147,14 @@ export function cupTeam(data: CupData, slot: number, at: number): TeamView {
     }
     return { slot, name: e.clubs.name, tag: e.clubs.tag, crest: decodeCrest(e.clubs.crest), kit: decodeKit(e.clubs.kit), bot: false, clubId: e.club_id, squad };
   }
-  const kind = CUP_KINDS[data.cup.kind as CupKind] ?? CUP_KINDS[0];
-  const b = botTeam(1_000_000 + data.cup.id, slot, kind.botDivision);
-  return { slot, name: b.name, tag: b.tag, crest: b.crest, kit: b.kit, bot: true, squad: b.squad };
+  const b = botTeam(1_000_000 + data.cup.id, slot, cupConfig(data.cup.kind).botDivision);
+  const name = botName(data.cup, slot);
+  return { slot, name, tag: tagOf(name), crest: b.crest, kit: b.kit, bot: true, squad: b.squad };
 }
 
 function lineupAt(data: CupData, team: TeamView, kickoff: number): Lineup {
   if (team.bot || !team.clubId) {
-    const kind = CUP_KINDS[data.cup.kind as CupKind] ?? CUP_KINDS[0];
-    return botTeam(1_000_000 + data.cup.id, team.slot, kind.botDivision).lineup;
+    return botTeam(1_000_000 + data.cup.id, team.slot, cupConfig(data.cup.kind).botDivision).lineup;
   }
   let code: string | null = null;
   for (const l of data.logs) {

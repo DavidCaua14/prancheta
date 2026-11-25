@@ -1,18 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { CrestSvg } from "@/components/club/CrestSvg";
 import { ArtImg } from "@/components/ui/ArtImg";
 import { Icon } from "@/components/ui/Icon";
-import { CUP_KINDS, cupMatch, nextEditionStart, pathOf, roundName, roundsOf, slotsIn, type CupData, type CupMatch } from "@/lib/cup/data";
+import { CUP_KINDS, cupConfig, cupMatch, nextEditionStart, pathOf, roundName, roundsOf, slotsIn, type CupData, type CupMatch } from "@/lib/cup/data";
+import { divisionInfo } from "@/lib/league/divisions";
 import { liveRound, pairsKnown, roundOver, scoresKnown, useCup } from "@/lib/cup/useCup";
 import { CUPS } from "@/lib/game-config";
 import { fmtCountdown, fmtKickoff, matchDone, TICK_SECONDS } from "@/lib/league/core";
 import { useNow } from "@/lib/league/useLeague";
 import { clockText } from "@/components/match/parts";
 
-const KIND = CUP_KINDS[0];
+/** Horário "13h" / "11h30" a partir de minutos desde 0h. */
+function hhmm(min: number) {
+  const h = Math.floor(min / 60) % 24;
+  const m = min % 60;
+  return m ? `${h}h${String(m).padStart(2, "0")}` : `${h}h`;
+}
 
 /** Nome da fase alcançada: 0 = caiu na 1ª fase ... total = campeão. */
 export function reachLabel(reach: number, total: number) {
@@ -39,12 +45,13 @@ function scoreOf(data: CupData, m: CupMatch, now: number) {
 }
 
 function MatchLine({ data, m, now, mySlot }: { data: CupData; m: CupMatch; now: number; mySlot: number | null }) {
+  const kind = data.cup.kind;
   const s = scoreOf(data, m, now);
   const mine = m.home.slot === mySlot || m.away.slot === mySlot;
   const won = (side: 0 | 1) => s.status === "fim" && m.winner === side;
   return (
     <Link
-      href={`/copas/jogo?r=${m.round}&i=${m.index}`}
+      href={`/copas/jogo?k=${kind}&r=${m.round}&i=${m.index}`}
       className={`grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-[var(--ink)]/10 px-3 py-2.5 last:border-0 hover:bg-[var(--cream)] ${mine ? "bg-[var(--sun)]/30" : ""}`}
     >
       <span className={`flex min-w-0 items-center justify-end gap-2 text-right ${s.status === "fim" && !won(0) ? "opacity-50" : ""}`}>
@@ -67,12 +74,29 @@ function MatchLine({ data, m, now, mySlot }: { data: CupData; m: CupMatch; now: 
   );
 }
 
+/** Página das copas: escolhe a copa (?k=0 Várzea, ?k=1 Nacional) e mostra a edição. */
 export function CupHub() {
-  const { club, entry, data, ready, joining, error, join, reload } = useCup(0);
+  const [kind, setKind] = useState<number | null>(null);
+  useEffect(() => {
+    const k = Number(new URLSearchParams(window.location.search).get("k"));
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- lê a copa pedida na URL uma vez
+    setKind(CUP_KINDS[k] ? k : 0);
+  }, []);
+  if (kind === null) return null;
+  const pick = (k: number) => {
+    window.history.replaceState(null, "", `/copas?k=${k}`);
+    setKind(k);
+  };
+  return <CupView key={kind} kind={kind} onPick={pick} />;
+}
+
+function CupView({ kind, onPick }: { kind: number; onPick: (k: number) => void }) {
+  const KIND = cupConfig(kind);
+  const { club, entry, data, ready, joining, error, join, reload } = useCup(kind);
   const now = useNow(1000);
   const [tab, setTab] = useState<number | null>(null);
 
-  const total = data ? roundsOf(data.cup.size) : 5;
+  const total = roundsOf(data ? data.cup.size : KIND.size);
   const mySlot = entry && data && entry.cup_id === data.cup.id ? entry.slot : null;
   const path = useMemo(() => (data && mySlot !== null && now ? pathOf(data, mySlot) : []), [data, mySlot, now]);
 
@@ -101,7 +125,8 @@ export function CupHub() {
   const current = data ? (live ?? data.kickoffs.findIndex((k) => now < k) + 1) || total : 1;
   const shown = Math.min(total, Math.max(1, tab ?? current));
   const canJoin = !data || ended;
-  const next = now ? nextEditionStart(now) : null;
+  const next = now ? nextEditionStart(now, KIND) : null;
+  const locked = club.division < KIND.minDivision;
 
   // situação do técnico
   let status: ReactNode = null;
@@ -156,7 +181,7 @@ export function CupHub() {
             {s.status === "vivo" ? s.clock : `${fmtKickoff(last.kickoff)} · em ${fmtCountdown(last.kickoff - now)}`}
           </p>
           {pairsKnown(data, last.round, now) && (
-            <Link href={`/copas/jogo?r=${last.round}&i=${last.index}`} className="btn btn-paper btn-sm mt-3">
+            <Link href={`/copas/jogo?k=${kind}&r=${last.round}&i=${last.index}`} className="btn btn-paper btn-sm mt-3">
               {s.status === "vivo" ? "Assistir e mexer no time" : "Ver o jogo"}
             </Link>
           )}
@@ -176,7 +201,7 @@ export function CupHub() {
           <div className="min-w-0 flex-1">
             <p className="t-heading truncate text-white">{KIND.name}</p>
             <p className="truncate text-xs font-bold text-white/60">
-              {data && !canJoin ? `Edição #${data.cup.id} · ${live ? `${roundName(live, total)} ao vivo` : started ? roundName(shown, total) : "inscrições abertas"}` : "Mata-mata diário · 32 clubes"}
+              {data && !canJoin ? `Edição #${data.cup.id} · ${live ? `${roundName(live, total)} ao vivo` : started ? roundName(shown, total) : "inscrições abertas"}` : KIND.tagline}
             </p>
           </div>
         </div>
@@ -185,19 +210,29 @@ export function CupHub() {
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 px-3 pb-12 pt-4 sm:px-6">
         {/* as copas do jogo */}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {CUPS.map((c, k) => (
-            <div
-              key={c.id}
-              className={`flex items-center gap-2 rounded-2xl border-[3px] border-[var(--ink)] p-2 ${k === 0 ? "bg-[var(--sun)] text-[var(--ink)]" : "bg-white/10 text-white/70"}`}
-              aria-current={k === 0 ? "page" : undefined}
-            >
-              <ArtImg name={`trophy-${c.id}`} className={`h-9 w-9 shrink-0 object-contain ${k === 0 ? "" : "opacity-50 grayscale"}`} fallback={<Icon name="trophy" className="h-7 w-7" />} />
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-extrabold leading-tight">{c.name}</span>
-                <span className="block truncate text-[0.65rem] font-bold leading-tight opacity-75">{k === 0 ? "Aberta" : `Em breve · ${c.unlock}`}</span>
-              </span>
-            </div>
-          ))}
+          {CUPS.map((c) => {
+            const k = Number(Object.keys(CUP_KINDS).find((x) => CUP_KINDS[Number(x)].id === c.id) ?? -1);
+            const open = k >= 0;
+            const active = k === kind;
+            const cfg = open ? cupConfig(k) : null;
+            const lockedHere = cfg ? club.division < cfg.minDivision : false;
+            return (
+              <button
+                key={c.id}
+                type="button"
+                disabled={!open}
+                onClick={() => open && onPick(k)}
+                className={`flex items-center gap-2 rounded-2xl border-[3px] border-[var(--ink)] p-2 text-left ${active ? "bg-[var(--sun)] text-[var(--ink)]" : open ? "bg-white/15 text-white" : "bg-white/10 text-white/60"}`}
+                aria-current={active ? "page" : undefined}
+              >
+                <ArtImg name={`trophy-${c.id}`} className={`h-9 w-9 shrink-0 object-contain ${open ? "" : "opacity-50 grayscale"}`} fallback={<Icon name="trophy" className="h-7 w-7" />} />
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-extrabold leading-tight">{c.name}</span>
+                  <span className="block truncate text-[0.65rem] font-bold leading-tight opacity-75">{!open ? `Em breve · ${c.unlock}` : lockedHere ? c.unlock : "Aberta"}</span>
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {error && <p className="rounded-xl bg-[var(--red)] px-3 py-2 text-sm font-bold text-white">{error}</p>}
@@ -215,12 +250,25 @@ export function CupHub() {
         )}
 
         {/* inscrição */}
-        {canJoin ? (
+        {canJoin && locked ? (
+          <Panel>
+            <span className="tag bg-white/15">Bloqueada</span>
+            <p className="t-heading mt-2 text-xl">A {KIND.name} é a partir da {divisionInfo(KIND.minDivision).name}</p>
+            <p className="mt-1 text-sm text-white/75">
+              O {club.name} está na {divisionInfo(club.division).name}. Suba na liga para disputar — enquanto isso, a Copa da Várzea está aberta todo dia.
+            </p>
+            {kind !== 0 && (
+              <button type="button" onClick={() => onPick(0)} className="btn btn-paper btn-sm mt-3">
+                Ver a Copa da Várzea
+              </button>
+            )}
+          </Panel>
+        ) : canJoin ? (
           <Panel>
             <p className="t-heading text-xl">Inscreva o {club.name}</p>
             <p className="mt-1 text-sm text-white/75">
-              Próxima edição: <b className="text-[var(--sun)]">{next ? fmtKickoff(next) : "..."}</b>. Inscrições até 12h45 de cada dia; depois disso, a inscrição vale para a
-              copa do dia seguinte.
+              Próxima edição: <b className="text-[var(--sun)]">{next ? fmtKickoff(next) : "..."}</b>. Inscrições até {hhmm(KIND.deadlineMinute)} de cada dia; depois disso, a inscrição vale
+              para a copa do dia seguinte.
             </p>
             <button type="button" onClick={() => void join()} disabled={joining} className="btn btn-green mt-3">
               <Icon name="trophy" className="h-5 w-5" /> {joining ? "Inscrevendo..." : "Inscrever na copa"}
@@ -267,8 +315,9 @@ export function CupHub() {
           <p className="t-heading">Como funciona</p>
           <ul className="mt-2 space-y-1.5 text-sm text-white/80">
             <li className="flex gap-2">
-              <Icon name="clock" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sun)]" /> Todo dia, mata-mata de 32 clubes: 1ª fase às 13h, oitavas às 15h, quartas às 17h, semi às 19h e
-              final às 21h (Brasília).
+              <Icon name="clock" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sun)]" /> Todo dia, mata-mata de {KIND.size} clubes:{" "}
+              {Array.from({ length: total }, (_, k) => `${roundName(k + 1, total).toLowerCase()} às ${hhmm(KIND.firstMinute + k * 120)}`).join(", ")} (Brasília).
+              {KIND.minDivision > 0 && ` Só clubes da ${divisionInfo(KIND.minDivision).name} para cima; as vagas livres ficam com a CPU da ${divisionInfo(KIND.botDivision).name}.`}
             </li>
             <li className="flex gap-2">
               <Icon name="whistle" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sun)]" /> Jogo único em campo neutro. Empatou, vai para os pênaltis. Dá para mexer no time ao vivo, como na liga.
@@ -277,14 +326,12 @@ export function CupHub() {
               <Icon name="shield" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sun)]" /> Seu time entra com a força da inscrição; vale a escalação salva no apito de cada jogo.
             </li>
           </ul>
-          <div className="mt-3 grid grid-cols-5 gap-1 text-center text-[0.68rem] font-extrabold">
-            {[
-              ["Campeão", KIND.prizes[5]],
-              ["Vice", KIND.prizes[4]],
-              ["Semi", KIND.prizes[3]],
-              ["Quartas", KIND.prizes[2]],
-              ["Oitavas", KIND.prizes[1]],
-            ].map(([label, v]) => (
+          <div className="mt-3 grid grid-cols-3 gap-1 text-center text-[0.68rem] font-extrabold sm:grid-cols-6">
+            {KIND.prizes
+              .map((v, reach) => [reach === total ? "Campeão" : reach === total - 1 ? "Vice" : roundName(reach + 1, total).replace("Semifinal", "Semi"), v] as const)
+              .filter(([, v]) => v > 0)
+              .reverse()
+              .map(([label, v]) => (
               <div key={label} className="rounded-lg bg-white/10 px-1 py-1.5">
                 <p className="opacity-70">{label}</p>
                 <p className="t-num text-sm text-[var(--sun)]">{v}</p>

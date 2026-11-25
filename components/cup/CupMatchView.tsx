@@ -4,13 +4,22 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { LiveMatch } from "@/components/match/LiveMatch";
 import { Icon } from "@/components/ui/Icon";
-import { CUP_KINDS, cupMatch, refreshCupChanges, roundName, roundsOf, sendCupChange, slotsIn } from "@/lib/cup/data";
+import { cupConfig, cupMatch, refreshCupChanges, roundName, roundsOf, sendCupChange, slotsIn } from "@/lib/cup/data";
 import { pairsKnown, useCup } from "@/lib/cup/useCup";
 import { useNow } from "@/lib/league/useLeague";
 
 /** Jogo de copa: lê fase/jogo da URL e usa a tela de partida ao vivo. */
 export function CupMatchView() {
-  const { club, data, setData } = useCup(0);
+  const [kind, setKind] = useState<number | null>(null);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- lê a copa pedida na URL uma vez
+    setKind(Number(new URLSearchParams(window.location.search).get("k")) || 0);
+  }, []);
+  return kind === null ? null : <CupMatch kind={kind} />;
+}
+
+function CupMatch({ kind }: { kind: number }) {
+  const { club, data, setData } = useCup(kind);
   const now = useNow(1000);
   const [ref, setRef] = useState<{ r: number; i: number } | null>(null);
 
@@ -39,7 +48,7 @@ export function CupMatchView() {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-3 px-6 text-center text-white">
         <p className="font-bold">{m ? "Carregando o jogo..." : "Esse confronto ainda não está definido."}</p>
-        <Link href="/copas" className="btn btn-paper btn-sm">
+        <Link href={`/copas?k=${kind}`} className="btn btn-paper btn-sm">
           Voltar para a copa
         </Link>
       </div>
@@ -53,8 +62,8 @@ export function CupMatchView() {
       clubId={club.id}
       m={m}
       changes={data.changes}
-      title={`${CUP_KINDS[0].name} · ${roundName(m.round, total)}`}
-      backHref="/copas"
+      title={`${cupConfig(kind).name} · ${roundName(m.round, total)}`}
+      backHref={`/copas?k=${kind}`}
       finalStatus={so ? `PÊN ${so.score[0]}-${so.score[1]}` : undefined}
       after={
         so && (

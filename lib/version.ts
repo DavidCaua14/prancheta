@@ -6,9 +6,9 @@ export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
  * de atualização obrigatória que os jogadores veem.
  */
 export const RELEASE_NOTES: string[] = [
-  "Copa da Várzea: mata-mata diário de 32 clubes, das 13h às 21h",
-  "Pênaltis no empate, mudanças ao vivo e prêmio de até 600 moedas",
-  "Cartas do leilão agora podem entrar ao vivo nas substituições",
+  "Copa Nacional: 64 clubes da Série C para cima, todo dia das 11h30 às 21h30",
+  "Campeão da Copa Nacional leva 1.600 moedas",
+  "Times da CPU das copas sem nomes repetidos na chave",
 ];
 
 export type VersionPayload = {

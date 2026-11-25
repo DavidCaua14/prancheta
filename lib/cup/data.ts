@@ -3,7 +3,7 @@
 /** Leitura e escrita das copas no Supabase. O cálculo está em ./core. */
 import { LOT_COLS, type ChangeRow, type LogRow, type LotRow } from "@/lib/league/core";
 import { supabase } from "@/lib/supabase/client";
-import { buildCupData, CUP_COLS, ENTRY_COLS, type CupData, type CupEntry, type CupRow } from "./core";
+import { buildCupData, CUP_COLS, ENTRY_COLS, type CupConfig, type CupData, type CupEntry, type CupRow } from "./core";
 
 export * from "./core";
 
@@ -75,12 +75,12 @@ export async function closeCup(cupId: number) {
   return !error;
 }
 
-/** Início da próxima edição em que uma inscrição feita agora entraria (13h de hoje ou de amanhã). */
-export function nextEditionStart(now: number): number {
+/** Início da próxima edição em que uma inscrição feita agora entraria (hoje ou amanhã). */
+export function nextEditionStart(now: number, cfg: CupConfig): number {
   const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
   const parts = Object.fromEntries(fmt.formatToParts(new Date(now)).map((p) => [p.type, p.value]));
   const minutes = Number(parts.hour) * 60 + Number(parts.minute);
   const day = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day));
   // Brasília = UTC-3 (sem horário de verão desde 2019)
-  return day + (minutes < 12 * 60 + 45 ? 0 : 86400_000) + 16 * 3600_000;
+  return day + (minutes < cfg.deadlineMinute ? 0 : 86400_000) + (cfg.firstMinute + 3 * 60) * 60_000;
 }
