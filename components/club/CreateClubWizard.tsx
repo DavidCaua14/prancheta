@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { MascotTipInline, MascotTipSide } from "@/components/game/MascotTip";
-import { createClub, getMyClub, getSession, signOut } from "@/lib/club/api";
+import { createClub, ensureValidUser, getMyClub, getSession, signOut } from "@/lib/club/api";
 import {
   CREST_PATTERNS,
   CREST_SHAPES,
@@ -155,6 +155,8 @@ export function CreateClubWizard({ mascot, banner }: { mascot: ReactNode; banner
       const s = await getSession();
       if (!alive) return;
       if (!s) return router.replace("/entrar");
+      if (!(await ensureValidUser())) return router.replace("/entrar");
+      if (!alive) return;
       try {
         const existing = await getMyClub(s);
         if (existing) return router.replace(existing.squad ? "/jogo" : "/peneira");
@@ -245,6 +247,7 @@ export function CreateClubWizard({ mascot, banner }: { mascot: ReactNode; banner
         break;
       }
       case "session":
+        await signOut();
         router.replace("/entrar");
         break;
       case "invalid":

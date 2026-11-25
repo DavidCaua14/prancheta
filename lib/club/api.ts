@@ -73,8 +73,24 @@ export async function createClub(
     return error.message.includes("clubs_pkey") ? { error: "already_has_club" } : { error: "name_taken" };
   }
   if (error.code === "23514" || error.code === "22001") return { error: "invalid" };
-  if (error.code === "42501" || error.code === "PGRST301") return { error: "session" };
+  if (error.code === "42501" || error.code === "PGRST301" || error.code === "23503") return { error: "session" };
   return { error: "network" };
+}
+
+/**
+ * Confere no servidor de login se a conta ainda existe (ex.: foi apagada).
+ * Só é chamado na criação do clube, então custa 1 requisição por cadastro.
+ * Se a conta não existir mais, limpa a sessão guardada no aparelho.
+ */
+export async function ensureValidUser(): Promise<boolean> {
+  const { data, error } = await supabase().auth.getUser();
+  if (data.user && !error) return true;
+  // erro de rede: não desloga; conta inexistente/sessão inválida: desloga
+  if (error && error.status && error.status >= 400 && error.status < 500) {
+    await supabase().auth.signOut({ scope: "local" });
+    return false;
+  }
+  return true;
 }
 
 /** Para onde mandar o usuário logado: criar clube ou entrar no jogo. */
