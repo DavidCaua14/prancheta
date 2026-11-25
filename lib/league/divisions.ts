@@ -28,7 +28,8 @@ export const LEAGUE_DIVISIONS: LeagueDivision[] = [
   { id: 0, name: "Liga da Várzea", short: "Várzea", art: "div-varzea", up: 4, down: 0, upTo: "Série D", botLevel: 0 },
   { id: 1, name: "Série D", short: "Série D", art: "div-serie-d", up: 4, down: 3, upTo: "Série C", downTo: "Várzea", botLevel: 1 },
   { id: 2, name: "Série C", short: "Série C", art: "div-serie-c", up: 4, down: 3, upTo: "Série B", downTo: "Série D", botLevel: 2 },
-  { id: 3, name: "Série B", short: "Série B", art: "div-serie-b", up: 0, down: 3, downTo: "Série C", soon: "Série A", botLevel: 3 },
+  { id: 3, name: "Série B", short: "Série B", art: "div-serie-b", up: 4, down: 3, upTo: "Série A", downTo: "Série C", botLevel: 3 },
+  { id: 4, name: "Série A", short: "Série A", art: "div-serie-a", up: 0, down: 3, downTo: "Série B", soon: "Liga das Lendas", botLevel: 4 },
 ];
 
 export function divisionInfo(id: number | null | undefined): LeagueDivision {

@@ -41,6 +41,16 @@ export const VARZEA_CLUBS = [
   "Cruzeirinho do Sul", "Palmeirinha da Vila", "Morumbizinho EC", "Rubro-Negro da Laje", "Tricolor do Beco",
 ];
 
+/** Clubes da CPU na Série A: a elite, metrópoles inventadas. */
+export const SERIE_A_CLUBS = [
+  "Imperial Futebol Clube", "Sport Club Metrópole", "Atlético Aurora", "EC Capital do Sol", "Associação Real Atlântida",
+  "Clube de Regatas Maré Azul", "SE Cordilheira", "Grêmio Vale do Prata", "Atlético Horizonte Novo", "União Bandeirola FC",
+  "EC Pampa Dourado", "Clube Náutico Ilha Grande", "Fortim Esporte Clube", "Sport Club Trovão", "AA Serra Celeste",
+  "Gigante do Cerrado EC", "Real Sociedade Arpoador", "Atlético Jequitibá", "EC Baía dos Ventos", "Pinhal Atlético Clube",
+  "Sociedade Esportiva Quilombo", "Grêmio Cometa", "Clube Esportivo Vento Norte", "Monarca FC", "Leste Paulistano EC",
+  "Sport Club Maré Vermelha", "Clube Atlético Mata Atlântica", "EC Coroa Imperial", "Associação Tempestade", "União Capital FC",
+];
+
 /** Clubes da CPU na Série B: clubes grandes de capitais inventadas. */
 export const SERIE_B_CLUBS = [
   "Esporte Clube Nova Aurora", "Atlético Clube Porto Real", "Sport Club Vale Imperial", "Associação Atlética Serra Grande", "Clube de Regatas Baía Azul",

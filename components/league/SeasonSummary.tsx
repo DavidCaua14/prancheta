@@ -27,7 +27,9 @@ export function SeasonSummary({ season, clubName, onClose }: { season: SeasonRow
     ? `O ${clubName} está na ${to.name}! Os times da CPU são mais fortes, a rotina continua com 8 jogos por dia. Cuidado: os ${to.down} últimos voltam para a ${to.downTo}.`
     : down
       ? `Não deu desta vez. O ${clubName} volta para a ${to.name}, onde os ${to.up} primeiros sobem de novo.`
-      : from.up > 0
+      : champion
+        ? `O ${clubName} é campeão da ${from.name}! Título no peito e vaga garantida na próxima temporada.${from.soon ? ` A ${from.soon} chega numa próxima atualização.` : ""}`
+        : from.up > 0
         ? `Faltou pouco: só os ${from.up} primeiros sobem. A nova temporada da ${from.name} já começou.`
         : `O ${clubName} segue na ${from.name}.${from.soon ? ` A ${from.soon} chega numa próxima atualização.` : ""}`;
 

@@ -22,7 +22,7 @@ test("times da CPU da Várzea não mudam (ligas antigas são recalculadas)", () 
   assert.equal(b.squad.map((c) => c.overall).join(","), "53,53,53,47,52,56,53,58,53,53,47,53,53,56");
 });
 
-test("CPU fica mais forte a cada divisão (Várzea < D < C < B)", () => {
+test("CPU fica mais forte a cada divisão (Várzea < D < C < B < A)", () => {
   const avg = (div: number) => {
     let t = 0;
     for (let L = 1; L <= 40; L++)
@@ -36,10 +36,13 @@ test("CPU fica mais forte a cada divisão (Várzea < D < C < B)", () => {
   const d = avg(1);
   const c = avg(2);
   const b = avg(3);
+  const a = avg(4);
   assert.ok(d - v >= 2 && d - v <= 5, `várzea ${v.toFixed(1)} × série D ${d.toFixed(1)}`);
   assert.ok(c - d >= 1.5 && c - d <= 4, `série D ${d.toFixed(1)} × série C ${c.toFixed(1)}`);
   assert.ok(b - c >= 1.5 && b - c <= 4, `série C ${c.toFixed(1)} × série B ${b.toFixed(1)}`);
+  assert.ok(a - b >= 1.5 && a - b <= 4, `série B ${b.toFixed(1)} × série A ${a.toFixed(1)}`);
   assert.notEqual(botTeam(3, 0, 3).name, botTeam(3, 0, 2).name);
+  assert.notEqual(botTeam(3, 0, 4).name, botTeam(3, 0, 3).name);
   assert.notEqual(botTeam(3, 0, 1).name, botTeam(3, 0, 0).name);
   assert.notEqual(botTeam(3, 0, 2).name, botTeam(3, 0, 1).name);
 });
@@ -63,7 +66,11 @@ test("zonas de acesso e rebaixamento", () => {
   const c = divisionInfo(2);
   assert.deepEqual([1, 4, 5, 7, 8, 10].map((p) => zoneOf(c, p, 10)), ["up", "up", null, null, "down", "down"]);
   const b = divisionInfo(3);
-  assert.deepEqual([1, 7, 8, 10].map((p) => zoneOf(b, p, 10)), [null, null, "down", "down"]);
+  assert.deepEqual([1, 4, 5, 7, 8, 10].map((p) => zoneOf(b, p, 10)), ["up", "up", null, null, "down", "down"]);
+  const a = divisionInfo(4);
+  assert.deepEqual([1, 7, 8, 10].map((p) => zoneOf(a, p, 10)), [null, null, "down", "down"]);
+  assert.equal(b.upTo, a.name);
+  assert.equal(a.downTo, b.name);
   assert.equal(c.upTo, b.name);
   assert.equal(b.downTo, c.name);
   assert.equal(d.upTo, c.name);
