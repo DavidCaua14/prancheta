@@ -6,9 +6,9 @@ export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
  * de atualização obrigatória que os jogadores veem.
  */
 export const RELEASE_NOTES: string[] = [
-  "Escalação e tática: 6 formações, postura, marcação e passes",
-  "Capitão e cobrador de pênaltis",
-  "Escalação automática e aviso de jogador fora de posição",
+  "14 formações, incluindo Quadrado mágico, Losango e Árvore de Natal",
+  "Aviso claro de jogador fora de posição na escalação",
+  "Ao selecionar um jogador, o campinho mostra onde ele rende melhor",
 ];
 
 export type VersionPayload = {

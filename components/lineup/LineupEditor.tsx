@@ -145,7 +145,10 @@ export function LineupEditor() {
   const bench = cards.map((c, i) => ({ c, i })).filter(({ i }) => !lineup.xi.includes(i));
   const power = strength(formation, xiCards);
   const dirty = encodeLineup(lineup) !== savedCode;
-  const misplaced = formation.slots.filter((s, i) => fitLevel(xiCards[i], s.role) === "bad").length;
+  const outOfPlace = formation.slots
+    .map((s, slot) => ({ slot, role: s.role, card: xiCards[slot], level: fitLevel(xiCards[slot], s.role), value: effective(xiCards[slot], s.role) }))
+    .filter((o) => o.level !== "ok");
+  const misplaced = outOfPlace.filter((o) => o.level === "bad").length;
 
   function update(next: Lineup) {
     setLineup(fixLeaders(next, cards));
@@ -229,11 +232,12 @@ export function LineupEditor() {
                 update(withFormation(lineup, f.id, cards));
                 setSel(null);
               }}
-              className={`t-num h-10 rounded-xl border-[3px] border-[var(--ink)] px-2 text-sm ${
+              className={`flex min-h-11 flex-col items-center justify-center rounded-xl border-[3px] border-[var(--ink)] px-1 py-1 ${
                 lineup.formation === f.id ? "bg-[var(--sun)] text-[var(--ink)]" : "bg-white/10 text-white hover:bg-white/20"
               }`}
             >
-              {f.name}
+              <span className="t-num text-sm leading-tight">{f.name}</span>
+              {f.nick && <span className="text-[0.6rem] font-extrabold leading-tight opacity-75">{f.nick}</span>}
             </button>
           ))}
         </div>
@@ -248,6 +252,7 @@ export function LineupEditor() {
           selected={selectedSlot}
           captain={cards[lineup.captain]}
           showFit
+          previewCard={sel ? (sel.kind === "xi" ? xiCards[sel.slot] : cards[sel.card]) : null}
           clickEmpty
           onSlotClick={clickSlot}
           className="mx-auto max-w-[420px] text-[clamp(10px,3.1vw,13px)] lg:text-[13px]"
@@ -255,15 +260,44 @@ export function LineupEditor() {
         <p className="mt-2 text-center text-xs font-bold text-white/70" aria-live="polite">
           {help}
         </p>
+        <ul className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[0.68rem] font-extrabold text-white/75">
+          <li className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-[var(--grass)]" />Na posição</li>
+          <li className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-[var(--sun)]" />Adaptado</li>
+          <li className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-[var(--red)]" />Improvisado</li>
+        </ul>
         <div className="mt-3 grid gap-1.5">
           <Bar label="DEF" value={power.def} />
           <Bar label="MEI" value={power.mei} />
           <Bar label="ATA" value={power.ata} />
         </div>
-        {misplaced > 0 && (
-          <p className="mt-3 rounded-xl bg-[var(--red)]/20 px-3 py-2 text-xs font-bold text-white">
-            ⚠️ {misplaced} {misplaced === 1 ? "jogador improvisado" : "jogadores improvisados"} (em vermelho) — rendem bem menos.
-          </p>
+        {outOfPlace.length > 0 && (
+          <div className={`mt-3 rounded-xl border-2 px-3 py-2.5 text-xs font-bold text-white ${misplaced > 0 ? "border-[var(--red)] bg-[var(--red)]/20" : "border-[var(--sun)] bg-[var(--sun)]/10"}`}>
+            <p className="text-sm font-extrabold">
+              ⚠️ {outOfPlace.length} {outOfPlace.length === 1 ? "jogador fora de posição" : "jogadores fora de posição"}
+            </p>
+            <ul className="mt-1.5 grid gap-1">
+              {outOfPlace.map((o) => (
+                <li key={o.slot} className="flex items-center justify-between gap-2">
+                  <span className="truncate">
+                    {o.card.name} <span className="opacity-60">({o.card.position})</span> jogando de {o.role}
+                  </span>
+                  <span className={`t-num shrink-0 rounded px-1.5 ${o.level === "bad" ? "bg-[var(--red)]" : "bg-[var(--sun)] text-[var(--ink)]"}`}>
+                    {o.card.overall} → {o.value}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              onClick={() => {
+                update(autoLineup(lineup, cards));
+                setSel(null);
+              }}
+              className="mt-2.5 text-xs font-extrabold text-[var(--sun)] underline underline-offset-2"
+            >
+              Corrigir com a escalação automática
+            </button>
+          </div>
         )}
       </div>
     </div>
@@ -290,14 +324,24 @@ export function LineupEditor() {
               <tr
                 key={`xi-${slot}`}
                 onClick={() => clickSlot(slot)}
-                className={`cursor-pointer border-b border-[var(--ink)]/10 ${active ? "bg-[var(--sun)]" : "hover:bg-[var(--cream)]"}`}
+                className={`cursor-pointer border-b border-[var(--ink)]/10 ${
+                  active ? "bg-[var(--sun)]" : lvl === "bad" ? "bg-[#ffe0e0] hover:bg-[#ffd0d0]" : lvl === "adapted" ? "bg-[#fff6d6] hover:bg-[#ffefb8]" : "hover:bg-[var(--cream)]"
+                }`}
               >
                 <td className="py-1.5 pl-3">
-                  <span className="t-num rounded bg-[var(--ink)] px-1.5 py-0.5 text-[0.65rem] text-white">{s.role}</span>
+                  <span className={`t-num rounded px-1.5 py-0.5 text-[0.65rem] text-white ${lvl === "bad" ? "bg-[var(--red)]" : "bg-[var(--ink)]"}`}>{s.role}</span>
                 </td>
                 <td className="truncate py-1.5 font-bold">
                   {c.name}
-                  <span className="ml-1.5 text-xs font-semibold opacity-50">{c.position}</span>
+                  {lvl === "ok" ? (
+                    <span className="ml-1.5 text-xs font-semibold opacity-50">{c.position}</span>
+                  ) : (
+                    <span
+                      className={`ml-1.5 rounded px-1 text-[0.6rem] font-extrabold uppercase ${lvl === "bad" ? "bg-[var(--red)] text-white" : "bg-[var(--sun)] text-[var(--ink)]"}`}
+                    >
+                      {c.position} · {lvl === "bad" ? "improvisado" : "adaptado"}
+                    </span>
+                  )}
                   {idx === lineup.captain && <span className="ml-1 rounded bg-[var(--sky)] px-1 text-[0.6rem] font-extrabold">C</span>}
                   {idx === lineup.penalty && <span className="ml-1 rounded bg-[var(--hot)] px-1 text-[0.6rem] font-extrabold text-white">P</span>}
                 </td>

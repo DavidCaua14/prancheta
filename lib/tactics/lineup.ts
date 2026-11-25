@@ -40,18 +40,20 @@ export type Lineup = {
 const b36 = (n: number) => n.toString(36);
 
 export function encodeLineup(l: Lineup): string {
-  return `1:${l.formation}:${l.xi.map(b36).join("")}:${l.posture}${l.marking}${l.passing}:${b36(l.captain)}${b36(l.penalty)}`;
+  return `1:${b36(l.formation)}:${l.xi.map(b36).join("")}:${l.posture}${l.marking}${l.passing}:${b36(l.captain)}${b36(l.penalty)}`;
 }
 
 export function decodeLineup(code: string | null | undefined, squadSize: number): Lineup | null {
-  const m = /^1:([0-5]):([0-9a-z]{11}):([0-4])([0-2])([0-2]):([0-9a-z])([0-9a-z])$/.exec(code ?? "");
+  const m = /^1:([0-9a-z]):([0-9a-z]{11}):([0-4])([0-2])([0-2]):([0-9a-z])([0-9a-z])$/.exec(code ?? "");
   if (!m) return null;
   const xi = m[2].split("").map((c) => parseInt(c, 36));
   if (new Set(xi).size !== 11 || xi.some((i) => i >= squadSize)) return null;
   const captain = parseInt(m[6], 36);
   const penalty = parseInt(m[7], 36);
   if (!xi.includes(captain) || !xi.includes(penalty)) return null;
-  return { formation: +m[1], xi, posture: +m[3], marking: +m[4], passing: +m[5], captain, penalty };
+  const formation = parseInt(m[1], 36);
+  if (formation >= FORMATIONS.length) return null;
+  return { formation, xi, posture: +m[3], marking: +m[4], passing: +m[5], captain, penalty };
 }
 
 /** Capitão: maior overall. Pênaltis: melhor finalização (fora o goleiro). */

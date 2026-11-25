@@ -16,6 +16,12 @@ const DRAFT_PITCH: Slot[] = DRAFT_SLOTS.filter((s) => s.spot).map((s) => ({
 }));
 
 const FIT_COLORS = { ok: "bg-[var(--grass)]", adapted: "bg-[var(--sun)]", bad: "bg-[var(--red)] text-white" };
+const FIT_RING = { ok: "", adapted: "outline outline-[0.18em] outline-[var(--sun)]", bad: "outline outline-[0.2em] outline-[var(--red)]" };
+const PREVIEW = {
+  ok: { cls: "bg-[var(--grass)] text-[var(--ink)]", icon: "✓" },
+  adapted: { cls: "bg-[var(--sun)] text-[var(--ink)]", icon: "~" },
+  bad: { cls: "bg-[var(--red)] text-white", icon: "✕" },
+};
 
 /**
  * Campinho vertical com os titulares. Serve para a peneira (4-3-3) e para a
@@ -29,6 +35,7 @@ export function MiniPitch({
   selected,
   captain,
   showFit = false,
+  previewCard = null,
   clickEmpty = false,
   onSlotClick,
   className = "",
@@ -43,6 +50,8 @@ export function MiniPitch({
   /** carta do capitão (para mostrar a braçadeira) */
   captain?: BaseCard | null;
   showFit?: boolean;
+  /** jogador selecionado: mostra em cada vaga como ele renderia ali */
+  previewCard?: BaseCard | null;
   clickEmpty?: boolean;
   onSlotClick?: (slot: number) => void;
   className?: string;
@@ -65,12 +74,13 @@ export function MiniPitch({
         const highlighted = current === i || selected === i;
         const level = card && showFit ? fitLevel(card, slot.role) : null;
         const value = card ? (showFit ? effective(card, slot.role) : card.overall) : null;
+        const preview = previewCard && !highlighted ? PREVIEW[fitLevel(previewCard, slot.role)] : null;
         const content = (
           <>
             <span
               className={`relative flex h-[2.6em] w-[2.6em] items-center justify-center overflow-hidden rounded-full border-[0.18em] ${
                 card ? "border-[var(--ink)] bg-[var(--cream)]" : "border-dashed border-white/80 bg-black/20"
-              } ${highlighted ? "shadow-[0_0_0_0.22em_var(--sun)]" : ""}`}
+              } ${highlighted ? "shadow-[0_0_0_0.22em_var(--sun)]" : ""} ${level && !highlighted ? FIT_RING[level] : ""}`}
             >
               {card ? (
                 <PlayerAvatar look={cardLook(card, kit)} className="h-[120%] w-[120%] translate-y-[0.35em]" />
@@ -85,6 +95,23 @@ export function MiniPitch({
                 } ${level === "bad" ? "" : "text-[var(--ink)]"}`}
               >
                 {value}
+              </span>
+            )}
+            {level && level !== "ok" && !preview && (
+              <span
+                className={`absolute -bottom-[0.1em] -right-[0.35em] flex h-[1.15em] w-[1.15em] items-center justify-center rounded-full border-[0.12em] border-[var(--ink)] text-[0.62em] font-extrabold leading-none ${
+                  level === "bad" ? "bg-[var(--red)] text-white" : "bg-[var(--sun)] text-[var(--ink)]"
+                }`}
+                aria-label={level === "bad" ? "Improvisado" : "Adaptado"}
+              >
+                !
+              </span>
+            )}
+            {preview && (
+              <span
+                className={`absolute -bottom-[0.2em] -right-[0.5em] flex h-[1.7em] w-[1.7em] items-center justify-center rounded-full border-[0.14em] border-[var(--ink)] text-[0.8em] font-extrabold leading-none shadow-[0_0.1em_0_var(--ink)] ${preview.cls}`}
+              >
+                {preview.icon}
               </span>
             )}
             {card && captain && card.key === captain.key && (

@@ -100,8 +100,9 @@ chegarem de fora (leilão, prêmios), referenciadas pela seed.
 
 ## Escalação e tática (implementado)
 
-- Tela `/escalacao`, inspirada no Brasfoot: lista de jogadores (titulares por vaga + reservas), 6 formações
-  (4-3-3, 4-4-2, 3-5-2, 4-5-1, 5-3-2, 3-4-3), escalação automática, campinho com o rendimento na vaga e força por
+- Tela `/escalacao`, inspirada no Brasfoot: lista de jogadores (titulares por vaga + reservas), 14 formações
+  (4-3-3, 4-4-2, 3-5-2, 4-5-1, 5-3-2, 3-4-3, 4-2-3-1, 4-1-4-1, 4-4-2 losango, 4-2-2-2 quadrado mágico, 4-2-4,
+  5-4-1, 3-4-1-2, 4-3-2-1 árvore de Natal — caractere da formação em base 36, migração 0004), escalação automática, campinho com o rendimento na vaga e força por
   setor (DEF/MEI/ATA).
 - **Fora de posição rende menos** (`lib/tactics/formations.ts`): 100% na posição, ~80–90% em posições
   parecidas (amarelo), 60–75% improvisado (vermelho) e 30% para goleiro na linha ou jogador no gol.
@@ -109,7 +110,8 @@ chegarem de fora (leilão, prêmios), referenciadas pela seed.
   passes (toque curto/misto/ligação direta), capitão e cobrador de pênaltis. Os efeitos entram no motor de
   simulação.
 - **No banco**: `clubs.lineup` = `"1:F:XXXXXXXXXXX:PMS:CK"` (~23 bytes), validado pela função `lineup_ok`
-  (11 titulares diferentes, capitão e cobrador entre eles). 1 escrita a cada "Salvar"
+  (11 titulares diferentes, capitão e cobrador entre eles). Jogador fora de posição é marcado no campinho
+  (anel + "!"), na lista (etiqueta adaptado/improvisado) e num aviso com quanto ele perde. 1 escrita a cada "Salvar"
   (`supabase/migrations/0003_lineup.sql`). Sem escalação salva, vale o 4-3-3 da peneira.
 
 ## Esboço do banco (Postgres)

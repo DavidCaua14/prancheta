@@ -6,7 +6,7 @@
 import type { BaseCard, Position } from "@/lib/cards/generate";
 
 export type FormationSlot = { role: Position; spot: [number, number] };
-export type Formation = { id: number; name: string; slots: FormationSlot[] };
+export type Formation = { id: number; name: string; nick?: string; slots: FormationSlot[] };
 
 const GOL: FormationSlot = { role: "GOL", spot: [50, 90] };
 const back4: FormationSlot[] = [
@@ -14,6 +14,10 @@ const back4: FormationSlot[] = [
   { role: "ZAG", spot: [37, 74] },
   { role: "LD", spot: [86, 66] },
   { role: "LE", spot: [14, 66] },
+];
+const twoUp: FormationSlot[] = [
+  { role: "ATA", spot: [62, 16] },
+  { role: "ATA", spot: [38, 16] },
 ];
 const back3: FormationSlot[] = [
   { role: "ZAG", spot: [50, 76] },
@@ -107,6 +111,122 @@ export const FORMATIONS: Formation[] = [
       { role: "MC", spot: [63, 50] },
       { role: "PD", spot: [82, 22] },
       { role: "PE", spot: [18, 22] },
+      { role: "ATA", spot: [50, 14] },
+    ],
+  },
+  {
+    id: 6,
+    name: "4-2-3-1",
+    slots: [
+      GOL,
+      ...back4,
+      { role: "VOL", spot: [63, 58] },
+      { role: "VOL", spot: [37, 58] },
+      { role: "MEI", spot: [50, 38] },
+      { role: "PD", spot: [83, 32] },
+      { role: "PE", spot: [17, 32] },
+      { role: "ATA", spot: [50, 14] },
+    ],
+  },
+  {
+    id: 7,
+    name: "4-1-4-1",
+    slots: [
+      GOL,
+      ...back4,
+      { role: "VOL", spot: [50, 60] },
+      { role: "MC", spot: [64, 44] },
+      { role: "MC", spot: [36, 44] },
+      { role: "PD", spot: [87, 36] },
+      { role: "PE", spot: [13, 36] },
+      { role: "ATA", spot: [50, 15] },
+    ],
+  },
+  {
+    id: 8,
+    name: "4-4-2 L",
+    nick: "Losango",
+    slots: [
+      GOL,
+      ...back4,
+      { role: "VOL", spot: [50, 60] },
+      { role: "MC", spot: [72, 48] },
+      { role: "MC", spot: [28, 48] },
+      { role: "MEI", spot: [50, 35] },
+      ...twoUp,
+    ],
+  },
+  {
+    id: 9,
+    name: "4-2-2-2",
+    nick: "Quadrado mágico",
+    slots: [
+      GOL,
+      ...back4,
+      { role: "VOL", spot: [63, 58] },
+      { role: "VOL", spot: [37, 58] },
+      { role: "MEI", spot: [72, 38] },
+      { role: "MEI", spot: [28, 38] },
+      ...twoUp,
+    ],
+  },
+  {
+    id: 10,
+    name: "4-2-4",
+    nick: "Ataque total",
+    slots: [
+      GOL,
+      ...back4,
+      { role: "VOL", spot: [62, 52] },
+      { role: "MC", spot: [38, 52] },
+      { role: "PD", spot: [85, 22] },
+      { role: "PE", spot: [15, 22] },
+      { role: "ATA", spot: [62, 14] },
+      { role: "ATA", spot: [38, 14] },
+    ],
+  },
+  {
+    id: 11,
+    name: "5-4-1",
+    nick: "Ferrolho",
+    slots: [
+      GOL,
+      ...back3,
+      { role: "LD", spot: [90, 60] },
+      { role: "LE", spot: [10, 60] },
+      { role: "VOL", spot: [62, 50] },
+      { role: "MC", spot: [38, 50] },
+      { role: "PD", spot: [84, 33] },
+      { role: "PE", spot: [16, 33] },
+      { role: "ATA", spot: [50, 16] },
+    ],
+  },
+  {
+    id: 12,
+    name: "3-4-1-2",
+    slots: [
+      GOL,
+      ...back3,
+      { role: "LD", spot: [89, 50] },
+      { role: "LE", spot: [11, 50] },
+      { role: "VOL", spot: [62, 56] },
+      { role: "MC", spot: [38, 56] },
+      { role: "MEI", spot: [50, 37] },
+      ...twoUp,
+    ],
+  },
+  {
+    id: 13,
+    name: "4-3-2-1",
+    nick: "Árvore de Natal",
+    slots: [
+      GOL,
+      ...back4,
+      { role: "VOL", spot: [50, 60] },
+      { role: "MC", spot: [72, 52] },
+      { role: "MC", spot: [28, 52] },
+      { role: "MEI", spot: [64, 32] },
+      { role: "MEI", spot: [36, 32] },
       { role: "ATA", spot: [50, 14] },
     ],
   },
