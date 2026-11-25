@@ -41,6 +41,16 @@ export const VARZEA_CLUBS = [
   "Cruzeirinho do Sul", "Palmeirinha da Vila", "Morumbizinho EC", "Rubro-Negro da Laje", "Tricolor do Beco",
 ];
 
+/** Clubes da CPU na Série B: clubes grandes de capitais inventadas. */
+export const SERIE_B_CLUBS = [
+  "Esporte Clube Nova Aurora", "Atlético Clube Porto Real", "Sport Club Vale Imperial", "Associação Atlética Serra Grande", "Clube de Regatas Baía Azul",
+  "Sociedade Esportiva Planalto Central", "Grêmio Atlético Terra Roxa", "União Esportiva Costa Dourada", "Clube Atlético Cidade Alta", "Esporte Clube Rio das Pedras",
+  "Associação Desportiva Campos Altos", "Tupinambá Futebol Clube", "Clube Náutico Maré Alta", "Atlético Monte Castelo", "Ferroviário da Capital",
+  "Sport Club Três Coroas", "Estrela Guia FC", "Clube Esportivo Santa Aurora", "Real Planalto EC", "Operário da Baixada Grande",
+  "Associação Esportiva Lagoa Real", "Vila Imperial FC", "Clube Atlético Mar de Minas", "Esporte Clube Ponta Negra do Sul", "Pinheiral Futebol Clube",
+  "Sociedade Esportiva Porto Firme", "Grêmio Recreativo Alto Paraíso", "Atlético Serra do Mar", "União Barra Grande", "Clube Esportivo Rio Vermelho",
+];
+
 /** Clubes da CPU na Série C: tradicionais de cidade média, cidades inventadas. */
 export const SERIE_C_CLUBS = [
   "EC Vila Serrana", "Atlético Porto das Garças", "SE Campo Largo do Sul", "CA Baependi Velho", "Ferroviária de Vale Alto",

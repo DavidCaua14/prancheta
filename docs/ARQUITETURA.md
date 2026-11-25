@@ -175,11 +175,12 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
 - **Custo**: por liga, ~18 linhas de horários + 1 linha de escalação por "Salvar" + mudanças ao vivo
   (só quando alguém mexe). Leituras: 5 consultas pequenas ao abrir a liga.
 
-## Divisões: Várzea, Série D e Série C (implementado)
+## Divisões: Várzea, Séries D, C e B (implementado)
 
 - **Regras** (`lib/league/divisions.ts`, espelhadas em SQL em `division_rules()`):
   Várzea → os **4 primeiros sobem** para a Série D. Série D → **4 sobem** para a C e os **3 últimos caem**
-  para a Várzea. Série C → os **3 últimos caem** para a D (ninguém sobe da C enquanto a Série B não existe). Vale a posição da vaga — quem assumiu um time da CPU no
+  para a Várzea. Série C → **4 sobem** para a B e os **3 últimos caem** para a D. Série B → os **3 últimos caem**
+  para a C (ninguém sobe da B enquanto a Série A não existe). Vale a posição da vaga — quem assumiu um time da CPU no
   meio da temporada leva a campanha dele.
 - **Quem fecha a temporada é o servidor**: a Edge Function `close-league`
   (`supabase/functions/close-league/index.ts`) relê a liga, recalcula os 90 jogos com o **mesmo código do jogo**
@@ -193,7 +194,7 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
   clube por temporada** em `club_seasons (pos, pts, move)`. Nada de placares.
 - **Força da CPU por divisão** (mesmo formato em todas: 10 clubes, 8 rodadas/dia), OVR médio do time:
   Várzea 52,1 (escolha aleatória na peneira) · Série D 54,9 (sempre a melhor carta) · Série C 56,9 (melhor
-  carta + 2 de overall). Cada degrau dá ~30% V / 25% E / 45% D para um time do nível de baixo — quem sobe
+  carta + 2 de overall) · Série B 58,9 (melhor carta + 4). Cada degrau dá ~30% V / 25% E / 45% D para um time do nível de baixo — quem sobe
   entre os 4 primeiros chega competitivo, mas sente a subida. A CPU de divisões que já existem nunca muda
   (testado em `tests/league.test.ts`), porque ligas antigas são recalculadas.
 - **Nova divisão** = uma linha em `LEAGUE_DIVISIONS`, nomes da CPU em `lib/cards/names.ts`, uma migração com
@@ -229,7 +230,8 @@ friendlies(id, codigo, casa_id, fora_id, inicio_em, match_id)
 1. ~~Liga da Várzea (8 rodadas/dia, ao vivo, CPU nas vagas livres)~~ ✅
 1. ~~Acesso à Série D (Edge Function fecha a temporada)~~ ✅
 1. ~~Série C~~ ✅
-1. Evolução das cartas e prêmios por título (para a diferença da CPU não travar a subida); Séries B e A.
+1. ~~Série B~~ ✅
+1. Evolução das cartas e prêmios por título (para a diferença da CPU não travar a subida); Série A e Liga das Lendas.
 2. Motor de simulação completo (`lib/sim/`) com testes de determinismo.
 3. Tela de escalação/prancheta.
 4. Ligas da Várzea + job de rodadas.

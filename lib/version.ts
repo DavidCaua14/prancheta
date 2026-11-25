@@ -6,9 +6,9 @@ export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
  * de atualização obrigatória que os jogadores veem.
  */
 export const RELEASE_NOTES: string[] = [
-  "Série C liberada: os 4 primeiros da Série D sobem",
-  "Série C com CPU mais experiente e 3 rebaixados",
-  "Tabela da Série D com zona de acesso e de rebaixamento",
+  "Série B liberada: os 4 primeiros da Série C sobem",
+  "Série B com a CPU mais forte até agora e 3 rebaixados",
+  "Série C agora tem zona de acesso",
 ];
 
 export type VersionPayload = {
