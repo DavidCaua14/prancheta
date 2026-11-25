@@ -22,7 +22,7 @@ test("times da CPU da Várzea não mudam (ligas antigas são recalculadas)", () 
   assert.equal(b.squad.map((c) => c.overall).join(","), "53,53,53,47,52,56,53,58,53,53,47,53,53,56");
 });
 
-test("CPU da Série D é mais forte que a da Várzea", () => {
+test("CPU fica mais forte a cada divisão (Várzea < D < C)", () => {
   const avg = (div: number) => {
     let t = 0;
     for (let L = 1; L <= 40; L++)
@@ -34,8 +34,11 @@ test("CPU da Série D é mais forte que a da Várzea", () => {
   };
   const v = avg(0);
   const d = avg(1);
+  const c = avg(2);
   assert.ok(d - v >= 2 && d - v <= 5, `várzea ${v.toFixed(1)} × série D ${d.toFixed(1)}`);
+  assert.ok(c - d >= 1.5 && c - d <= 4, `série D ${d.toFixed(1)} × série C ${c.toFixed(1)}`);
   assert.notEqual(botTeam(3, 0, 1).name, botTeam(3, 0, 0).name);
+  assert.notEqual(botTeam(3, 0, 2).name, botTeam(3, 0, 1).name);
 });
 
 test("tabela final: ordem é uma permutação das vagas e é determinística", () => {
@@ -53,5 +56,9 @@ test("zonas de acesso e rebaixamento", () => {
   const v = divisionInfo(0);
   const d = divisionInfo(1);
   assert.deepEqual([1, 4, 5, 10].map((p) => zoneOf(v, p, 10)), ["up", "up", null, null]);
-  assert.deepEqual([1, 7, 8, 10].map((p) => zoneOf(d, p, 10)), [null, null, "down", "down"]);
+  assert.deepEqual([1, 4, 5, 7, 8, 10].map((p) => zoneOf(d, p, 10)), ["up", "up", null, null, "down", "down"]);
+  const c = divisionInfo(2);
+  assert.deepEqual([1, 7, 8, 10].map((p) => zoneOf(c, p, 10)), [null, null, "down", "down"]);
+  assert.equal(d.upTo, c.name);
+  assert.equal(c.downTo, d.name);
 });

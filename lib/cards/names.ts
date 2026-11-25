@@ -41,6 +41,16 @@ export const VARZEA_CLUBS = [
   "Cruzeirinho do Sul", "Palmeirinha da Vila", "Morumbizinho EC", "Rubro-Negro da Laje", "Tricolor do Beco",
 ];
 
+/** Clubes da CPU na Série C: tradicionais de cidade média, cidades inventadas. */
+export const SERIE_C_CLUBS = [
+  "EC Vila Serrana", "Atlético Porto das Garças", "SE Campo Largo do Sul", "CA Baependi Velho", "Ferroviária de Vale Alto",
+  "União Ribeirão Novo", "AA Monte Verde", "Fortaleza das Araras", "EC São Jerônimo do Rio", "Doze de Outubro FC",
+  "Atlético Pedra Branca", "GE Alvorada do Campo", "Náutico de Rio Fundo", "Planaltina do Leste", "Serra Dourada FC",
+  "Inter de Lagoa Dourada", "Operário de Taquaral", "AD Bela Vista do Sul", "Estrela do Vale Azul", "Litoral Atlético",
+  "Tapajós da Serra", "Ipê Amarelo FC", "Rio Negrinho EC", "Cidade Velha EC", "Conquista de Água Clara",
+  "Esportivo Ribeirópolis", "Jacarandá FC", "Figueiral do Porto", "Morro Alto EC", "Canavial FC",
+];
+
 /** Clubes da CPU na Série D: times do interior, cidades inventadas. */
 export const SERIE_D_CLUBS = [
   "EC Serra Azul", "Atlético Vale do Juruá", "União Cajueiro", "Operário de Pedra Alta", "Esporte Clube Lagoa Funda",

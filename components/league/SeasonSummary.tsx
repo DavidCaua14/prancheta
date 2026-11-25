@@ -29,7 +29,7 @@ export function SeasonSummary({ season, clubName, onClose }: { season: SeasonRow
       ? `Não deu desta vez. O ${clubName} volta para a ${to.name}, onde os ${to.up} primeiros sobem de novo.`
       : from.up > 0
         ? `Faltou pouco: só os ${from.up} primeiros sobem. A nova temporada da ${from.name} já começou.`
-        : `O ${clubName} segue na ${from.name}. ${season.division >= 1 ? "A Série C chega numa próxima atualização." : ""}`;
+        : `O ${clubName} segue na ${from.name}.${from.soon ? ` A ${from.soon} chega numa próxima atualização.` : ""}`;
 
   return (
     <div
