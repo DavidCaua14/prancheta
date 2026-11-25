@@ -41,6 +41,16 @@ export const VARZEA_CLUBS = [
   "Cruzeirinho do Sul", "Palmeirinha da Vila", "Morumbizinho EC", "Rubro-Negro da Laje", "Tricolor do Beco",
 ];
 
+/** Clubes da CPU na Liga das Lendas: esquadrões míticos, todos inventados. */
+export const LENDAS_CLUBS = [
+  "Esquadrão Dourado", "Os Invencíveis FC", "Galáticos do Sertão", "Máquina Tricolor", "Seleção dos Sonhos",
+  "Lendas do Asfalto", "Dínamo Celeste", "Real Constelação", "Imortais do Cais", "Academia do Gol",
+  "Os Magos da Bola", "Titãs do Planalto", "Fênix Imperial", "Brasa Eterna FC", "Rolo Compressor EC",
+  "Esquadrão Relâmpago", "Os Feiticeiros", "Monumental FC", "Dragões do Atlântico", "Supremo Futebol Clube",
+  "Cometa Lendário", "Os Craques Eternos", "Panteão FC", "Olimpo Esporte Clube", "Trovões de Ouro",
+  "Escrete Real", "Os Bambas da Bola", "Galeria da Fama FC", "Furacão Lendário", "Coroa de Ouro EC",
+];
+
 /** Clubes da CPU na Série A: a elite, metrópoles inventadas. */
 export const SERIE_A_CLUBS = [
   "Imperial Futebol Clube", "Sport Club Metrópole", "Atlético Aurora", "EC Capital do Sol", "Associação Real Atlântida",
