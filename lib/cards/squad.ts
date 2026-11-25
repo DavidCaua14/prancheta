@@ -5,6 +5,7 @@
  * No banco: "1:" + um dígito por vaga com a opção escolhida.
  */
 
+import { evolveSquad } from "./evolution";
 import { GENERATOR_VERSION, generateBaseCard, hash32, type BaseCard, type Position } from "./generate";
 
 export type DraftSlot = {
@@ -69,4 +70,9 @@ export function squadCards(clubId: string, code: string | null | undefined): Bas
 export function teamOverall(cards: BaseCard[]): number {
   const starters = cards.slice(0, STARTERS);
   return starters.length ? Math.round(starters.reduce((s, c) => s + c.overall, 0) / starters.length) : 0;
+}
+
+/** Elenco do clube com a evolução (níveis) aplicada. */
+export function clubCards(clubId: string, squad: string | null, xp: readonly number[] | null | undefined): BaseCard[] {
+  return evolveSquad(squadCards(clubId, squad) ?? [], xp);
 }

@@ -4,10 +4,10 @@ import { useEffect } from "react";
 import { ArtImg } from "@/components/ui/ArtImg";
 import { Icon } from "@/components/ui/Icon";
 import { divisionInfo } from "@/lib/league/divisions";
-import type { SeasonRow } from "@/lib/league/data";
+import type { SeasonResult } from "@/lib/league/data";
 
 /** Aviso de fim de temporada: posição final, acesso ou rebaixamento. */
-export function SeasonSummary({ season, clubName, onClose }: { season: SeasonRow; clubName: string; onClose: () => void }) {
+export function SeasonSummary({ season, clubName, onClose }: { season: SeasonResult; clubName: string; onClose: () => void }) {
   const from = divisionInfo(season.division);
   const to = divisionInfo(season.division + season.move);
   const up = season.move > 0;
@@ -38,9 +38,9 @@ export function SeasonSummary({ season, clubName, onClose }: { season: SeasonRow
       role="dialog"
       aria-modal="true"
       aria-labelledby="season-title"
-      className="fixed inset-0 z-[90] flex items-center justify-center bg-[rgba(27,16,56,0.82)] p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[90] flex overflow-y-auto bg-[rgba(27,16,56,0.82)] px-4 pb-4 pt-20 backdrop-blur-sm"
     >
-      <div className="panel halftone anim-pop relative w-full max-w-sm px-5 pb-5 pt-20 text-center">
+      <div className="panel halftone anim-pop relative m-auto w-full max-w-sm px-5 pb-5 pt-20 text-center">
         <div className="absolute -top-16 left-1/2 -translate-x-1/2">
           <ArtImg
             name={to.art}
@@ -75,6 +75,35 @@ export function SeasonSummary({ season, clubName, onClose }: { season: SeasonRow
           </p>
         )}
         <p className="mt-3 text-sm font-semibold">{text}</p>
+        {season.xp > 0 && (
+          <div className="mt-3 rounded-xl border-[3px] border-[var(--ink)] bg-white p-2.5 text-left">
+            <p className="flex items-center justify-between gap-2 text-xs font-extrabold uppercase tracking-wider">
+              <span className="flex items-center gap-1">
+                <Icon name="bolt" className="h-4 w-4 text-[var(--hot)]" /> Evolução
+              </span>
+              <span className="t-num normal-case tracking-normal text-[var(--grass-2)]">+{season.xp} XP no elenco</span>
+            </p>
+            {season.evolved.length > 0 ? (
+              <ul className="mt-1.5 max-h-32 space-y-1 overflow-y-auto pr-1">
+                {season.evolved.map((e) => (
+                  <li key={`${e.name}-${e.position}`} className="flex items-center gap-2 text-sm">
+                    <span className="w-9 shrink-0 rounded bg-[var(--ink)]/10 text-center text-[0.65rem] font-extrabold">{e.position}</span>
+                    <span className="min-w-0 flex-1 truncate font-bold">{e.name}</span>
+                    <span className="shrink-0 text-xs font-extrabold opacity-70">
+                      Nv {e.from}→{e.to}
+                    </span>
+                    <span className="t-num w-12 shrink-0 text-right text-[var(--grass-2)]">
+                      {e.overall}
+                      {e.gain > 0 && <span className="text-[0.65rem]"> +{e.gain}</span>}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-1 text-xs font-semibold opacity-70">Nenhuma carta subiu de nível desta vez — o XP já está guardado.</p>
+            )}
+          </div>
+        )}
         <button type="button" autoFocus onClick={onClose} className="btn btn-green btn-lg mt-5 w-full">
           {up ? `Bora pra ${to.name}!` : "Começar a nova temporada"}
         </button>

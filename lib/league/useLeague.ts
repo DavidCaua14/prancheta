@@ -4,12 +4,14 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { getMyClub, getSession, type Club } from "@/lib/club/api";
-import { clockAt, closeLeague, joinLeague, lastSeason, loadLeague, refreshChanges, type LeagueData, type SeasonRow } from "./data";
+import { seasonBonus } from "@/lib/cards/evolution";
+import { clubCards } from "@/lib/cards/squad";
+import { clockAt, closeLeague, clubMatchXp, joinLeague, lastSeason, loadLeague, refreshChanges, type Evolved, type LeagueData, type SeasonResult, type SeasonRow } from "./data";
 
 /** Dados da liga em memória (navegar entre telas não relê o banco). */
 const memory = new Map<number, LeagueData>();
 /** Resultado da temporada que acabou de fechar (até o técnico fechar o aviso). */
-let pendingSeason: SeasonRow | null = null;
+let pendingSeason: SeasonResult | null = null;
 
 const SEEN = (clubId: string) => `prancheta:temporada-vista:${clubId}`;
 
@@ -19,6 +21,25 @@ function seenSeason(clubId: string): number {
   } catch {
     return 0;
   }
+}
+
+/**
+ * Cartas que subiram de nível: recalcula o XP que a temporada deu (o mesmo
+ * cálculo do servidor) e compara o elenco antes e depois.
+ */
+function seasonResult(row: SeasonRow, club: Club, old: LeagueData | undefined): SeasonResult {
+  if (!old || !club.xp) return { ...row, evolved: [], xp: 0 };
+  const bonus = seasonBonus(row.pos, row.move);
+  const gained = clubMatchXp(old, club.id, Number.POSITIVE_INFINITY).xp.map((v) => Math.min(3000, v) + bonus);
+  const before = club.xp.map((v, i) => Math.max(0, v - gained[i]));
+  const a = clubCards(club.id, club.squad, before);
+  const b = clubCards(club.id, club.squad, club.xp);
+  const evolved: Evolved[] = [];
+  b.forEach((c, i) => {
+    if (c.level > a[i].level) evolved.push({ name: c.name, position: c.position, from: a[i].level, to: c.level, overall: c.overall, gain: c.overall - a[i].overall });
+  });
+  evolved.sort((x, y) => y.to - y.from - (x.to - x.from) || y.overall - x.overall);
+  return { ...row, evolved, xp: gained.reduce((s, v) => s + v, 0) };
 }
 
 /** Relógio da tela: atualiza a cada `ms`. */
@@ -47,7 +68,7 @@ export function useLeague({ autoJoin = true }: { autoJoin?: boolean } = {}) {
   const [data, setData] = useState<LeagueData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
-  const [season, setSeason] = useState<SeasonRow | null>(pendingSeason);
+  const [season, setSeason] = useState<SeasonResult | null>(pendingSeason);
 
   const load = useCallback(
     async (opts: { forceJoin?: boolean } = {}) => {
@@ -72,6 +93,7 @@ export function useLeague({ autoJoin = true }: { autoJoin?: boolean } = {}) {
       if ((over && autoJoin) || opts.forceJoin) {
         setJoining(true);
         const prev = c.league_id;
+        const oldData = d;
         try {
           // temporada acabou: o servidor recalcula a tabela e decide quem sobe/cai
           if (prev && d && !d.league.closed_at && Date.now() > new Date(d.league.ends_at).getTime()) {
@@ -83,8 +105,9 @@ export function useLeague({ autoJoin = true }: { autoJoin?: boolean } = {}) {
             memory.delete(prev);
             const last = await lastSeason(c.id);
             if (last && last.league_id === prev && seenSeason(c.id) < last.league_id) {
-              pendingSeason = last;
-              setSeason(last);
+              const result = seasonResult(last, c, oldData);
+              pendingSeason = result;
+              setSeason(result);
             }
           }
           d = await loadLeague(id);

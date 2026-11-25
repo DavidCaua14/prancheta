@@ -9,7 +9,7 @@ import { Icon } from "@/components/ui/Icon";
 import { getMyClub, getSession, saveLineup, type Club } from "@/lib/club/api";
 import { decodeKit } from "@/lib/club/identity";
 import { POSITION_NAMES, type BaseCard } from "@/lib/cards/generate";
-import { squadCards } from "@/lib/cards/squad";
+import { clubCards } from "@/lib/cards/squad";
 import { FORMATIONS, effective, fitLevel, strength } from "@/lib/tactics/formations";
 import {
   MARKINGS,
@@ -113,7 +113,7 @@ export function LineupEditor() {
         if (!c.squad) return router.replace("/peneira");
         setSession(s);
         setClub(c);
-        setLineup(lineupFor(c.lineup, squadCards(c.id, c.squad) ?? []));
+        setLineup(lineupFor(c.lineup, clubCards(c.id, c.squad, c.xp)));
       } catch {
         router.replace("/entrar?erro=1");
       }
@@ -123,7 +123,7 @@ export function LineupEditor() {
     };
   }, [router]);
 
-  const cards = useMemo(() => (club ? squadCards(club.id, club.squad) ?? [] : []), [club]);
+  const cards = useMemo(() => (club ? clubCards(club.id, club.squad, club.xp) : []), [club]);
   const savedCode = useMemo(() => (club && cards.length ? encodeLineup(lineupFor(club.lineup, cards)) : ""), [club, cards]);
 
   useEffect(() => {

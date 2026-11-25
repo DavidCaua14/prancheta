@@ -5,7 +5,8 @@
  */
 import type { BaseCard } from "@/lib/cards/generate";
 import { hash32 } from "@/lib/cards/generate";
-import { squadCards } from "@/lib/cards/squad";
+import { matchXp } from "@/lib/cards/evolution";
+import { clubCards } from "@/lib/cards/squad";
 import { decodeCrest, decodeKit, type Crest, type Kit } from "@/lib/club/identity";
 import { simulate, type Change, type MatchResult, type TeamInput } from "@/lib/sim/engine";
 import { lineupFor, type Lineup } from "@/lib/tactics/lineup";
@@ -34,6 +35,8 @@ export type LeagueClub = {
   squad: string;
   league_slot: number;
   joined_round: number;
+  /** XP acumulado por carta (null = tudo no nível 1) */
+  xp: number[] | null;
 };
 export type LogRow = { club_id: string; at: string; lineup: string };
 export type ChangeRow = { round: number; club_id: string; tick: number; change: string };
@@ -61,7 +64,7 @@ export type TeamView = {
 
 /** Colunas lidas do banco (as mesmas no aparelho e no servidor). */
 export const LEAGUE_COLS = "id,division,size,rounds,starts_at,ends_at,closed_at,final";
-export const CLUB_COLS = "id,name,tag,crest,kit,squad,league_slot,joined_round";
+export const CLUB_COLS = "id,name,tag,crest,kit,squad,league_slot,joined_round,xp";
 
 /** Escalações valem a partir de 11 dias antes do início (o banco guarda 10 + a última anterior). */
 export function logsSince(league: LeagueRow) {
@@ -95,10 +98,10 @@ export function buildLeagueData(raw: {
 const squadCache = new Map<string, BaseCard[]>();
 
 function clubSquad(c: LeagueClub): BaseCard[] {
-  const key = `${c.id}:${c.squad}`;
+  const key = `${c.id}:${c.squad}:${c.xp?.join(".") ?? ""}`;
   let s = squadCache.get(key);
   if (!s) {
-    s = squadCards(c.id, c.squad) ?? [];
+    s = clubCards(c.id, c.squad, c.xp);
     squadCache.set(key, s);
   }
   return s;
@@ -298,6 +301,34 @@ export function standings(data: LeagueData, now: number): Row[] {
     });
   }
   return rows.sort((x, y) => y.p - x.p || y.v - x.v || y.gp - y.gc - (x.gp - x.gc) || y.gp - x.gp || x.slot - y.slot);
+}
+
+/**
+ * XP que as cartas do clube ganharam nos jogos da liga terminados até `now`
+ * (só os jogos em que o próprio técnico comandou a vaga). O servidor usa
+ * now = ∞ no fechamento; o aparelho usa para mostrar o "XP a receber".
+ */
+export function clubMatchXp(data: LeagueData, clubId: string, now: number): { xp: number[]; games: number } {
+  const total = Array.from({ length: 14 }, () => 0);
+  let games = 0;
+  for (let r = 1; r <= data.kickoffs.length; r++) {
+    if (data.kickoffs[r - 1] > now) break;
+    const fixtures = data.fixtures[r - 1];
+    for (let i = 0; i < fixtures.length; i++) {
+      const f = fixtures[i];
+      const home = teamAt(data, f.home, r);
+      const away = teamAt(data, f.away, r);
+      const side = home.clubId === clubId ? 0 : away.clubId === clubId ? 1 : -1;
+      if (side < 0) continue;
+      const m = matchAt(data, r, i);
+      if (!matchDone(m, now)) break;
+      const xi = side === 0 ? m.homeLineup.xi : m.awayLineup.xi;
+      matchXp(m.result, side as 0 | 1, xi, 14).forEach((v, k) => (total[k] += v));
+      games++;
+      break;
+    }
+  }
+  return { xp: total, games };
 }
 
 /** Tabela final (todos os jogos da temporada). */

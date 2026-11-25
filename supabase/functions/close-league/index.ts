@@ -3,13 +3,14 @@
  *
  * Recalcula TODOS os jogos com o mesmo código do jogo (lib/league/core) e
  * grava a ordem final via close_league() — quem sobe e quem cai sai daqui,
+ * assim como o XP que cada carta ganhou nos jogos (evolução das cartas),
  * nunca do aparelho do jogador. É idempotente: liga já fechada só devolve
  * o resultado guardado.
  *
  * Este arquivo é empacotado com esbuild (npm run fn:build) porque importa
  * o código do jogo; o deploy envia o pacote pronto (npm run fn:deploy).
  */
-import { buildLeagueData, CLUB_COLS, finalCode, finalTable, LEAGUE_COLS, logsSince, type LeagueClub, type LeagueRow } from "../../../lib/league/core";
+import { buildLeagueData, CLUB_COLS, clubMatchXp, finalCode, finalTable, LEAGUE_COLS, logsSince, type LeagueClub, type LeagueRow } from "../../../lib/league/core";
 
 declare const Deno: { env: { get(k: string): string | undefined }; serve(h: (req: Request) => Response | Promise<Response>): void };
 
@@ -70,9 +71,11 @@ Deno.serve(async (req) => {
     const data = buildLeagueData({ league, rounds, clubs, logs, changes });
     const table = finalTable(data);
     const points = Array.from({ length: league.size }, (_, slot) => table.find((r) => r.slot === slot)!.p);
+    const xp: Record<string, number[]> = {};
+    for (const c of clubs) xp[c.id] = clubMatchXp(data, c.id, Number.POSITIVE_INFINITY).xp;
     const final = await rest<string>("rpc/close_league", {
       method: "POST",
-      body: JSON.stringify({ p_league: id, p_final: finalCode(table), p_points: points }),
+      body: JSON.stringify({ p_league: id, p_final: finalCode(table), p_points: points, p_xp: xp }),
     });
     return reply(200, { league_id: id, final, closed: true });
   } catch (e) {

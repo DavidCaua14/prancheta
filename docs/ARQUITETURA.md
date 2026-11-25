@@ -207,6 +207,27 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
   `SUPABASE_ACCESS_TOKEN=sbp_... npm run fn:deploy`. Só é preciso republicar quando mudar o motor, os times
   da CPU ou as regras da liga — e, nesse caso, junto com o deploy do site.
 
+## Evolução das cartas (implementado)
+
+- **O banco guarda só o XP**: `clubs.xp smallint[14]` (null = tudo zero). Nível e overall são derivados no
+  aparelho (`lib/cards/evolution.ts`): cada nível = **+1 de overall e de cada atributo**, até o teto do tipo
+  (Base: nível 10, overall 70). Custo do nível n → n+1: `50 + 25·(n−1)` XP (1.350 XP até o nível 10).
+- **XP por jogo da liga** (`matchXp`): titular 6, entrou no jogo 4, banco 2 (treino); nota ≥ 7 +3, ≥ 8 +6;
+  gol +4, assistência +2; vitória +3, empate +1. **Fim de temporada**: acesso +40 e título +60 para cada
+  carta (somados em SQL).
+- **Quando entra**: só no fechamento da temporada. A Edge Function `close-league` calcula o XP dos jogos de
+  cada clube humano (`clubMatchXp`, o mesmo motor) e `close_league(..., p_xp)` soma, com teto de 3.000 por
+  carta por temporada. Ninguém do lado do jogador consegue escrever em `xp` (sem grant de update).
+  Por que só no fim? Os jogos da liga são recalculados por todos os aparelhos, então a força das cartas
+  precisa ser a mesma do 1º ao último jogo da temporada.
+- **No app**: o Elenco mostra a barra de XP de cada carta, o "XP a receber" da temporada em andamento
+  (calculado no aparelho) e quais cartas vão subir de nível. O aviso de fim de temporada lista as cartas
+  que evoluíram.
+- **Ritmo** (média, sem bônus): titular ~157 XP por temporada, reserva ~57. Titular chega ao nível 3 na 1ª
+  temporada e ao 10 em ~9 temporadas (~3 semanas). Elenco Base no nível 10 (OVR ~62 contra 53): V/E/D
+  77/15/9% contra a CPU da Várzea, 42/24/34% contra a da Série A e 35/25/41% contra a das Lendas — o topo
+  fica para as cartas Destaque, Épica e Especial.
+
 ## Esboço do banco (Postgres)
 
 ```
@@ -235,7 +256,8 @@ friendlies(id, codigo, casa_id, fora_id, inicio_em, match_id)
 1. ~~Série B~~ ✅
 1. ~~Série A~~ ✅
 1. ~~Liga das Lendas~~ ✅
-1. Evolução das cartas e prêmios por título (para a diferença da CPU não travar a subida).
+1. ~~Evolução das cartas (XP por jogo, bônus de acesso e título)~~ ✅
+1. Cartas Destaque/Épica/Especial como prêmio e no leilão; copas.
 2. Motor de simulação completo (`lib/sim/`) com testes de determinismo.
 3. Tela de escalação/prancheta.
 4. Ligas da Várzea + job de rodadas.

@@ -6,9 +6,9 @@ export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
  * de atualização obrigatória que os jogadores veem.
  */
 export const RELEASE_NOTES: string[] = [
-  "Liga das Lendas liberada: os 4 primeiros da Série A sobem",
-  "O topo do Prancheta: só esquadrões lendários na CPU",
-  "Série A agora tem zona de acesso",
+  "Evolução das cartas: cada jogo da liga dá XP",
+  "Cada nível vale +1 de overall (até 70 nas cartas Base)",
+  "Bônus de XP no acesso e no título; veja tudo no Elenco",
 ];
 
 export type VersionPayload = {

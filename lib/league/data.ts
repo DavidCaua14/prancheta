@@ -63,6 +63,10 @@ export async function sendChange(data: LeagueData, round: number, clubId: string
 
 export type SeasonRow = { league_id: number; division: number; pos: number; pts: number; move: number };
 
+/** Carta que subiu de nível no fechamento da temporada. */
+export type Evolved = { name: string; position: string; from: number; to: number; overall: number; gain: number };
+export type SeasonResult = SeasonRow & { evolved: Evolved[]; xp: number };
+
 /**
  * Pede ao servidor para fechar a temporada (idempotente: se alguém já
  * fechou, só devolve o resultado). O servidor recalcula todos os jogos com o

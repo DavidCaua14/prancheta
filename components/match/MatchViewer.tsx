@@ -9,7 +9,7 @@ import { Icon } from "@/components/ui/Icon";
 import { getMyClub, getSession, type Club } from "@/lib/club/api";
 import { decodeCrest } from "@/lib/club/identity";
 import { hash32 } from "@/lib/cards/generate";
-import { squadCards } from "@/lib/cards/squad";
+import { clubCards } from "@/lib/cards/squad";
 import { simulate, type Change, type MatchEvent, type MatchResult } from "@/lib/sim/engine";
 import { makeRival } from "@/lib/sim/rival";
 import { FORMATIONS, fitLevel } from "@/lib/tactics/formations";
@@ -82,7 +82,7 @@ export function MatchViewer() {
 
   const setup = useMemo(() => {
     if (!club) return null;
-    const squad = squadCards(club.id, club.squad) ?? [];
+    const squad = clubCards(club.id, club.squad, club.xp);
     const lineup = lineupFor(club.lineup, squad);
     const rival = makeRival(club.id);
     return { squad, lineup, rival };

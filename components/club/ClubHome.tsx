@@ -10,12 +10,14 @@ import { Icon, type IconName } from "@/components/ui/Icon";
 import { Logo } from "@/components/ui/Logo";
 import { signOut } from "@/lib/club/api";
 import { decodeCrest, decodeKit } from "@/lib/club/identity";
-import { clockAt, fmtCountdown, fmtKickoff, matchAt, matchDone, standings } from "@/lib/league/data";
+import { clockAt, clubMatchXp, fmtCountdown, fmtKickoff, matchAt, matchDone, standings } from "@/lib/league/data";
+import { levelFromXp } from "@/lib/cards/evolution";
+import { CARD_TIERS } from "@/lib/game-config";
 import { divisionInfo } from "@/lib/league/divisions";
 import { useLeague, useNow } from "@/lib/league/useLeague";
 import { SeasonSummary } from "@/components/league/SeasonSummary";
 import { scoreAt } from "@/components/league/LeagueHub";
-import { squadCards } from "@/lib/cards/squad";
+import { clubCards } from "@/lib/cards/squad";
 import { FORMATIONS, strength } from "@/lib/tactics/formations";
 import { POSTURES, lineupFor } from "@/lib/tactics/lineup";
 import { CrestSvg } from "./CrestSvg";
@@ -65,6 +67,29 @@ function Soon({ title, text }: { title: string; text: string }) {
   );
 }
 
+/** Barra de XP do nível atual + o que entra no fim da temporada. */
+function XpBar({ xp, pending }: { xp: number; pending: number }) {
+  const max = CARD_TIERS.base.maxLevel;
+  const now = levelFromXp(xp, max);
+  const after = levelFromXp(xp + pending, max);
+  const pct = now.max ? 100 : Math.round((now.into / now.need) * 100);
+  const pctAfter = now.max ? 100 : after.level > now.level ? 100 : Math.round(((now.into + pending) / now.need) * 100);
+  return (
+    <div className="w-full max-w-[9.5rem] text-[0.62rem] font-extrabold leading-tight text-white/80">
+      <div className="relative h-2 overflow-hidden rounded-full border border-[var(--ink)] bg-black/40" aria-hidden>
+        <div className="absolute inset-y-0 left-0 bg-[var(--sun)]/45" style={{ width: `${pctAfter}%` }} />
+        <div className="absolute inset-y-0 left-0 bg-[var(--sun)]" style={{ width: `${pct}%` }} />
+      </div>
+      <p className="mt-0.5 flex justify-between gap-1">
+        <span>{now.max ? "Nível máximo" : `${now.into}/${now.need} XP`}</span>
+        {pending > 0 && !now.max && (
+          <span className={after.level > now.level ? "text-[var(--grass)]" : "text-[var(--sun)]"}>{after.level > now.level ? `Nv ${after.level}!` : `+${pending}`}</span>
+        )}
+      </p>
+    </div>
+  );
+}
+
 /** Tela inicial do jogo (protótipo). */
 export function ClubHome({ mascot }: { mascot: ReactNode }) {
   const router = useRouter();
@@ -85,7 +110,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
     return () => window.clearTimeout(t);
   }, [toast]);
 
-  const cards = useMemo(() => (club ? squadCards(club.id, club.squad) ?? [] : []), [club]);
+  const cards = useMemo(() => (club ? clubCards(club.id, club.squad, club.xp) : []), [club]);
   // meu jogo ao vivo ou o próximo, e minha posição
   const minute = Math.floor(now / 60_000);
   const leagueInfo = useMemo(() => {
@@ -98,6 +123,8 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
     const pos = standings(league, minute * 60_000).findIndex((r) => r.slot === slot) + 1;
     return { target, pos, total: league.kickoffs.length };
   }, [league, club, minute]);
+  // XP ganho nos jogos desta temporada (entra no elenco quando a temporada fecha)
+  const pending = useMemo(() => (league && club ? clubMatchXp(league, club.id, minute * 60_000) : null), [league, club, minute]);
 
   if (!club) {
     return (
@@ -290,6 +317,24 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
 
         {tab === "elenco" && (
           <div className="flex flex-col gap-4">
+            <Panel className="flex items-start gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-[3px] border-[var(--ink)] bg-[var(--sun)] text-[var(--ink)]">
+                <Icon name="bolt" className="h-6 w-6" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="t-heading">Evolução das cartas</p>
+                <p className="mt-0.5 text-sm text-white/75">
+                  Cada jogo da liga dá XP: jogar, nota boa, gol, assistência e vitória. Banco também treina. O XP entra no elenco
+                  quando a temporada fecha (+40 no acesso, +60 no título) e cada nível vale +1 de overall, até {CARD_TIERS.base.maxOverall} nas
+                  cartas Base.
+                </p>
+                {pending && pending.games > 0 && (
+                  <p className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-2 py-1 text-xs font-extrabold text-[var(--sun)]">
+                    <Icon name="clock" className="h-3.5 w-3.5" /> +{pending.xp.reduce((a, b) => a + b, 0)} XP a receber em {pending.games} {pending.games === 1 ? "jogo" : "jogos"} desta temporada
+                  </p>
+                )}
+              </div>
+            </Panel>
             {[
               ["Titulares", xiCards],
               ["Reservas", benchCards],
@@ -299,9 +344,15 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
                   {title as string} <span className="text-sm text-white/50">({(list as typeof cards).length})</span>
                 </p>
                 <div className="grid grid-cols-3 justify-items-center gap-x-2 gap-y-4 sm:grid-cols-4 lg:grid-cols-6">
-                  {(list as typeof cards).map((c) => (
-                    <GameCard key={c.key} card={c} kit={kit} tag={club.tag} className="!text-[clamp(8px,2.45vw,12px)]" />
-                  ))}
+                  {(list as typeof cards).map((c) => {
+                    const i = cards.indexOf(c);
+                    return (
+                      <div key={c.key} className="flex w-full flex-col items-center gap-1.5">
+                        <GameCard card={c} kit={kit} tag={club.tag} className="!text-[clamp(8px,2.45vw,12px)]" />
+                        <XpBar xp={club.xp?.[i] ?? 0} pending={pending?.xp[i] ?? 0} />
+                      </div>
+                    );
+                  })}
                 </div>
               </Panel>
             ))}
