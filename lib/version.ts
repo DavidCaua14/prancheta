@@ -6,9 +6,9 @@ export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
  * de atualização obrigatória que os jogadores veem.
  */
 export const RELEASE_NOTES: string[] = [
-  "14 formações, incluindo Quadrado mágico, Losango e Árvore de Natal",
-  "Aviso claro de jogador fora de posição na escalação",
-  "Ao selecionar um jogador, o campinho mostra onde ele rende melhor",
+  "Motor de partidas: jogos simulados lance a lance",
+  "Amistoso de treino com narração, pausa no intervalo e substituições",
+  "Tática agora faz diferença em campo",
 ];
 
 export type VersionPayload = {

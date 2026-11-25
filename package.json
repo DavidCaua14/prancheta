@@ -8,7 +8,9 @@
     "prebuild": "node scripts/art-manifest.mjs",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "tsx --tsconfig tsconfig.json --test tests/*.test.ts",
+    "sim:balance": "tsx --tsconfig tsconfig.json scripts/sim-balance.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.2",
@@ -24,6 +26,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
     "tailwindcss": "4.3.3",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }

@@ -114,6 +114,46 @@ chegarem de fora (leilão, prêmios), referenciadas pela seed.
   (anel + "!"), na lista (etiqueta adaptado/improvisado) e num aviso com quanto ele perde. 1 escrita a cada "Salvar"
   (`supabase/migrations/0003_lineup.sql`). Sem escalação salva, vale o 4-3-3 da peneira.
 
+## Motor de partidas (implementado)
+
+- `lib/sim/engine.ts`: simulação minuto a minuto, **determinística** (seed + times + mudanças → mesma partida).
+  Narração com sorteio separado (`lib/sim/narration.ts`): mudar frases nunca muda resultados.
+- A cada minuto: o meio-campo disputa a posse; quem tem a bola pode atacar (ataque × defesa → chute); o chute
+  depende de finalização × goleiro. Também: contra-ataques (quem se lança deixa espaço), escanteios e cabeçadas,
+  faltas, cartões, pênaltis (cobrador escolhido), lesões, cansaço, expulsões e substituições.
+- Pesam: atributos, encaixe de posição, formação (cobertura por setor), postura, marcação, passes, mando de campo,
+  "dia" de cada jogador, cansaço e jogadores a menos.
+- `changes`: mudanças do técnico durante o jogo (postura, marcação, passes, substituições) a partir de um minuto.
+  Recalcular com as mudanças não altera nada antes delas.
+- IA do técnico (`ai: true`): substitui cansados e ajusta a postura pelo placar.
+- Saída: placar, lances narrados, estatísticas e notas dos jogadores (base para XP).
+- Constantes em `TUNING`; ⚠️ mudar regras altera partidas antigas → subir `ENGINE_VERSION`.
+
+### Equilíbrio (testado)
+
+`npm test` roda 13 testes (regras, determinismo e equilíbrio com milhares de jogos) e `npm run sim:balance`
+imprime o relatório completo. Números atuais (times Base sorteados):
+
+| Métrica | Motor | Referência real |
+| --- | --- | --- |
+| Gols por jogo | ~2,7 | 2,5–2,8 |
+| Mandante / empate / visitante | ~45% / 25% / 30% | 45% / 27% / 28% |
+| 0 x 0 | ~6% | 7–8% |
+| Chutes por time / no alvo | ~12,8 / 34% | 12 / 33% |
+| Amarelos / vermelhos / pênaltis por jogo | 3,1 / 0,15 / 0,3 | 3–4 / 0,15 / 0,25 |
+
+- Força: +5 de overall vence ~55% (perde ~23%), +10 vence ~72%, +20 vence ~95%.
+- Postura: nenhuma domina; mais ofensiva = mais gols nos dois lados; retranca = mais empates e é a melhor
+  escolha do time mais fraco contra o mais forte.
+- Marcação pressão: leve vantagem, quase o dobro de cartões e mais cansaço.
+- Passes: time técnico rende mais no toque curto; time rápido, na ligação direta.
+- Todas as 14 formações ficam competitivas (33–42% de derrotas contra o 4-3-3).
+
+### Amistoso de treino
+
+`/partida`: jogo contra o rival gerado do clube, rodando o motor no aparelho (nada vai para o banco), com
+narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substituições durante o jogo.
+
 ## Esboço do banco (Postgres)
 
 ```
@@ -135,6 +175,7 @@ friendlies(id, codigo, casa_id, fora_id, inicio_em, match_id)
 1. ~~Autenticação e criação de clube~~ ✅
 1. ~~Peneira: elenco inicial de cartas Base~~ ✅
 1. ~~Escalação e tática~~ ✅
+1. ~~Motor de simulação + amistoso de treino~~ ✅
 2. Motor de simulação completo (`lib/sim/`) com testes de determinismo.
 3. Tela de escalação/prancheta.
 4. Ligas da Várzea + job de rodadas.

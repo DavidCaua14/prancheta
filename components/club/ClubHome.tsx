@@ -8,9 +8,8 @@ import { MiniPitch } from "@/components/cards/MiniPitch";
 import { ArtImg } from "@/components/ui/ArtImg";
 import { Logo } from "@/components/ui/Logo";
 import { getMyClub, getSession, signOut, type Club } from "@/lib/club/api";
-import { decodeCrest, decodeKit, randomCrest } from "@/lib/club/identity";
-import { hash32, rng } from "@/lib/cards/generate";
-import { RIVAL_CLUBS } from "@/lib/cards/names";
+import { decodeCrest, decodeKit } from "@/lib/club/identity";
+import { makeRival } from "@/lib/sim/rival";
 import { squadCards } from "@/lib/cards/squad";
 import { FORMATIONS, strength } from "@/lib/tactics/formations";
 import { POSTURES, lineupFor } from "@/lib/tactics/lineup";
@@ -92,11 +91,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
   }, [toast]);
 
   const cards = useMemo(() => (club ? squadCards(club.id, club.squad) ?? [] : []), [club]);
-  const rival = useMemo(() => {
-    if (!club) return null;
-    const r = rng(hash32(`${club.id}:rival:1`));
-    return { name: RIVAL_CLUBS[Math.floor(r() * RIVAL_CLUBS.length)], crest: randomCrest(r) };
-  }, [club]);
+  const rival = useMemo(() => (club ? makeRival(club.id) : null), [club]);
 
   if (!club || !rival) {
     return (
@@ -191,7 +186,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
                       <span className="mt-1 rounded-lg bg-[var(--ink)] px-2 py-0.5 text-xs font-extrabold">Sáb · 20:00</span>
                     </div>
                     <div className="flex min-w-0 flex-col items-center text-center">
-                      <CrestSvg crest={rival.crest} tag={rival.name.slice(0, 3).toUpperCase()} className="h-20 w-[72px] sm:h-24 sm:w-[86px]" />
+                      <CrestSvg crest={rival.crest} tag={rival.tag} className="h-20 w-[72px] sm:h-24 sm:w-[86px]" />
                       <p className="mt-1.5 line-clamp-2 text-sm font-extrabold leading-tight">{rival.name}</p>
                     </div>
                   </div>
@@ -199,8 +194,8 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
                     <button type="button" onClick={goLineup} className="btn btn-paper">
                       Escalação
                     </button>
-                    <button type="button" onClick={() => soon("O jogo ao vivo")} className="btn btn-green">
-                      Assistir
+                    <button type="button" onClick={() => router.push("/partida")} className="btn btn-green">
+                      Amistoso de treino
                     </button>
                   </div>
                 </div>
