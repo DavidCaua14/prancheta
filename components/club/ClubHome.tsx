@@ -110,7 +110,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
     return () => window.clearTimeout(t);
   }, [toast]);
 
-  const cards = useMemo(() => (club ? clubCards(club.id, club.squad, club.xp) : []), [club]);
+  const cards = useMemo(() => (club ? clubCards(club.id, club.squad, club.xp, club.won) : []), [club]);
   // meu jogo ao vivo ou o próximo, e minha posição
   const minute = Math.floor(now / 60_000);
   const leagueInfo = useMemo(() => {
@@ -150,7 +150,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
     { label: "Escalação", icon: "icon-tatica", fallback: "clipboard", action: goLineup, ready: true },
     { label: "Liga", icon: div.art, alt: "icon-liga", fallback: "trophy", action: () => router.push("/liga"), ready: true },
     { label: "Treino", icon: "icon-treino", alt: "icon-pvp", fallback: "whistle", action: () => router.push("/partida"), ready: true },
-    { label: "Leilão", icon: "icon-leilao", fallback: "gavel", action: () => soon("O leilão") },
+    { label: "Leilão", icon: "icon-leilao", fallback: "gavel", action: () => router.push("/leilao"), ready: true },
     { label: "Copas", icon: "trophy-copa-nacional", fallback: "trophy", action: () => soon("As copas") },
   ];
 
@@ -167,11 +167,22 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
           <CrestSvg crest={crest} tag={club.tag} className="h-11 w-10 shrink-0" />
           <div className="min-w-0 flex-1">
             <p className="t-heading truncate text-white">{club.name}</p>
-            <p className="text-xs font-bold text-white/60">
+            <p className="truncate text-xs font-bold text-white/60">
               {div.short}{league ? ` · Grupo #${league.league.id}` : ""}
               {leagueInfo?.pos ? ` · ${leagueInfo.pos}º lugar` : ""}
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => router.push("/leilao")}
+            className="flex h-10 shrink-0 items-center gap-1 rounded-xl border-[3px] border-[var(--ink)] bg-white/10 px-1.5 text-white sm:px-2"
+            aria-label={`${club.coins ?? 0} moedas — abrir o leilão`}
+          >
+            <ArtImg name="icon-moeda" className="h-5 w-5 object-contain" fallback={<span className="h-4 w-4 rounded-full border-2 border-[var(--ink)] bg-[var(--sun)]" />} />
+            <span className="t-num text-sm leading-none text-[var(--sun)] sm:text-lg">
+              {(club.coins ?? 0) >= 10000 ? `${Math.floor((club.coins ?? 0) / 1000)}k` : (club.coins ?? 0).toLocaleString("pt-BR")}
+            </span>
+          </button>
           <span className="flex shrink-0 flex-col items-center rounded-xl border-[3px] border-[var(--ink)] bg-[var(--sun)] px-2.5 py-0.5 text-[var(--ink)]">
             <span className="text-[0.55rem] font-extrabold uppercase leading-none tracking-wider">OVR</span>
             <span className="t-num text-lg leading-none">{ovr}</span>
@@ -181,7 +192,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
               <button
                 key={n.id}
                 type="button"
-                onClick={() => (n.id === "jogos" ? router.push("/liga?aba=jogos") : setTab(n.id))}
+                onClick={() => (n.id === "jogos" ? router.push("/liga?aba=jogos") : n.id === "leilao" ? router.push("/leilao") : setTab(n.id))}
                 aria-current={tab === n.id ? "page" : undefined}
                 className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-extrabold transition-colors ${
                   tab === n.id ? "bg-[var(--sun)] text-[var(--ink)]" : "text-white/80 hover:bg-white/10"
@@ -360,7 +371,6 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
         )}
 
         {tab === "jogos" && <Soon title="Calendário" text="Rodadas da liga, copas e amistosos, com a partida ao vivo e a narração lance a lance." />}
-        {tab === "leilao" && <Soon title="Leilão" text="Cartas Destaque, Épicas e Especiais em disputa entre todos os técnicos." />}
 
         {tab === "clube" && (
           <Panel className="flex flex-col items-center gap-4 py-8 text-center">
@@ -394,7 +404,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
             <li key={n.id}>
               <button
                 type="button"
-                onClick={() => (n.id === "jogos" ? router.push("/liga?aba=jogos") : setTab(n.id))}
+                onClick={() => (n.id === "jogos" ? router.push("/liga?aba=jogos") : n.id === "leilao" ? router.push("/leilao") : setTab(n.id))}
                 aria-current={tab === n.id ? "page" : undefined}
                 className={`flex w-full flex-col items-center gap-0.5 py-2 text-[0.68rem] font-extrabold ${
                   tab === n.id ? "text-[var(--sun)]" : "text-white/65"

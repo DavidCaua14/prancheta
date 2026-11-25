@@ -228,6 +228,27 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
   77/15/9% contra a CPU da Várzea, 42/24/34% contra a da Série A e 35/25/41% contra a das Lendas — o topo
   fica para as cartas Destaque, Épica e Especial.
 
+## Leilão (implementado)
+
+- **Lotes sem tabela**: a cada 2 h (rodada = `floor(epoch/7200)`, 24 h por dia) abrem **8 lotes**: 5 Destaque,
+  2 Épica e o 8º é Especial a cada 4 rodadas (senão Destaque). A carta do lote sai de `(rodada, índice)` em
+  `lib/auction/lots.ts` (`lotCard`) — o banco não guarda cartas.
+- **Banco**: só `auction_lots (round, idx, best_club, best_amount, bids, ends_at)` — **1 linha por lote que
+  recebeu lance**, atualizada a cada lance. `place_bid()` faz tudo numa transação: confere horário e lance
+  mínimo (piso da raridade: 300 / 900 / 2.500, depois +5% e pelo menos +10), **tira as moedas** de quem deu o
+  lance e **devolve** as do anterior, não deixa cobrir o próprio lance, limita a 10 cartas extras (arrematadas
+  + liderando) e **prorroga** o lote para 60 s se o lance vier no último minuto.
+- **Sem "entrega"**: o lote com `ends_at` no passado é de quem deu o maior lance. O elenco é montado no
+  aparelho: 14 cartas da peneira + arrematadas em ordem de arremate (índices 14…23). Nos jogos da liga a
+  carta só conta **depois do arremate** (`wonAt(..., apito)`), então nenhum resultado antigo muda.
+- **Moedas** (`clubs.coins`, sem grant de update): 1.000 para começar + prêmio no fim de cada temporada
+  (`season_prize`: 1º lugar ganha 300 na Várzea, 500 na D, 800 na C, 1.200 na B, 1.800 na A e 2.800 nas
+  Lendas; o último leva 25% disso). O prêmio aparece no aviso de fim de temporada.
+- **Raridades evoluem** com o mesmo XP: Destaque até nível 20 / overall 79, Épica 35 / 89, Especial 50 / 99.
+  `clubs.xp` cresce para 24 posições.
+- **Custo**: lances = 1 linha por lote disputado (no máximo 8 a cada 2 h, ~100 por dia). A tela relê só os
+  lotes da rodada a cada 8 s enquanto está aberta.
+
 ## Esboço do banco (Postgres)
 
 ```
@@ -257,7 +278,8 @@ friendlies(id, codigo, casa_id, fora_id, inicio_em, match_id)
 1. ~~Série A~~ ✅
 1. ~~Liga das Lendas~~ ✅
 1. ~~Evolução das cartas (XP por jogo, bônus de acesso e título)~~ ✅
-1. Cartas Destaque/Épica/Especial como prêmio e no leilão; copas.
+1. ~~Leilão (cartas Destaque, Épica e Especial; moedas e prêmios por temporada)~~ ✅
+1. Copas e amistosos entre amigos.
 2. Motor de simulação completo (`lib/sim/`) com testes de determinismo.
 3. Tela de escalação/prancheta.
 4. Ligas da Várzea + job de rodadas.

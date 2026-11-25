@@ -82,7 +82,7 @@ export function MatchViewer() {
 
   const setup = useMemo(() => {
     if (!club) return null;
-    const squad = clubCards(club.id, club.squad, club.xp);
+    const squad = clubCards(club.id, club.squad, club.xp, club.won);
     const lineup = lineupFor(club.lineup, squad);
     const rival = makeRival(club.id);
     return { squad, lineup, rival };

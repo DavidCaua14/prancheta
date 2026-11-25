@@ -5,6 +5,7 @@
  */
 import type { BaseCard } from "@/lib/cards/generate";
 import { hash32 } from "@/lib/cards/generate";
+import { wonAt, type WonLot } from "@/lib/auction/lots";
 import { matchXp } from "@/lib/cards/evolution";
 import { clubCards } from "@/lib/cards/squad";
 import { decodeCrest, decodeKit, type Crest, type Kit } from "@/lib/club/identity";
@@ -37,7 +38,11 @@ export type LeagueClub = {
   joined_round: number;
   /** XP acumulado por carta (null = tudo no nível 1) */
   xp: number[] | null;
+  /** lotes do leilão arrematados (lidos à parte, em auction_lots) */
+  won?: WonLot[];
 };
+export type LotRow = WonLot & { best_club: string };
+export const LOT_COLS = "round,idx,ends_at,best_club";
 export type LogRow = { club_id: string; at: string; lineup: string };
 export type ChangeRow = { round: number; club_id: string; tick: number; change: string };
 
@@ -77,13 +82,15 @@ export function buildLeagueData(raw: {
   clubs: LeagueClub[];
   logs: LogRow[];
   changes: ChangeRow[];
+  /** lotes do leilão já encerrados, de qualquer clube da liga */
+  lots?: LotRow[];
 }): LeagueData {
   const rounds = [...raw.rounds].sort((a, b) => a.round - b.round);
   const logs = [...raw.logs].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
   return {
     league: raw.league,
     kickoffs: rounds.map((r) => new Date(r.kickoff).getTime()),
-    clubs: raw.clubs,
+    clubs: raw.lots?.length ? raw.clubs.map((c) => ({ ...c, won: raw.lots!.filter((l) => l.best_club === c.id) })) : raw.clubs,
     logs,
     changes: raw.changes,
     fixtures: doubleRoundRobin(raw.league.size),
@@ -97,11 +104,13 @@ export function buildLeagueData(raw: {
 
 const squadCache = new Map<string, BaseCard[]>();
 
-function clubSquad(c: LeagueClub): BaseCard[] {
-  const key = `${c.id}:${c.squad}:${c.xp?.join(".") ?? ""}`;
+/** Elenco do clube no apito (cartas do leilão só contam depois de arrematadas). */
+function clubSquad(c: LeagueClub, at: number): BaseCard[] {
+  const won = wonAt(c.won, at);
+  const key = `${c.id}:${c.squad}:${c.xp?.join(".") ?? ""}:${won.map((w) => `${w.round}-${w.idx}`).join(",")}`;
   let s = squadCache.get(key);
   if (!s) {
-    s = clubCards(c.id, c.squad, c.xp);
+    s = clubCards(c.id, c.squad, c.xp, won);
     squadCache.set(key, s);
   }
   return s;
@@ -111,7 +120,7 @@ function clubSquad(c: LeagueClub): BaseCard[] {
 export function teamAt(data: LeagueData, slot: number, round: number): TeamView {
   const club = data.clubs.find((c) => c.league_slot === slot && c.joined_round <= round);
   if (club) {
-    return { slot, name: club.name, tag: club.tag, crest: decodeCrest(club.crest), kit: decodeKit(club.kit), bot: false, clubId: club.id, squad: clubSquad(club) };
+    return { slot, name: club.name, tag: club.tag, crest: decodeCrest(club.crest), kit: decodeKit(club.kit), bot: false, clubId: club.id, squad: clubSquad(club, data.kickoffs[round - 1] ?? Number.POSITIVE_INFINITY) };
   }
   const b = botTeam(data.league.id, slot, data.league.division);
   return { slot, name: b.name, tag: b.tag, crest: b.crest, kit: b.kit, bot: true, squad: b.squad };
@@ -303,13 +312,16 @@ export function standings(data: LeagueData, now: number): Row[] {
   return rows.sort((x, y) => y.p - x.p || y.v - x.v || y.gp - y.gc - (x.gp - x.gc) || y.gp - x.gp || x.slot - y.slot);
 }
 
+/** Tamanho máximo do elenco (14 da peneira + cartas do leilão) = tamanho de clubs.xp. */
+export const XP_SLOTS = 24;
+
 /**
  * XP que as cartas do clube ganharam nos jogos da liga terminados até `now`
  * (só os jogos em que o próprio técnico comandou a vaga). O servidor usa
  * now = ∞ no fechamento; o aparelho usa para mostrar o "XP a receber".
  */
 export function clubMatchXp(data: LeagueData, clubId: string, now: number): { xp: number[]; games: number } {
-  const total = Array.from({ length: 14 }, () => 0);
+  const total = Array.from({ length: XP_SLOTS }, () => 0);
   let games = 0;
   for (let r = 1; r <= data.kickoffs.length; r++) {
     if (data.kickoffs[r - 1] > now) break;
@@ -323,7 +335,8 @@ export function clubMatchXp(data: LeagueData, clubId: string, now: number): { xp
       const m = matchAt(data, r, i);
       if (!matchDone(m, now)) break;
       const xi = side === 0 ? m.homeLineup.xi : m.awayLineup.xi;
-      matchXp(m.result, side as 0 | 1, xi, 14).forEach((v, k) => (total[k] += v));
+      const squad = side === 0 ? m.home.squad : m.away.squad;
+      matchXp(m.result, side as 0 | 1, xi, squad.length).forEach((v, k) => (total[k] += v));
       games++;
       break;
     }

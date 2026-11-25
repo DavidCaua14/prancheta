@@ -32,8 +32,8 @@ function seasonResult(row: SeasonRow, club: Club, old: LeagueData | undefined): 
   const bonus = seasonBonus(row.pos, row.move);
   const gained = clubMatchXp(old, club.id, Number.POSITIVE_INFINITY).xp.map((v) => Math.min(3000, v) + bonus);
   const before = club.xp.map((v, i) => Math.max(0, v - gained[i]));
-  const a = clubCards(club.id, club.squad, before);
-  const b = clubCards(club.id, club.squad, club.xp);
+  const a = clubCards(club.id, club.squad, before, club.won);
+  const b = clubCards(club.id, club.squad, club.xp, club.won);
   const evolved: Evolved[] = [];
   b.forEach((c, i) => {
     if (c.level > a[i].level) evolved.push({ name: c.name, position: c.position, from: a[i].level, to: c.level, overall: c.overall, gain: c.overall - a[i].overall });

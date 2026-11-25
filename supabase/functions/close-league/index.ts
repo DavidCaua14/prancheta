@@ -10,7 +10,7 @@
  * Este arquivo é empacotado com esbuild (npm run fn:build) porque importa
  * o código do jogo; o deploy envia o pacote pronto (npm run fn:deploy).
  */
-import { buildLeagueData, CLUB_COLS, clubMatchXp, finalCode, finalTable, LEAGUE_COLS, logsSince, type LeagueClub, type LeagueRow } from "../../../lib/league/core";
+import { buildLeagueData, CLUB_COLS, clubMatchXp, finalCode, finalTable, LEAGUE_COLS, LOT_COLS, logsSince, type LeagueClub, type LeagueRow, type LotRow } from "../../../lib/league/core";
 
 declare const Deno: { env: { get(k: string): string | undefined }; serve(h: (req: Request) => Response | Promise<Response>): void };
 
@@ -67,8 +67,11 @@ Deno.serve(async (req) => {
           `lineup_log?club_id=in.(${ids.join(",")})&at=gte.${encodeURIComponent(logsSince(league))}&select=club_id,at,lineup&order=at`,
         )
       : [];
+    const lots = ids.length
+      ? await rest<LotRow[]>(`auction_lots?best_club=in.(${ids.join(",")})&ends_at=lt.${encodeURIComponent(new Date().toISOString())}&select=${LOT_COLS}`)
+      : [];
 
-    const data = buildLeagueData({ league, rounds, clubs, logs, changes });
+    const data = buildLeagueData({ league, rounds, clubs, logs, changes, lots });
     const table = finalTable(data);
     const points = Array.from({ length: league.size }, (_, slot) => table.find((r) => r.slot === slot)!.p);
     const xp: Record<string, number[]> = {};

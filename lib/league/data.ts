@@ -5,7 +5,7 @@
  * ./core — código puro, que também roda no servidor para fechar a temporada.
  */
 import { supabase } from "@/lib/supabase/client";
-import { buildLeagueData, CLUB_COLS, LEAGUE_COLS, logsSince, type ChangeRow, type LeagueData, type LeagueRow, type LogRow, type LeagueClub } from "./core";
+import { buildLeagueData, CLUB_COLS, LEAGUE_COLS, LOT_COLS, logsSince, type ChangeRow, type LeagueData, type LeagueRow, type LogRow, type LeagueClub, type LotRow } from "./core";
 
 export * from "./core";
 
@@ -32,7 +32,12 @@ export async function loadLeague(leagueId: number): Promise<LeagueData> {
     ? await sb.from("lineup_log").select("club_id,at,lineup").in("club_id", ids).gte("at", logsSince(league)).order("at")
     : { data: [], error: null };
   if (logs.error) throw logs.error;
+  const lots = ids.length
+    ? await sb.from("auction_lots").select(LOT_COLS).in("best_club", ids).lt("ends_at", new Date().toISOString())
+    : { data: [], error: null };
+  if (lots.error) throw lots.error;
   return buildLeagueData({
+    lots: (lots.data ?? []) as LotRow[],
     league,
     rounds: rounds.data ?? [],
     clubs: (clubs.data ?? []) as LeagueClub[],
@@ -61,7 +66,7 @@ export async function sendChange(data: LeagueData, round: number, clubId: string
 /* Fim de temporada                                                    */
 /* ------------------------------------------------------------------ */
 
-export type SeasonRow = { league_id: number; division: number; pos: number; pts: number; move: number };
+export type SeasonRow = { league_id: number; division: number; pos: number; pts: number; move: number; coins: number };
 
 /** Carta que subiu de nível no fechamento da temporada. */
 export type Evolved = { name: string; position: string; from: number; to: number; overall: number; gain: number };
@@ -81,7 +86,7 @@ export async function closeLeague(leagueId: number): Promise<boolean> {
 export async function lastSeason(clubId: string): Promise<SeasonRow | null> {
   const { data, error } = await supabase()
     .from("club_seasons")
-    .select("league_id,division,pos,pts,move")
+    .select("league_id,division,pos,pts,move,coins")
     .eq("club_id", clubId)
     .order("league_id", { ascending: false })
     .limit(1)

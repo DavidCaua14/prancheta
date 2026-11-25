@@ -1,5 +1,6 @@
 "use client";
 
+import type { WonLot } from "@/lib/auction/lots";
 import type { Session } from "@supabase/supabase-js";
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL, supabase } from "@/lib/supabase/client";
 
@@ -21,7 +22,15 @@ export type Club = {
   division: number;
   /** XP acumulado das 14 cartas (null = todas no nível 1) — só o servidor muda. */
   xp: number[] | null;
+  /** Moedas disponíveis (as de lances em andamento já saíram daqui). */
+  coins: number;
+  /** Lotes do leilão arrematados (cartas extras do elenco). */
+  won: WonLot[];
+  /** Quando foi lido do banco (o cache vale 5 minutos). */
+  fetchedAt?: number;
 };
+
+const CACHE_TTL = 5 * 60_000;
 
 const CLUB_CACHE = (uid: string) => `prancheta:club:${uid}`;
 
@@ -30,7 +39,7 @@ function readCache(uid: string): Club | null {
     const raw = localStorage.getItem(CLUB_CACHE(uid));
     const club = raw ? (JSON.parse(raw) as Club) : null;
     // cache de versão antiga (sem o campo squad) ou elenco ainda vazio: relê do banco
-    return club && typeof club.squad === "string" && "lineup" in club && "xp" in club ? club : null;
+    return club && typeof club.squad === "string" && "lineup" in club && "won" in club && Date.now() - (club.fetchedAt ?? 0) < CACHE_TTL ? club : null;
   } catch {
     return null;
   }
@@ -60,9 +69,15 @@ export async function getMyClub(session: Session, { fresh = false } = {}): Promi
     const cached = readCache(uid);
     if (cached) return cached;
   }
-  const { data, error } = await supabase().from("clubs").select("id,name,tag,crest,kit,squad,lineup,league_id,league_slot,joined_round,division,xp").eq("id", uid).maybeSingle();
-  if (error) throw error;
-  if (data) writeCache(data);
+  const sb = supabase();
+  const [club, lots] = await Promise.all([
+    sb.from("clubs").select("id,name,tag,crest,kit,squad,lineup,league_id,league_slot,joined_round,division,xp,coins").eq("id", uid).maybeSingle(),
+    sb.from("auction_lots").select("round,idx,ends_at").eq("best_club", uid).lt("ends_at", new Date().toISOString()),
+  ]);
+  if (club.error) throw club.error;
+  if (!club.data) return null;
+  const data: Club = { ...(club.data as Omit<Club, "won">), won: (lots.data ?? []) as WonLot[], fetchedAt: Date.now() };
+  writeCache(data);
   return data;
 }
 
@@ -72,7 +87,7 @@ export async function createClub(
   session: Session,
   input: Pick<Club, "name" | "tag" | "crest" | "kit">,
 ): Promise<{ club: Club } | { error: CreateClubError }> {
-  const club: Club = { id: session.user.id, ...input, name: input.name.trim(), squad: null, lineup: null, league_id: null, league_slot: null, joined_round: null, division: 0, xp: null };
+  const club: Club = { id: session.user.id, ...input, name: input.name.trim(), squad: null, lineup: null, league_id: null, league_slot: null, joined_round: null, division: 0, xp: null, coins: 1000, won: [], fetchedAt: Date.now() };
   const { error } = await supabase().from("clubs").insert({ ...input, id: club.id, name: club.name });
   if (!error) {
     writeCache(club);

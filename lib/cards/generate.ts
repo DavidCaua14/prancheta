@@ -9,7 +9,7 @@
  * cartas de todos os clubes. Para mudar, crie GENERATOR_V2 e um novo prefixo.
  */
 
-import { CARD_TIERS } from "@/lib/game-config";
+import { CARD_TIERS, type CardTier } from "@/lib/game-config";
 import { FIRST_NAMES, NICKNAMES, SURNAMES } from "./names";
 
 export const GENERATOR_VERSION = 1;
@@ -32,6 +32,8 @@ export const POSITION_NAMES: Record<Position, string> = {
 export type HairStyle = "short" | "afro" | "mohawk" | "bald" | "long" | "cap";
 
 export type BaseCard = {
+  /** Raridade (ausente = Base). */
+  tier?: CardTier;
   /** Identificador estável: "<vaga>-<opção>". */
   key: string;
   seed: number;
@@ -111,8 +113,18 @@ function weighted(stats: number[], w: number[]) {
 
 /** Gera a carta Base de uma seed para a posição pedida. */
 export function generateBaseCard(seed: number, position: Position, key: string): BaseCard {
+  return generateCard(seed, position, key, "base");
+}
+
+/**
+ * Gera uma carta de qualquer raridade. Para "base" o resultado é idêntico ao
+ * da versão 1 (mesma sequência de sorteios); as outras só mudam a faixa de
+ * overall e o teto dos atributos.
+ */
+export function generateCard(seed: number, position: Position, key: string, tier: CardTier): BaseCard {
   const r = rng(seed);
-  const [lo, hi] = CARD_TIERS.base.startOverall;
+  const [lo, hi] = CARD_TIERS[tier].startOverall;
+  const statCap = tier === "base" ? 85 : 97;
 
   // nível alvo concentrado no meio da faixa (média de dois sorteios)
   const target = Math.round(lo + ((r() + r()) / 2) * (hi - lo));
@@ -120,7 +132,7 @@ export function generateBaseCard(seed: number, position: Position, key: string):
   let raw = prof.off.map((o) => target + o + Math.round((r() - 0.5) * 10));
   // ajusta para o overall bater com o alvo
   const shift = Math.round(target - weighted(raw, prof.w));
-  raw = raw.map((v) => Math.min(85, Math.max(20, v + shift)));
+  raw = raw.map((v) => Math.min(statCap, Math.max(20, v + shift)));
   const overall = Math.min(hi, Math.max(lo, Math.round(weighted(raw, prof.w))));
 
   const labels = position === "GOL" ? GK_LABELS : FIELD_LABELS;
@@ -129,6 +141,7 @@ export function generateBaseCard(seed: number, position: Position, key: string):
   const hairStyle = pick(r, STYLES);
 
   return {
+    ...(tier === "base" ? {} : { tier }),
     key,
     seed,
     name,

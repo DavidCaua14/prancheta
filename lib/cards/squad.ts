@@ -5,6 +5,7 @@
  * No banco: "1:" + um dígito por vaga com a opção escolhida.
  */
 
+import { lotCard, wonAt, type WonLot } from "@/lib/auction/lots";
 import { evolveSquad } from "./evolution";
 import { GENERATOR_VERSION, generateBaseCard, hash32, type BaseCard, type Position } from "./generate";
 
@@ -72,7 +73,19 @@ export function teamOverall(cards: BaseCard[]): number {
   return starters.length ? Math.round(starters.reduce((s, c) => s + c.overall, 0) / starters.length) : 0;
 }
 
-/** Elenco do clube com a evolução (níveis) aplicada. */
-export function clubCards(clubId: string, squad: string | null, xp: readonly number[] | null | undefined): BaseCard[] {
-  return evolveSquad(squadCards(clubId, squad) ?? [], xp);
+/**
+ * Elenco do clube no instante `at`: as 14 da peneira + as cartas arrematadas
+ * no leilão até ali (índices 14, 15, ...), com a evolução (níveis) aplicada.
+ */
+export function clubCards(
+  clubId: string,
+  squad: string | null,
+  xp: readonly number[] | null | undefined,
+  won?: readonly WonLot[] | null,
+  at = Number.POSITIVE_INFINITY,
+): BaseCard[] {
+  const base = squadCards(clubId, squad) ?? [];
+  if (!base.length) return base;
+  const extra = wonAt(won, at).map((w) => lotCard(w.round, w.idx));
+  return evolveSquad([...base, ...extra], xp);
 }

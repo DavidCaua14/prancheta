@@ -6,9 +6,9 @@ export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
  * de atualização obrigatória que os jogadores veem.
  */
 export const RELEASE_NOTES: string[] = [
-  "Evolução das cartas: cada jogo da liga dá XP",
-  "Cada nível vale +1 de overall (até 70 nas cartas Base)",
-  "Bônus de XP no acesso e no título; veja tudo no Elenco",
+  "Leilão aberto: 8 cartas Destaque, Épica e Especial a cada 2 horas",
+  "Você começa com 1.000 moedas e ganha mais no fim de cada temporada",
+  "Cartas arrematadas entram no elenco e também evoluem",
 ];
 
 export type VersionPayload = {

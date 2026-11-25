@@ -1,5 +1,7 @@
 "use client";
 
+import { CARD_TIERS, type CardTier } from "@/lib/game-config";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -90,6 +92,13 @@ function Segmented({
   );
 }
 
+/** Etiqueta de raridade para cartas que não são Base (vindas do leilão). */
+function TierTag({ tier }: { tier?: CardTier }) {
+  if (!tier || tier === "base") return null;
+  const style = tier === "destaque" ? "bg-[var(--sky)] text-[var(--ink)]" : tier === "epica" ? "bg-[#a46bff] text-white" : "bg-[var(--sun)] text-[var(--ink)]";
+  return <span className={`ml-1.5 rounded px-1 text-[0.58rem] font-extrabold uppercase ${style}`}>{CARD_TIERS[tier].label}</span>;
+}
+
 export function LineupEditor() {
   const router = useRouter();
   const [session, setSession] = useState<Session | null>(null);
@@ -113,7 +122,7 @@ export function LineupEditor() {
         if (!c.squad) return router.replace("/peneira");
         setSession(s);
         setClub(c);
-        setLineup(lineupFor(c.lineup, clubCards(c.id, c.squad, c.xp)));
+        setLineup(lineupFor(c.lineup, clubCards(c.id, c.squad, c.xp, c.won)));
       } catch {
         router.replace("/entrar?erro=1");
       }
@@ -123,7 +132,7 @@ export function LineupEditor() {
     };
   }, [router]);
 
-  const cards = useMemo(() => (club ? clubCards(club.id, club.squad, club.xp) : []), [club]);
+  const cards = useMemo(() => (club ? clubCards(club.id, club.squad, club.xp, club.won) : []), [club]);
   const savedCode = useMemo(() => (club && cards.length ? encodeLineup(lineupFor(club.lineup, cards)) : ""), [club, cards]);
 
   useEffect(() => {
@@ -338,6 +347,7 @@ export function LineupEditor() {
                 </td>
                 <td className="truncate py-1.5 font-bold">
                   {c.name}
+                  <TierTag tier={c.tier} />
                   {lvl === "ok" ? (
                     <span className="ml-1.5 text-xs font-semibold opacity-50">{c.position}</span>
                   ) : (
@@ -373,6 +383,7 @@ export function LineupEditor() {
                 </td>
                 <td className="truncate py-1.5 font-bold">
                   {c.name}
+                  <TierTag tier={c.tier} />
                   <span className="ml-1.5 text-xs font-semibold opacity-50">{POSITION_NAMES[c.position]}</span>
                 </td>
                 <td className="py-1.5 text-center text-xs opacity-70">{c.age}</td>

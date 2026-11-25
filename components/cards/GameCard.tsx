@@ -38,11 +38,11 @@ export const GameCard = memo(function GameCard({
         position: card.position,
         overall: card.overall,
         level: card.level,
-        tier: "base",
+        tier: card.tier ?? "base",
         club: { short: tag, color: PALETTE[kit.c1].hex },
         stats: card.stats,
       }}
-      gem={<ArtImg name="gem-base" className="h-full w-full object-contain" fallback={null} />}
+      gem={<ArtImg name={`gem-${card.tier ?? "base"}`} className="h-full w-full object-contain" fallback={null} />}
       portrait={<PlayerAvatar look={cardLook(card, kit)} className="h-full w-full" />}
     />
   );

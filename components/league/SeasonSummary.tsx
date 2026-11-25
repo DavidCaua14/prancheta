@@ -67,6 +67,11 @@ export function SeasonSummary({ season, clubName, onClose }: { season: SeasonRes
             <p className="t-num text-2xl leading-none">{season.pts}</p>
           </div>
         </div>
+        {season.coins > 0 && (
+          <p className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-[var(--sun)] px-2.5 py-1 text-sm font-extrabold">
+            <Icon name="trophy" className="h-4 w-4" /> Prêmio: +{season.coins.toLocaleString("pt-BR")} moedas
+          </p>
+        )}
         {(up || down) && (
           <p className="mt-3 flex items-center justify-center gap-2 text-sm font-extrabold">
             {from.short}

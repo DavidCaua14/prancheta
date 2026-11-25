@@ -58,9 +58,9 @@ export function xpToMax(maxLevel: number) {
   return t;
 }
 
-/** Carta com o nível aplicado: +1 de overall e de cada atributo por nível, até o teto do tipo. */
+/** Carta com o nível aplicado: +1 de overall e de cada atributo por nível, até o teto da raridade. */
 export function evolveCard(card: BaseCard, xp: number): BaseCard {
-  const tier = CARD_TIERS.base;
+  const tier = CARD_TIERS[card.tier ?? "base"];
   const { level } = levelFromXp(xp, tier.maxLevel);
   const target = Math.min(tier.maxOverall, Math.max(card.overall, card.overall + level - 1));
   const bonus = target - card.overall;
