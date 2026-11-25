@@ -13,6 +13,10 @@ export type Club = {
   squad: string | null;
   /** Escalação e tática ("1:0:0123456789a:211:a9"); null = padrão da peneira. */
   lineup: string | null;
+  /** Liga em que o clube joga (null = ainda não entrou) */
+  league_id: number | null;
+  league_slot: number | null;
+  joined_round: number | null;
 };
 
 const CLUB_CACHE = (uid: string) => `prancheta:club:${uid}`;
@@ -22,7 +26,7 @@ function readCache(uid: string): Club | null {
     const raw = localStorage.getItem(CLUB_CACHE(uid));
     const club = raw ? (JSON.parse(raw) as Club) : null;
     // cache de versão antiga (sem o campo squad) ou elenco ainda vazio: relê do banco
-    return club && typeof club.squad === "string" && "lineup" in club ? club : null;
+    return club && typeof club.squad === "string" && "lineup" in club && "league_id" in club ? club : null;
   } catch {
     return null;
   }
@@ -52,7 +56,7 @@ export async function getMyClub(session: Session, { fresh = false } = {}): Promi
     const cached = readCache(uid);
     if (cached) return cached;
   }
-  const { data, error } = await supabase().from("clubs").select("id,name,tag,crest,kit,squad,lineup").eq("id", uid).maybeSingle();
+  const { data, error } = await supabase().from("clubs").select("id,name,tag,crest,kit,squad,lineup,league_id,league_slot,joined_round").eq("id", uid).maybeSingle();
   if (error) throw error;
   if (data) writeCache(data);
   return data;
@@ -62,9 +66,9 @@ export type CreateClubError = "name_taken" | "already_has_club" | "invalid" | "s
 
 export async function createClub(
   session: Session,
-  input: Omit<Club, "id" | "squad" | "lineup">,
+  input: Pick<Club, "name" | "tag" | "crest" | "kit">,
 ): Promise<{ club: Club } | { error: CreateClubError }> {
-  const club: Club = { id: session.user.id, ...input, name: input.name.trim(), squad: null, lineup: null };
+  const club: Club = { id: session.user.id, ...input, name: input.name.trim(), squad: null, lineup: null, league_id: null, league_slot: null, joined_round: null };
   const { error } = await supabase().from("clubs").insert({ ...input, id: club.id, name: club.name });
   if (!error) {
     writeCache(club);

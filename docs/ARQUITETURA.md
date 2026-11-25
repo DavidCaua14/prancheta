@@ -154,6 +154,29 @@ imprime o relatório completo. Números atuais (times Base sorteados):
 `/partida`: jogo contra o rival gerado do clube, rodando o motor no aparelho (nada vai para o banco), com
 narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substituições durante o jogo.
 
+## Liga da Várzea (implementado)
+
+- **Formato**: grupos de 10 clubes, turno e returno (18 rodadas). Rodadas às 8h, 10h, 12h, 14h, 16h, 18h, 20h e 22h
+  (Brasília) → 8 jogos por dia, temporada de ~2,5 dias. 1 minuto de jogo = 6 s (jogo de ~9,5 min ao vivo).
+- **Vagas da CPU**: a liga nasce cheia; vagas sem técnico são times da CPU gerados no aparelho
+  (`lib/league/bots.ts`). Quem chega **assume a vaga de um time da CPU** (com a campanha dele, como um técnico que
+  pega o clube no meio do campeonato) e joga já na próxima rodada.
+- **`join_league()`** (função no banco): mantém o clube na liga atual; senão procura uma liga com vaga e ≥ 6
+  rodadas pela frente (preferindo a que tem mais humanos, para os técnicos se encontrarem); senão cria uma nova
+  com a 1ª rodada no próximo horário.
+- **Nenhum placar no banco**. O aparelho calcula tudo (`lib/league/data.ts`) a partir de:
+  `league_rounds` (horários), `clubs.league_slot/joined_round` (quem ocupa cada vaga),
+  `lineup_log` (escalação em vigor no apito — gravada por gatilho a cada "Salvar") e
+  `match_changes` (mudanças ao vivo). Como o motor é determinístico, todos veem os mesmos resultados e
+  ninguém consegue gravar um placar falso. Temporada inteira (90 jogos) = ~55 ms.
+- **Ao vivo**: o técnico muda postura e faz substituições durante o jogo; a mudança vale 4 minutos de jogo
+  depois (24 s), para chegar a todos os aparelhos. O banco recusa mudança para minuto que já passou e em time
+  alheio (`match_change_ok`). O aparelho relê as mudanças a cada 10 s só durante as rodadas.
+- **Custo**: por liga, ~18 linhas de horários + 1 linha de escalação por "Salvar" + mudanças ao vivo
+  (só quando alguém mexe). Leituras: 5 consultas pequenas ao abrir a liga.
+- **Pendente**: acesso/rebaixamento entre divisões precisa de um juiz confiável para fechar a tabela
+  (próximo passo: uma Edge Function do Supabase que roda o mesmo motor e grava só a classificação final).
+
 ## Esboço do banco (Postgres)
 
 ```
@@ -176,6 +199,8 @@ friendlies(id, codigo, casa_id, fora_id, inicio_em, match_id)
 1. ~~Peneira: elenco inicial de cartas Base~~ ✅
 1. ~~Escalação e tática~~ ✅
 1. ~~Motor de simulação + amistoso de treino~~ ✅
+1. ~~Liga da Várzea (8 rodadas/dia, ao vivo, CPU nas vagas livres)~~ ✅
+1. Acesso e rebaixamento (Edge Function fecha a temporada) → Série D, C, B, A.
 2. Motor de simulação completo (`lib/sim/`) com testes de determinismo.
 3. Tela de escalação/prancheta.
 4. Ligas da Várzea + job de rodadas.

@@ -179,3 +179,14 @@ Os outros ícones do menu reaproveitam artes que já existem (`icon-ao-vivo`, `i
 | --- | --- | --- |
 | `icon-inicio.png` | Menu → Início | `Icon of a small cartoon football stadium seen from the front, green pitch, two floodlights and a little flag on top.` |
 | `icon-elenco.png` | Menu → Elenco e atalho "Elenco" | `Icon of a fanned hand of three football player trading cards (bronze, blue and purple frames) with a small star on the front card.` |
+
+---
+
+## 11. Liga da Várzea
+
+Mesmo estilo base da seção 1. **512 × 512, fundo transparente, sem moldura** (seção 5).
+
+| Arquivo | Onde aparece | Prompt (depois do estilo base) |
+| --- | --- | --- |
+| `icon-liga.png` | Atalho "Liga" e topo da tela da liga | `Icon of a small rustic várzea league trophy next to a chalkboard standings table with three colored rows and a tiny football, simple bold shapes.` |
+| `icon-treino.png` | Atalho "Treino" (amistoso de treino) | `Icon of orange training cones, a football and a coach's whistle on a small patch of grass, simple bold shapes.` |

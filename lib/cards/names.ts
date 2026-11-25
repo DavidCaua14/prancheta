@@ -30,3 +30,13 @@ export const RIVAL_CLUBS = [
   "Grêmio da Esquina", "Botafogo da Praça", "Independente FC", "Ferroviário da Serra", "Juventude Operária",
   "Sociedade Tamoios", "Canarinhos do Vale", "Leões da Colina", "Estrela do Norte", "Ipiranga do Bairro",
 ];
+
+/** Clubes da CPU nas ligas da Várzea (sorteados sem repetir dentro da liga). */
+export const VARZEA_CLUBS = [
+  "Unidos do Morro", "Bola Murcha EC", "Real Várzea", "Atlético Barroca", "EC Poeira",
+  "Grêmio da Esquina", "Botafogo da Praça", "Independente FC", "Ferroviário da Serra", "Juventude Operária",
+  "Sociedade Tamoios", "Canarinhos do Vale", "Leões da Colina", "Estrela do Norte", "Ipiranga do Bairro",
+  "Vila Nova da Baixada", "Flor do Campo FC", "Pé de Valsa EC", "Terrão FC", "Beira-Rio da Ponte",
+  "Associação Galo Preto", "Unidos da Feira", "Primavera FC", "Asas do Sertão", "Paulistinha EC",
+  "Cruzeirinho do Sul", "Palmeirinha da Vila", "Morumbizinho EC", "Rubro-Negro da Laje", "Tricolor do Beco",
+];

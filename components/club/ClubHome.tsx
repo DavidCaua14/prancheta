@@ -7,9 +7,11 @@ import { GameCard } from "@/components/cards/GameCard";
 import { MiniPitch } from "@/components/cards/MiniPitch";
 import { ArtImg } from "@/components/ui/ArtImg";
 import { Logo } from "@/components/ui/Logo";
-import { getMyClub, getSession, signOut, type Club } from "@/lib/club/api";
+import { signOut } from "@/lib/club/api";
 import { decodeCrest, decodeKit } from "@/lib/club/identity";
-import { makeRival } from "@/lib/sim/rival";
+import { clockAt, fmtCountdown, fmtKickoff, matchAt, matchDone, standings } from "@/lib/league/data";
+import { useLeague, useNow } from "@/lib/league/useLeague";
+import { scoreAt } from "@/components/league/LeagueHub";
 import { squadCards } from "@/lib/cards/squad";
 import { FORMATIONS, strength } from "@/lib/tactics/formations";
 import { POSTURES, lineupFor } from "@/lib/tactics/lineup";
@@ -26,12 +28,14 @@ const NAV: { id: Tab; label: string; icon: string; fallback: string }[] = [
   { id: "clube", label: "Clube", icon: "icon-clube", fallback: "🛡️" },
 ];
 
-function NavIcon({ icon, fallback, className }: { icon: string; fallback: string; className: string }) {
+/** Ícone com reserva: arte própria → arte alternativa → emoji. */
+function NavIcon({ icon, alt, fallback, className }: { icon: string; alt?: string; fallback: string; className: string }) {
+  const emoji = <span className={`${className} flex items-center justify-center text-[1.6em] leading-none`}>{fallback}</span>;
   return (
     <ArtImg
       name={icon}
       className={`${className} object-contain`}
-      fallback={<span className={`${className} flex items-center justify-center text-[1.6em] leading-none`}>{fallback}</span>}
+      fallback={alt ? <ArtImg name={alt} className={`${className} object-contain`} fallback={emoji} /> : emoji}
     />
   );
 }
@@ -57,32 +61,16 @@ function Soon({ title, text }: { title: string; text: string }) {
 /** Tela inicial do jogo (protótipo). */
 export function ClubHome({ mascot }: { mascot: ReactNode }) {
   const router = useRouter();
-  const [club, setClub] = useState<Club | null>(null);
+  const { club, data: league, joining } = useLeague();
+  const now = useNow(1000);
   const [tab, setTab] = useState<Tab>("inicio");
   const [isNew, setIsNew] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      const session = await getSession();
-      if (!alive) return;
-      if (!session) return router.replace("/entrar");
-      try {
-        const c = await getMyClub(session);
-        if (!alive) return;
-        if (!c) return router.replace("/clube/novo");
-        if (!c.squad) return router.replace("/peneira");
-        setIsNew(new URLSearchParams(window.location.search).has("novo"));
-        setClub(c);
-      } catch {
-        router.replace("/entrar?erro=1");
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [router]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- lê ?novo=1 da URL uma vez
+    setIsNew(new URLSearchParams(window.location.search).has("novo"));
+  }, []);
 
   useEffect(() => {
     if (!toast) return;
@@ -91,9 +79,20 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
   }, [toast]);
 
   const cards = useMemo(() => (club ? squadCards(club.id, club.squad) ?? [] : []), [club]);
-  const rival = useMemo(() => (club ? makeRival(club.id) : null), [club]);
+  // meu jogo ao vivo ou o próximo, e minha posição
+  const minute = Math.floor(now / 60_000);
+  const leagueInfo = useMemo(() => {
+    if (!league || !club || club.league_slot === null) return null;
+    const clock = clockAt(league, minute * 60_000);
+    const slot = club.league_slot;
+    const find = (r: number) => matchAt(league, r, league.fixtures[r - 1].findIndex((f) => f.home === slot || f.away === slot));
+    const liveMatch = clock.live ? find(clock.live) : null;
+    const target = liveMatch && !matchDone(liveMatch, minute * 60_000) ? liveMatch : clock.next ? find(clock.next) : null;
+    const pos = standings(league, minute * 60_000).findIndex((r) => r.slot === slot) + 1;
+    return { target, pos, total: league.kickoffs.length };
+  }, [league, club, minute]);
 
-  if (!club || !rival) {
+  if (!club) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <span className="h-10 w-10 animate-spin rounded-full border-4 border-[var(--ink)] border-t-[var(--sun)]" aria-label="Carregando" />
@@ -111,12 +110,12 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
   const goLineup = () => router.push("/escalacao");
   const soon = (what: string) => setToast(`${what} chega nas próximas atualizações!`);
 
-  const tiles: { label: string; icon: string; fallback: string; action: () => void; ready?: boolean }[] = [
+  const tiles: { label: string; icon: string; alt?: string; fallback: string; action: () => void; ready?: boolean }[] = [
     { label: "Elenco", icon: "icon-elenco", fallback: "🃏", action: () => setTab("elenco"), ready: true },
     { label: "Escalação", icon: "icon-tatica", fallback: "📋", action: goLineup, ready: true },
-    { label: "Liga", icon: "trophy-copa-varzea", fallback: "🏆", action: () => soon("A tabela da liga") },
+    { label: "Liga", icon: "icon-liga", alt: "trophy-copa-varzea", fallback: "🏆", action: () => router.push("/liga"), ready: true },
+    { label: "Treino", icon: "icon-treino", alt: "icon-pvp", fallback: "🤝", action: () => router.push("/partida"), ready: true },
     { label: "Leilão", icon: "icon-leilao", fallback: "🔨", action: () => soon("O leilão") },
-    { label: "Amistosos", icon: "icon-pvp", fallback: "🤝", action: () => soon("Os amistosos") },
     { label: "Copas", icon: "trophy-copa-nacional", fallback: "🏆", action: () => soon("As copas") },
   ];
 
@@ -132,7 +131,10 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
           <CrestSvg crest={crest} tag={club.tag} className="h-11 w-10 shrink-0" />
           <div className="min-w-0 flex-1">
             <p className="t-heading truncate text-white">{club.name}</p>
-            <p className="text-xs font-bold text-white/60">Várzea · Temporada 1</p>
+            <p className="text-xs font-bold text-white/60">
+              Várzea{league ? ` · Grupo #${league.league.id}` : ""}
+              {leagueInfo?.pos ? ` · ${leagueInfo.pos}º lugar` : ""}
+            </p>
           </div>
           <span className="flex shrink-0 flex-col items-center rounded-xl border-[3px] border-[var(--ink)] bg-[var(--sun)] px-2.5 py-0.5 text-[var(--ink)]">
             <span className="text-[0.55rem] font-extrabold uppercase leading-none tracking-wider">OVR</span>
@@ -143,7 +145,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
               <button
                 key={n.id}
                 type="button"
-                onClick={() => setTab(n.id)}
+                onClick={() => (n.id === "jogos" ? router.push("/liga?aba=jogos") : setTab(n.id))}
                 aria-current={tab === n.id ? "page" : undefined}
                 className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-extrabold transition-colors ${
                   tab === n.id ? "bg-[var(--sun)] text-[var(--ink)]" : "text-white/80 hover:bg-white/10"
@@ -160,45 +162,71 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
       <div className="mx-auto w-full max-w-6xl flex-1 px-3 pb-28 pt-4 sm:px-6 lg:pb-10">
         {isNew && tab === "inicio" && (
           <MascotTipInline mascot={mascot} always>
-            Elenco fechado! O {club.name} está inscrito na Liga da Várzea. Enquanto a primeira rodada não chega, dá uma
-            olhada no seu time.
+            Elenco fechado! O {club.name} já está na Liga da Várzea, com rodadas de 2 em 2 horas. Enquanto o primeiro jogo
+            não chega, ajuste a escalação ou faça um treino.
           </MascotTipInline>
         )}
 
         {tab === "inicio" && (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-6">
             <div className="flex min-w-0 flex-col gap-4">
-              {/* próxima partida */}
+              {/* próxima partida (liga) */}
               <Panel className="relative overflow-hidden !p-0">
                 <div className="pitch absolute inset-0 opacity-25" aria-hidden />
-                <div className="relative p-4 sm:p-5">
-                  <div className="flex items-center justify-between">
-                    <span className="tag bg-[var(--sky)]">Próxima partida</span>
-                    <span className="text-xs font-extrabold text-white/70">Liga da Várzea · Rodada 1</span>
-                  </div>
-                  <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                    <div className="flex min-w-0 flex-col items-center text-center">
-                      <CrestSvg crest={crest} tag={club.tag} className="h-20 w-[72px] sm:h-24 sm:w-[86px]" />
-                      <p className="mt-1.5 line-clamp-2 text-sm font-extrabold leading-tight">{club.name}</p>
+                {(() => {
+                  const m = leagueInfo?.target;
+                  if (!m) {
+                    return (
+                      <div className="relative p-5 text-center">
+                        <span className="tag bg-[var(--sky)]">Liga da Várzea</span>
+                        <p className="mt-3 font-bold">{joining ? "Procurando uma vaga na liga..." : "Carregando a tabela..."}</p>
+                      </div>
+                    );
+                  }
+                  const s = scoreAt(m, now);
+                  const live = s.status === "vivo";
+                  return (
+                    <div className="relative p-4 sm:p-5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`tag ${live ? "bg-[var(--red)] text-white" : "bg-[var(--sky)]"}`}>{live ? "● Ao vivo" : "Próximo jogo"}</span>
+                        <span className="text-xs font-extrabold text-white/70">
+                          Liga da Várzea · Rodada {m.round}/{leagueInfo.total}
+                        </span>
+                      </div>
+                      <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                        {[m.home, null, m.away].map((t, k) =>
+                          t ? (
+                            <div key={k} className="flex min-w-0 flex-col items-center text-center">
+                              <CrestSvg crest={t.crest} tag={t.tag} className="h-20 w-[72px] sm:h-24 sm:w-[86px]" />
+                              <p className="mt-1.5 line-clamp-2 text-sm font-extrabold leading-tight">{t.name}</p>
+                              {t.bot && <span className="mt-0.5 rounded bg-white/15 px-1 text-[0.55rem] font-extrabold uppercase">CPU</span>}
+                            </div>
+                          ) : (
+                            <div key={k} className="flex flex-col items-center">
+                              {live ? (
+                                <span className="t-num rounded-lg bg-[var(--ink)] px-3 py-1 text-3xl">
+                                  {s.score[0]}-{s.score[1]}
+                                </span>
+                              ) : (
+                                <span className="t-display text-3xl text-[var(--sun)]">VS</span>
+                              )}
+                              <span className="t-num mt-1 rounded-lg bg-[var(--ink)] px-2 py-0.5 text-xs">{live ? s.clock : fmtKickoff(m.kickoff)}</span>
+                              {!live && <span className="mt-1 text-[0.7rem] font-extrabold text-[var(--sun)]">em {fmtCountdown(m.kickoff - now)}</span>}
+                            </div>
+                          ),
+                        )}
+                      </div>
+                      <div className="mt-5 grid grid-cols-2 gap-2">
+                        <button type="button" onClick={goLineup} className="btn btn-paper">
+                          Escalação
+                        </button>
+                        <button type="button" onClick={() => router.push(`/liga/jogo?r=${m.round}&i=${m.index}`)} className={`btn ${live ? "btn-green" : "btn-paper"}`}>
+                          {live ? "Assistir ao vivo" : "Ver jogo"}
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex flex-col items-center">
-                      <span className="t-display text-3xl text-[var(--sun)]">VS</span>
-                      <span className="mt-1 rounded-lg bg-[var(--ink)] px-2 py-0.5 text-xs font-extrabold">Sáb · 20:00</span>
-                    </div>
-                    <div className="flex min-w-0 flex-col items-center text-center">
-                      <CrestSvg crest={rival.crest} tag={rival.tag} className="h-20 w-[72px] sm:h-24 sm:w-[86px]" />
-                      <p className="mt-1.5 line-clamp-2 text-sm font-extrabold leading-tight">{rival.name}</p>
-                    </div>
-                  </div>
-                  <div className="mt-5 grid grid-cols-2 gap-2">
-                    <button type="button" onClick={goLineup} className="btn btn-paper">
-                      Escalação
-                    </button>
-                    <button type="button" onClick={() => router.push("/partida")} className="btn btn-green">
-                      Amistoso de treino
-                    </button>
-                  </div>
-                </div>
+                  );
+                })()}
               </Panel>
 
               {/* atalhos */}
@@ -215,7 +243,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
                         breve
                       </span>
                     )}
-                    <NavIcon icon={t.icon} fallback={t.fallback} className="h-11 w-11 sm:h-14 sm:w-14" />
+                    <NavIcon icon={t.icon} alt={t.alt} fallback={t.fallback} className="h-11 w-11 sm:h-14 sm:w-14" />
                     <span className="mt-1.5 text-xs font-extrabold sm:text-sm">{t.label}</span>
                   </button>
                 ))}
@@ -300,7 +328,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
             <li key={n.id}>
               <button
                 type="button"
-                onClick={() => setTab(n.id)}
+                onClick={() => (n.id === "jogos" ? router.push("/liga?aba=jogos") : setTab(n.id))}
                 aria-current={tab === n.id ? "page" : undefined}
                 className={`flex w-full flex-col items-center gap-0.5 py-2 text-[0.68rem] font-extrabold ${
                   tab === n.id ? "text-[var(--sun)]" : "text-white/65"
