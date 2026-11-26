@@ -61,3 +61,13 @@ export async function loadMatchPoints(clubId: string, kind: 0 | 1, ref: number, 
     .maybeSingle();
   return (data as MatchPointsRow | null) ?? null;
 }
+
+export type RankClimb = { before: number; after: number; passed: { name: string; tag: string; crest: string }[] };
+
+/** Posição antes deste jogo × agora, e quem foi ultrapassado (rank_climb). */
+export async function loadRankClimb(pts: number, win: boolean): Promise<RankClimb | null> {
+  const { data, error } = await supabase().rpc("rank_climb", { p_pts: pts, p_win: win });
+  if (error) return null;
+  const r = ((data ?? []) as { before: number; after: number; passed: RankClimb["passed"] }[])[0];
+  return r ? { before: Number(r.before), after: Number(r.after), passed: r.passed ?? [] } : null;
+}

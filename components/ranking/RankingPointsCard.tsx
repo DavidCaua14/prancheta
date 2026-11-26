@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArtImg } from "@/components/ui/ArtImg";
 import { Icon } from "@/components/ui/Icon";
-import { loadMatchPoints, loadRanking, matchRankPoints, type MatchPointsRow } from "@/lib/ranking";
+import { loadMatchPoints, loadRankClimb, matchRankPoints, type MatchPointsRow, type RankClimb as Climb } from "@/lib/ranking";
+import { RankClimb } from "./RankClimb";
 import { askScore } from "@/lib/score-client";
 import { MATCH_SETTLE_MS } from "@/lib/scoring";
 import { serverNow } from "@/lib/time";
@@ -18,7 +19,7 @@ const mult = (n: number) => `×${String(n).replace(".", ",")}`;
  */
 export function RankingPointsCard({ clubId, kind, refId, round, kickoff, multLabel }: { clubId: string; kind: 0 | 1; refId: number; round: number; kickoff: number; multLabel: string }) {
   const [row, setRow] = useState<MatchPointsRow | null | undefined>(undefined);
-  const [pos, setPos] = useState<number | null>(null);
+  const [climb, setClimb] = useState<Climb | null>(null);
 
   useEffect(() => {
     let stop = false;
@@ -30,8 +31,9 @@ export function RankingPointsCard({ clubId, kind, refId, round, kickoff, multLab
         if (r) {
           if (stop) return;
           setRow(r);
-          const rank = await loadRanking(false, 1).catch(() => []);
-          if (!stop) setPos(rank.find((x) => x.me)?.pos ?? null);
+          const p = matchRankPoints(r);
+          const c = await loadRankClimb(p.total, (r.kind === 0 && r.result === 2) || (r.kind === 1 && r.advanced));
+          if (!stop) setClimb(c);
           return;
         }
         await new Promise((res) => window.setTimeout(res, 4_000));
@@ -84,11 +86,15 @@ export function RankingPointsCard({ clubId, kind, refId, round, kickoff, multLab
         </div>
       )}
 
-      {row !== undefined && (
-        <Link href="/ranking" className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm font-bold hover:bg-white/15">
-          <span>{pos ? `Você está em ${pos}º no ranking` : "Ver o ranking"}</span>
-          <Icon name="chevron-right" className="h-4 w-4" />
-        </Link>
+      {climb ? (
+        <RankClimb climb={climb} />
+      ) : (
+        row !== undefined && (
+          <Link href="/ranking" className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm font-bold hover:bg-white/15">
+            <span>Ver o ranking</span>
+            <Icon name="chevron-right" className="h-4 w-4" />
+          </Link>
+        )
       )}
     </div>
   );

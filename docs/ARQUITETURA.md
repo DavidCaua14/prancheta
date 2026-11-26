@@ -352,7 +352,10 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
   (conferido: os números jogo a jogo batem com o que o fechamento grava em `club_seasons`).
 - **Fim de jogo** (`RankingPointsCard`, liga e copa): ~10 min após o apito inicial pede a pontuação, lê a linha de
   `match_points` e mostra "+N" com a conta (vitória/empate/goleada/fase × divisão ou copa, `matchRankPoints`, espelho do
-  SQL) e a posição atual.
+  SQL) e a subida (`rank_climb`, `0031_rank_climb.sql`: posição antes do jogo — minha pontuação sem os pontos dele
+  contra a atual dos outros —, posição agora e até 3 ultrapassados; `club_scores` concentra a conta do ranking).
+  Animação (`RankClimb`): o número rola do lugar antigo ao novo, a seta pula, os escudos ultrapassados entram um a
+  um; sem animação para quem pede menos movimento.
 - **Ranking** = jogos (vitória 10, empate 3, goleada +5 × divisão; fase de copa 15 × copa) + bônus no fechamento
   (título +150, acesso +75 × divisão; campeão de copa +60 × copa). "Semana" usa a hora do jogo.
 
