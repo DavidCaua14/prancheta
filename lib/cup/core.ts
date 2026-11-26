@@ -236,6 +236,17 @@ export type CupMatch = {
 
 const cache = new WeakMap<CupData, Map<string, CupMatch>>();
 
+/**
+ * Troca as mudanças ao vivo de UMA fase mantendo os jogos já calculados das
+ * fases anteriores (as seguintes dependem de quem venceu, então recalculam).
+ */
+export function withCupRoundChanges(data: CupData, round: number, rows: ChangeRow[]): CupData {
+  const next: CupData = { ...data, changes: [...data.changes.filter((c) => c.round !== round), ...rows] };
+  const old = cache.get(data);
+  if (old) cache.set(next, new Map([...old].filter(([k]) => Number(k.split(":")[0]) < round)));
+  return next;
+}
+
 /** Vagas (slots) que disputam a fase `round`, na ordem do chaveamento. */
 export function slotsIn(data: CupData, round: number): number[] {
   if (round === 1) return Array.from({ length: data.cup.size }, (_, s) => s);

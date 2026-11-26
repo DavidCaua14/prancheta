@@ -4,7 +4,7 @@
 import { LOT_COLS, type ChangeRow, type LogRow, type LotRow } from "@/lib/league/core";
 import { sendLiveChanges } from "@/lib/live-changes";
 import { supabase } from "@/lib/supabase/client";
-import { buildCupData, CUP_COLS, ENTRY_COLS, type CupConfig, type CupData, type CupEntry, type CupRow } from "./core";
+import { buildCupData, CUP_COLS, ENTRY_COLS, withCupRoundChanges, type CupConfig, type CupData, type CupEntry, type CupRow } from "./core";
 
 export * from "./core";
 
@@ -61,7 +61,7 @@ export async function loadCup(cupId: number): Promise<CupData> {
 export async function refreshCupChanges(data: CupData, round: number): Promise<CupData> {
   const { data: rows, error } = await supabase().from("cup_changes").select("round,club_id,tick,change").eq("cup_id", data.cup.id).eq("round", round);
   if (error) return data;
-  return { ...data, changes: [...data.changes.filter((c) => c.round !== round), ...((rows ?? []) as ChangeRow[])] };
+  return withCupRoundChanges(data, round, (rows ?? []) as ChangeRow[]);
 }
 
 export function sendCupChange(data: CupData, round: number, changes: string[]) {

@@ -177,6 +177,18 @@ export type LeagueMatch = {
 
 const resultCache = new WeakMap<LeagueData, Map<string, LeagueMatch>>();
 
+/**
+ * Troca as mudanças ao vivo de UMA rodada mantendo os jogos já calculados das
+ * outras (só os jogos daquela rodada dependem delas). Sem isso, reler as
+ * mudanças a cada 10 s durante o jogo resimulava a temporada inteira.
+ */
+export function withRoundChanges(data: LeagueData, round: number, rows: ChangeRow[]): LeagueData {
+  const next: LeagueData = { ...data, changes: [...data.changes.filter((c) => c.round !== round), ...rows] };
+  const old = resultCache.get(data);
+  if (old) resultCache.set(next, new Map([...old].filter(([k]) => !k.startsWith(`${round}:`))));
+  return next;
+}
+
 export function matchAt(data: LeagueData, round: number, index: number): LeagueMatch {
   let cache = resultCache.get(data);
   if (!cache) {

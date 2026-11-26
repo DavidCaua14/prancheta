@@ -6,7 +6,7 @@
  */
 import { sendLiveChanges } from "@/lib/live-changes";
 import { supabase } from "@/lib/supabase/client";
-import { buildLeagueData, CLUB_COLS, LEAGUE_COLS, LOT_COLS, logsFrom, type ChangeRow, type LeagueData, type LeagueRow, type LogRow, type LeagueClub, type LotRow } from "./core";
+import { buildLeagueData, CLUB_COLS, LEAGUE_COLS, LOT_COLS, logsFrom, withRoundChanges, type ChangeRow, type LeagueData, type LeagueRow, type LogRow, type LeagueClub, type LotRow } from "./core";
 
 export * from "./core";
 
@@ -16,7 +16,21 @@ export async function joinLeague(): Promise<number> {
   return data as number;
 }
 
+/**
+ * Liga completa (liga, rodadas, clubes, mudanças ao vivo, escalações e cartas do
+ * leilão) num pedido só (league_bundle). Se a função não estiver disponível,
+ * cai no caminho antigo, com várias leituras.
+ */
 export async function loadLeague(leagueId: number): Promise<LeagueData> {
+  const { data, error } = await supabase().rpc("league_bundle", { p_league: leagueId });
+  if (!error && data?.league) {
+    const b = data as { league: LeagueRow; rounds: { round: number; kickoff: string }[]; clubs: LeagueClub[]; changes: ChangeRow[]; logs: LogRow[]; lots: LotRow[] };
+    return buildLeagueData(b);
+  }
+  return loadLeagueParts(leagueId);
+}
+
+async function loadLeagueParts(leagueId: number): Promise<LeagueData> {
   const sb = supabase();
   const [lg, rounds, clubs, changes] = await Promise.all([
     sb.from("leagues").select(LEAGUE_COLS).eq("id", leagueId).single(),
@@ -29,13 +43,16 @@ export async function loadLeague(leagueId: number): Promise<LeagueData> {
   if (clubs.error) throw clubs.error;
   const league = lg.data as LeagueRow;
   const ids = (clubs.data ?? []).map((c) => c.id);
-  const logs = ids.length
-    ? await sb.rpc("lineup_log_window", { p_clubs: ids, p_from: logsFrom(league) })
-    : { data: [], error: null };
+  const [logs, lots] = ids.length
+    ? await Promise.all([
+        sb.rpc("lineup_log_window", { p_clubs: ids, p_from: logsFrom(league) }),
+        sb.from("auction_lots").select(LOT_COLS).in("best_club", ids).lt("ends_at", new Date().toISOString()),
+      ])
+    : [
+        { data: [], error: null },
+        { data: [], error: null },
+      ];
   if (logs.error) throw logs.error;
-  const lots = ids.length
-    ? await sb.from("auction_lots").select(LOT_COLS).in("best_club", ids).lt("ends_at", new Date().toISOString())
-    : { data: [], error: null };
   if (lots.error) throw lots.error;
   return buildLeagueData({
     lots: (lots.data ?? []) as LotRow[],
@@ -55,7 +72,7 @@ export async function refreshChanges(data: LeagueData, round: number): Promise<L
     .eq("league_id", data.league.id)
     .eq("round", round);
   if (error) return data;
-  return { ...data, changes: [...data.changes.filter((c) => c.round !== round), ...((rows ?? []) as ChangeRow[])] };
+  return withRoundChanges(data, round, (rows ?? []) as ChangeRow[]);
 }
 
 /** Grava as mudanças do técnico (o servidor escolhe o minuto, todas juntas). */

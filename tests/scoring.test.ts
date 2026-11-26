@@ -103,3 +103,33 @@ test("eventos: 'a confirmar' somado jogo a jogo = cálculo antigo (liga + copa)"
     cup_wins: cs.cup_wins,
   });
 });
+
+test("tela da liga/copa: reler mudanças ao vivo mantém os jogos já calculados e dá o mesmo resultado", async () => {
+  const { standings, withRoundChanges, matchAt } = await import("@/lib/league/core");
+  const { withCupRoundChanges, cupReach } = await import("@/lib/cup/core");
+  // liga: calcula tudo, depois relê mudanças da rodada 17
+  const d0 = league();
+  const end = d0.kickoffs[17] + 3600_000;
+  standings(d0, end);
+  const rows = [{ round: 17, club_id: A, tick: 30, change: "p4" }, { round: 17, club_id: A, tick: 30, change: "t2" }];
+  const fast = withRoundChanges(d0, 17, rows);
+  const t = performance.now();
+  const a = standings(fast, end);
+  const ms = performance.now() - t;
+  const fresh = buildLeagueData({ league: d0.league, rounds: d0.kickoffs.map((k, i) => ({ round: i + 1, kickoff: new Date(k).toISOString() })), clubs: d0.clubs, logs: d0.logs, changes: rows });
+  assert.deepEqual(a.map((r) => [r.slot, r.p, r.gp, r.gc]), standings(fresh, end).map((r) => [r.slot, r.p, r.gp, r.gc]));
+  // só a rodada 17 foi recalculada (as outras vêm da memória: o mesmo objeto)
+  assert.equal(matchAt(fast, 3, 0), matchAt(d0, 3, 0));
+  assert.notEqual(matchAt(fast, 17, 0), matchAt(d0, 17, 0));
+  assert.ok(ms < 40, `reler mudanças recalculou demais: ${ms.toFixed(0)} ms`);
+  // copa: mudança na fase 2 → fases 2+ recalculam, fase 1 fica; mesmo resultado que do zero
+  const start = Date.UTC(2026, 0, 1, 16);
+  const cup: CupRow = { id: 904, kind: 0, size: 32, starts_at: new Date(start).toISOString(), ends_at: new Date(start + 8.25 * 3600_000).toISOString(), closed_at: null, champion: null };
+  const e = (slot: number, id: string): CupEntry => ({ slot, club_id: id, xp: null, reach: null, coins: null, clubs: { name: `C${slot}`, tag: `C${String(slot).padStart(2, "0")}`, crest: "0.1.3.11.0.5", kit: "1.11.0.5", squad: "1:21021021021012" } });
+  const c0 = buildCupData({ cup, entries: [e(0, A), e(9, B)], logs: [], changes: [] });
+  cupReach(c0);
+  const crow = [{ round: 2, club_id: A, tick: 20, change: "p4" }, { round: 2, club_id: B, tick: 25, change: "p0" }];
+  const cf = withCupRoundChanges(c0, 2, crow);
+  assert.deepEqual(cupReach(cf), cupReach(buildCupData({ cup, entries: [e(0, A), e(9, B)], logs: [], changes: crow })));
+  assert.equal(cupMatch(cf, 1, 0), cupMatch(c0, 1, 0));
+});

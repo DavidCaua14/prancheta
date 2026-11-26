@@ -377,6 +377,11 @@ relógio das ligas/copas adiantado no banco para jogar uma temporada inteira. Ac
   no aparelho, em cascata (~2,8 s). Agora `my_pending_stats()` soma o resultado gravado jogo a jogo (`match_points`) das
   competições em andamento, numa consulta; as leituras saem em paralelo, o clube vem do cache do aparelho e a lista
   de eventos é lida uma vez por sessão (~0,9 s com 150 ms por consulta). Teste confere: mesma soma do cálculo antigo.
+- **Tela da liga**: `league_bundle(liga)` (`0035_league_bundle.sql`) devolve liga, rodadas, clubes, mudanças ao vivo,
+  escalações e cartas do leilão num pedido (antes 3 etapas em sequência: ~0,75–0,9 s → ~0,44 s com 150 ms por consulta;
+  se a função faltar, o app cai no caminho antigo). Durante o jogo ao vivo, reler as mudanças (`withRoundChanges` /
+  `withCupRoundChanges`) mantém os jogos já calculados e recalcula só a rodada (na copa, a fase e as seguintes):
+  ~78 ms → ~4 ms a cada 10 s. Teste confere que o resultado é idêntico ao cálculo do zero.
 - **Tempos** (50 simultâneos): leituras e RPCs ~0,1–0,5 s; fechar liga ~2,5 s; fechar copa ~1,3 s; cálculo da
   temporada no aparelho ~60 ms.
 
