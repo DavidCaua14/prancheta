@@ -31,3 +31,33 @@ export async function loadRanking(week: boolean, limit = 50): Promise<RankRow[]>
   if (error) throw error;
   return ((data ?? []) as RankRow[]).map((r) => ({ ...r, pos: Number(r.pos) }));
 }
+
+/** Resultado gravado de um jogo (match_points). */
+export type MatchPointsRow = { kind: 0 | 1; tier: number; result: 0 | 1 | 2; gf: number; ga: number; big_win: boolean; advanced: boolean };
+
+/** Pontos de um jogo no ranking, com a conta para mostrar (espelho de ranking() em 0030_match_points.sql). */
+export function matchRankPoints(r: MatchPointsRow): { total: number; parts: { label: string; pts: number }[]; mult: number } {
+  const parts: { label: string; pts: number }[] = [];
+  if (r.kind === 0) {
+    if (r.result === 2) parts.push({ label: "Vitória", pts: RANK_POINTS.win });
+    else if (r.result === 1) parts.push({ label: "Empate", pts: RANK_POINTS.draw });
+    if (r.big_win) parts.push({ label: "Goleada", pts: RANK_POINTS.bigWin });
+  } else if (r.advanced) {
+    parts.push({ label: "Passou de fase", pts: RANK_POINTS.cupRound });
+  }
+  const mult = r.kind === 0 ? DIVISION_MULT[Math.min(Math.max(r.tier, 0), 5)] : CUP_MULT[Math.min(Math.max(r.tier, 0), 3)];
+  const base = parts.reduce((s, p) => s + p.pts, 0);
+  return { total: Math.round(base * mult), parts, mult };
+}
+
+export async function loadMatchPoints(clubId: string, kind: 0 | 1, ref: number, round: number): Promise<MatchPointsRow | null> {
+  const { data } = await supabase()
+    .from("match_points")
+    .select("kind,tier,result,gf,ga,big_win,advanced")
+    .eq("club_id", clubId)
+    .eq("kind", kind)
+    .eq("ref_id", ref)
+    .eq("round", round)
+    .maybeSingle();
+  return (data as MatchPointsRow | null) ?? null;
+}

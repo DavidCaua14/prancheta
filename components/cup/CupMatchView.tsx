@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { LiveMatch } from "@/components/match/LiveMatch";
+import { RankingPointsCard } from "@/components/ranking/RankingPointsCard";
 import { Icon } from "@/components/ui/Icon";
 import { cupConfig, cupMatch, refreshCupChanges, roundName, roundsOf, sendCupChange, slotsIn } from "@/lib/cup/data";
 import { pairsKnown, useCup } from "@/lib/cup/useCup";
@@ -66,7 +67,8 @@ function CupMatch({ kind }: { kind: number }) {
       backHref={`/copas?k=${kind}`}
       finalStatus={so ? `PÊN ${so.score[0]}-${so.score[1]}` : undefined}
       after={
-        so && (
+        <>
+          {so && (
           <div className="rounded-[20px] border-[3px] border-[var(--ink)] bg-[var(--paper)] p-4 text-[var(--ink)] shadow-[0_5px_0_var(--ink)]">
             <p className="t-heading text-center">
               Pênaltis: {m.home.tag} {so.score[0]} × {so.score[1]} {m.away.tag}
@@ -90,7 +92,11 @@ function CupMatch({ kind }: { kind: number }) {
             </div>
             <p className="mt-3 text-center text-sm font-extrabold">{(so.winner === 0 ? m.home : m.away).name} avança!</p>
           </div>
-        )
+          )}
+          {(m.home.clubId === club.id || m.away.clubId === club.id) && (
+            <RankingPointsCard clubId={club.id} kind={1} refId={data.cup.id} round={m.round} kickoff={m.kickoff} multLabel={cupConfig(kind).name} />
+          )}
+        </>
       }
       onSend={async (list) => {
         const r = await sendCupChange(data, m.round, list);

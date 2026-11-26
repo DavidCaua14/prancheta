@@ -14,7 +14,7 @@ import { serverNow } from "@/lib/time";
 type Kind = "liga" | "copa";
 const asked = new Set<string>();
 
-async function askScore(kind: Kind, id: number, round: number) {
+export async function askScore(kind: Kind, id: number, round: number) {
   const k = `${kind}:${id}:${round}`;
   if (asked.has(k)) return;
   asked.add(k);

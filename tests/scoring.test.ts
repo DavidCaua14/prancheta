@@ -55,3 +55,17 @@ test("ranking jogo a jogo (copa): quem passa de fase, inclusive nos pênaltis", 
   assert.equal(slotsIn(d, 2).length, 32);
   assert.deepEqual(cupRoundPoints(d, 99), []);
 });
+
+test("pontos do jogo no ranking (espelho do SQL)", async () => {
+  const { matchRankPoints } = await import("@/lib/ranking");
+  // conferido no banco: liga Várzea, 6V 2E 2 goleadas = 76
+  const v = (big = false) => matchRankPoints({ kind: 0, tier: 0, result: 2, gf: 3, ga: 0, big_win: big, advanced: false }).total;
+  const e = matchRankPoints({ kind: 0, tier: 0, result: 1, gf: 1, ga: 1, big_win: false, advanced: false }).total;
+  assert.equal(4 * v() + 2 * v(true) + 2 * e, 76);
+  // Série B ×2; Copa das Lendas ×3; derrota e eliminação = 0
+  assert.equal(matchRankPoints({ kind: 0, tier: 3, result: 2, gf: 4, ga: 0, big_win: true, advanced: false }).total, 30);
+  assert.equal(matchRankPoints({ kind: 1, tier: 3, result: 1, gf: 1, ga: 1, big_win: false, advanced: true }).total, 45);
+  assert.equal(matchRankPoints({ kind: 0, tier: 5, result: 0, gf: 0, ga: 2, big_win: false, advanced: false }).total, 0);
+  assert.equal(matchRankPoints({ kind: 1, tier: 1, result: 2, gf: 2, ga: 1, big_win: false, advanced: false }).total, 0);
+  assert.equal(matchRankPoints({ kind: 0, tier: 1, result: 2, gf: 2, ga: 1, big_win: false, advanced: false }).total, 13); // 10 × 1,25 = 12,5 → 13 (como o round do SQL)
+});

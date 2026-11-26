@@ -350,6 +350,9 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
   (`useAutoScore` em `useLeague`/`useCup`: recupera rodadas encerradas ao abrir e agenda o fim de cada rodada) e,
   como rede de segurança, `close-league`/`close-cup` gravam tudo o que ficou de fora. Cálculo em `lib/scoring.ts`
   (conferido: os números jogo a jogo batem com o que o fechamento grava em `club_seasons`).
+- **Fim de jogo** (`RankingPointsCard`, liga e copa): ~10 min após o apito inicial pede a pontuação, lê a linha de
+  `match_points` e mostra "+N" com a conta (vitória/empate/goleada/fase × divisão ou copa, `matchRankPoints`, espelho do
+  SQL) e a posição atual.
 - **Ranking** = jogos (vitória 10, empate 3, goleada +5 × divisão; fase de copa 15 × copa) + bônus no fechamento
   (título +150, acesso +75 × divisão; campeão de copa +60 × copa). "Semana" usa a hora do jogo.
 

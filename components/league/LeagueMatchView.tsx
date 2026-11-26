@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { LiveMatch } from "@/components/match/LiveMatch";
 import { HomeIncomeCard } from "@/components/club/HomeIncomeCard";
+import { RankingPointsCard } from "@/components/ranking/RankingPointsCard";
 import { matchAt, refreshChanges, sendChange } from "@/lib/league/data";
 import { divisionInfo } from "@/lib/league/divisions";
 import { useLeague } from "@/lib/league/useLeague";
@@ -39,7 +40,14 @@ export function LeagueMatchView() {
       changes={data.changes}
       title={`${divisionInfo(data.league.division).name} · Rodada ${m.round}`}
       backHref="/liga?aba=rodadas"
-      after={m.home.clubId === club.id ? <HomeIncomeCard clubId={club.id} leagueId={data.league.id} round={m.round} kickoff={m.kickoff} /> : undefined}
+      after={
+        m.home.clubId === club.id || m.away.clubId === club.id ? (
+          <>
+            <RankingPointsCard clubId={club.id} kind={0} refId={data.league.id} round={m.round} kickoff={m.kickoff} multLabel={divisionInfo(data.league.division).name} />
+            {m.home.clubId === club.id && <HomeIncomeCard clubId={club.id} leagueId={data.league.id} round={m.round} kickoff={m.kickoff} />}
+          </>
+        ) : undefined
+      }
       onSend={async (list) => {
         const r = await sendChange(data, m.round, list);
         if (r.ok) setData(await refreshChanges(data, m.round));
