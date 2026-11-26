@@ -6,9 +6,9 @@ export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
  * de atualização obrigatória que os jogadores veem.
  */
 export const RELEASE_NOTES: string[] = [
-  "Fim de jogo mostra os pontos ganhos e a sua subida no ranking, com animação",
-  "Ranking ao vivo: cada vitória pontua logo depois do apito final",
-  "Página inicial atualizada com ranking, estrutura do clube, eventos e treino",
+  "Tela de eventos até 3× mais rápida",
+  "Correções para muitos jogadores ao mesmo tempo: vagas na liga e inscrições nas copas",
+  "Ranking pontua mais rápido quando vários técnicos abrem o jogo juntos",
 ];
 
 export type VersionPayload = {

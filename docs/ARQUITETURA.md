@@ -373,6 +373,10 @@ relógio das ligas/copas adiantado no banco para jogar uma temporada inteira. Ac
 - **Conferido**: ordem final do servidor = a do aparelho nas 6 ligas; acessos (4 por liga na Várzea), prêmios, XP,
   copas (930 moedas = tabela), leilão (carta escalada), amistoso ao vivo, renda em casa (nada pago 2×) e o caixa
   inteiro (25.000 − obras − leilão + prêmios + renda = saldo final, exato). Telas com dados reais: sem erros.
+- **Tela de eventos** (`0034_pending_stats.sql`): o "a confirmar" vinha de baixar a liga e cada copa e recalcular tudo
+  no aparelho, em cascata (~2,8 s). Agora `my_pending_stats()` soma o resultado gravado jogo a jogo (`match_points`) das
+  competições em andamento, numa consulta; as leituras saem em paralelo, o clube vem do cache do aparelho e a lista
+  de eventos é lida uma vez por sessão (~0,9 s com 150 ms por consulta). Teste confere: mesma soma do cálculo antigo.
 - **Tempos** (50 simultâneos): leituras e RPCs ~0,1–0,5 s; fechar liga ~2,5 s; fechar copa ~1,3 s; cálculo da
   temporada no aparelho ~60 ms.
 

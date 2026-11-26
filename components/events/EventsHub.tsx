@@ -1,15 +1,13 @@
 "use client";
 
-import { serverNow } from "@/lib/time";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { ArtImg } from "@/components/ui/ArtImg";
 import { Icon } from "@/components/ui/Icon";
 import { getMyClub, getSession, type Club } from "@/lib/club/api";
-import { CUP_KINDS, cupStats, loadCup, myLastEntry } from "@/lib/cup/data";
-import { claimMission, currentEvent, METRIC_LABEL, myProgress, templates, type Metric, type Progress, type Template, type WeekEvent } from "@/lib/events/data";
-import { clubLeagueStats, emptyStats, fmtCountdown, loadLeague } from "@/lib/league/data";
+import { claimMission, currentEvent, METRIC_LABEL, myPending, myProgress, templates, type Metric, type Progress, type Template, type WeekEvent } from "@/lib/events/data";
+import { fmtCountdown } from "@/lib/league/core";
 import { useNow } from "@/lib/league/useLeague";
 
 const EVENT_COLORS: Record<string, string> = {
@@ -20,41 +18,6 @@ const EVENT_COLORS: Record<string, string> = {
 };
 
 type Pending = Partial<Record<Metric, number>>;
-
-/**
- * O que ainda está "a confirmar": jogos já disputados na temporada e nas copas
- * em andamento. Só entra no progresso oficial quando elas fecharem.
- */
-async function pendingStats(club: Club, now: number): Promise<Pending> {
-  const out: Pending = {};
-  const add = (k: Metric, v: number) => (out[k] = (out[k] ?? 0) + v);
-  if (club.league_id) {
-    const d = await loadLeague(club.league_id).catch(() => null);
-    if (d && !d.league.closed_at) {
-      const s = d ? clubLeagueStats(d, club.id, now) : emptyStats();
-      add("games", s.games);
-      add("wins", s.wins);
-      add("goals", s.goals_for);
-      add("clean_sheets", s.clean_sheets);
-      add("big_wins", s.big_wins);
-    }
-  }
-  for (const kind of Object.keys(CUP_KINDS).map(Number)) {
-    const e = await myLastEntry(club.id, kind).catch(() => null);
-    if (!e || e.cups.closed_at || now < new Date(e.cups.starts_at).getTime()) continue;
-    const d = await loadCup(e.cup_id).catch(() => null);
-    if (!d) continue;
-    const s = cupStats(d, e.slot, now);
-    add("games", s.games);
-    add("wins", s.wins);
-    add("goals", s.goals_for);
-    add("clean_sheets", s.clean_sheets);
-    add("big_wins", s.big_wins);
-    add("cup_games", s.games);
-    add("cup_wins", s.cup_wins);
-  }
-  return out;
-}
 
 function Coins({ value, className = "" }: { value: number; className?: string }) {
   return (
@@ -81,24 +44,33 @@ export function EventsHub() {
   const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState(false);
 
-  const load = useCallback(async () => {
-    const s = await getSession();
-    if (!s) return router.replace("/entrar");
-    const c = await getMyClub(s, { fresh: true });
-    if (!c) return router.replace("/clube/novo");
-    if (!c.squad) return router.replace("/peneira");
-    setClub(c);
-    try {
-      const [ev, p, t] = await Promise.all([currentEvent(), myProgress(), templates()]);
-      setEvent(ev);
-      setProg(p);
-      setList(t);
-      setError(false);
-      setPending(await pendingStats(c, serverNow()));
-    } catch {
-      setError(true);
-    }
-  }, [router]);
+  const load = useCallback(
+    async (opts: { fresh?: boolean } = {}) => {
+      const s = await getSession();
+      if (!s) return router.replace("/entrar");
+      // clube guardado no aparelho: a tela abre na hora; as moedas atualizam em paralelo
+      const c = await getMyClub(s, { fresh: opts.fresh });
+      if (!c) return router.replace("/clube/novo");
+      if (!c.squad) return router.replace("/peneira");
+      setClub(c);
+      // tudo junto (antes era em cascata e recalculava a liga e as copas no aparelho)
+      const fresh = opts.fresh ? Promise.resolve(c) : getMyClub(s, { fresh: true }).catch(() => c);
+      const pend = myPending().catch(() => ({}));
+      try {
+        const [ev, p, t] = await Promise.all([currentEvent(), myProgress(), templates()]);
+        setEvent(ev);
+        setProg(p);
+        setList(t);
+        setError(false);
+      } catch {
+        setError(true);
+      }
+      const [fc, pd] = await Promise.all([fresh, pend]);
+      if (fc) setClub(fc);
+      setPending(pd as Pending);
+    },
+    [router],
+  );
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial assíncrona
@@ -117,7 +89,7 @@ export function EventsHub() {
     setBusy(null);
     if ("coins" in r) {
       setToast(`+${r.coins.toLocaleString("pt-BR")} moedas! Bora gastar no leilão.`);
-      void load();
+      void load({ fresh: true });
     } else {
       setToast(r.error === "claimed" ? "Essa recompensa já foi resgatada." : r.error === "incomplete" ? "Ainda falta um pouco para completar." : "Não deu para resgatar. Tente de novo.");
     }

@@ -69,3 +69,37 @@ test("pontos do jogo no ranking (espelho do SQL)", async () => {
   assert.equal(matchRankPoints({ kind: 1, tier: 1, result: 2, gf: 2, ga: 1, big_win: false, advanced: false }).total, 0);
   assert.equal(matchRankPoints({ kind: 0, tier: 1, result: 2, gf: 2, ga: 1, big_win: false, advanced: false }).total, 13); // 10 × 1,25 = 12,5 → 13 (como o round do SQL)
 });
+
+test("eventos: 'a confirmar' somado jogo a jogo = cálculo antigo (liga + copa)", async () => {
+  const { cupStats } = await import("@/lib/cup/core");
+  // mesma soma do my_pending_stats() (SQL)
+  const agg = (rows: { result: number; gf: number; ga: number; big_win: boolean; advanced: boolean; cup: boolean }[]) => ({
+    games: rows.length,
+    wins: rows.filter((r) => r.result === 2).length,
+    goals: rows.reduce((s, r) => s + r.gf, 0),
+    clean_sheets: rows.filter((r) => r.ga === 0).length,
+    big_wins: rows.filter((r) => r.big_win).length,
+    cup_games: rows.filter((r) => r.cup).length,
+    cup_wins: rows.filter((r) => r.cup && r.advanced).length,
+  });
+  const d = league();
+  const lg = Array.from({ length: 18 }, (_, i) => leagueRoundPoints(d, i + 1)).flat().filter((x) => x.club_id === A).map((x) => ({ ...x, cup: false }));
+  const start = Date.UTC(2026, 0, 1, 16);
+  const cup: CupRow = { id: 903, kind: 0, size: 32, starts_at: new Date(start).toISOString(), ends_at: new Date(start + 8.25 * 3600_000).toISOString(), closed_at: null, champion: null };
+  const e = (slot: number, id: string): CupEntry => ({ slot, club_id: id, xp: null, reach: null, coins: null, clubs: { name: `C${slot}`, tag: `C${String(slot).padStart(2, "0")}`, crest: "0.1.3.11.0.5", kit: "1.11.0.5", squad: "1:21021021021012" } });
+  const cd = buildCupData({ cup, entries: [e(4, A)], logs: [], changes: [] });
+  const cp = Array.from({ length: 5 }, (_, i) => cupRoundPoints(cd, i + 1)).flat().map((x) => ({ ...x, cup: true }));
+  const novo = agg([...lg, ...cp]);
+  // antigo: tabela da liga + estatísticas da copa, calculadas no aparelho
+  const st = clubLeagueStats(d, A, Number.POSITIVE_INFINITY);
+  const cs = cupStats(cd, 4);
+  assert.deepEqual(novo, {
+    games: st.games + cs.games,
+    wins: st.wins + cs.wins,
+    goals: st.goals_for + cs.goals_for,
+    clean_sheets: st.clean_sheets + cs.clean_sheets,
+    big_wins: st.big_wins + cs.big_wins,
+    cup_games: cs.games,
+    cup_wins: cs.cup_wins,
+  });
+});

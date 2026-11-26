@@ -41,9 +41,28 @@ export async function myProgress(): Promise<{ progress: Progress; claimed: numbe
   return data as { progress: Progress; claimed: number[] };
 }
 
-export async function templates(): Promise<Template[]> {
-  const { data } = await supabase().from("event_templates").select("id,slug,name").order("id");
-  return (data ?? []) as Template[];
+/** Lista de eventos (configuração fixa): lida uma vez por sessão. */
+let templatesOnce: Promise<Template[]> | null = null;
+export function templates(): Promise<Template[]> {
+  templatesOnce ??= (async () => {
+    const { data, error } = await supabase().from("event_templates").select("id,slug,name").order("id");
+    if (error) {
+      templatesOnce = null;
+      throw error;
+    }
+    return (data ?? []) as Template[];
+  })();
+  return templatesOnce;
+}
+
+/**
+ * "A confirmar": jogos já disputados na temporada e nas copas em andamento,
+ * somados no servidor a partir do resultado gravado de cada jogo (uma consulta).
+ */
+export async function myPending(): Promise<Partial<Progress>> {
+  const { data, error } = await supabase().rpc("my_pending_stats");
+  if (error) throw error;
+  return (data ?? {}) as Partial<Progress>;
 }
 
 export async function claimMission(index: number): Promise<{ coins: number } | { error: "incomplete" | "claimed" | "network" }> {
