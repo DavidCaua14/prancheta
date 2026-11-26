@@ -212,8 +212,17 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
 ## Evolução das cartas (implementado)
 
 - **O banco guarda só o XP**: `clubs.xp smallint[14]` (null = tudo zero). Nível e overall são derivados no
-  aparelho (`lib/cards/evolution.ts`): cada nível = **+1 de overall e de cada atributo**, até o teto do tipo
-  (Base: nível 10, overall 70). Custo do nível n → n+1: `50 + 25·(n−1)` XP (1.350 XP até o nível 10).
+  aparelho (`lib/cards/evolution.ts`). Custo do nível n → n+1: `50 + 25·(n−1)` XP (1.350 XP até o nível 10).
+- **Potencial próprio de cada carta** (`cardPotential`): o teto da raridade (Base 70 / nível 10, Destaque 79 /
+  20, Épica 89 / 35, Especial 99 / 50) é o **máximo possível**, não o destino de toda carta. Cada carta nasce
+  com o seu nível máximo (entre metade do teto e o teto) e o overall que alcança nele. A nota de potencial
+  (0–1) vem da idade (≤20 anos ~0,66 … ≥31 ~0,26) + sorteio (soma de 3, extremos raros), com seed própria
+  (`potencial:<seed>:<key>`): igual em todo aparelho e no servidor, nada no banco, cartas já geradas não mudam.
+  O ganho de overall se espalha do nível 1 ao nível máximo (`overallAtLevel`) e vale também para os atributos;
+  toda carta ganha ao menos +2 (se houver espaço). Distribuição (2.000 cartas por raridade): chegam ao overall
+  máximo ~1,3% das Base, ~1,1% das Destaque, ~0,8% das Épicas e ~0,6% das Especiais; ganho médio +8 (Base),
+  +7,6 (Destaque), +8,5 (Épica), +9,4 (Especial); Base termina entre os níveis 5 e 10 (a maioria 7–8).
+  A carta mostra "Nv 3/8 · Pot 63"; o leilão mostra o potencial (alto/médio/baixo) de cada lote.
 - **XP por jogo da liga** (`matchXp`): titular 6, entrou no jogo 4, banco 2 (treino); nota ≥ 7 +3, ≥ 8 +6;
   gol +4, assistência +2; vitória +3, empate +1. **Fim de temporada**: acesso +40 e título +60 para cada
   carta (somados em SQL).

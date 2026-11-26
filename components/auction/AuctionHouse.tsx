@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { GameCard } from "@/components/cards/GameCard";
+import { cardPotential, potentialLabel } from "@/lib/cards/evolution";
 import { CrestSvg } from "@/components/club/CrestSvg";
 import { ArtImg } from "@/components/ui/ArtImg";
 import { Icon } from "@/components/ui/Icon";
@@ -227,6 +228,7 @@ export function AuctionHouse() {
   const won = mine.filter((l) => new Date(l.ends_at).getTime() <= now);
   const sel = open ? lotInfo(open.round, open.idx) : null;
   const selCard = open ? lotCard(open.round, open.idx) : null;
+  const selPot = selCard ? cardPotential(selCard) : null;
   const step = sel ? Math.max(10, Math.ceil(sel.min * 0.05)) : 10;
 
   return (
@@ -362,7 +364,8 @@ export function AuctionHouse() {
                   {selCard.position} · {selCard.age} anos · OVR {selCard.overall}
                 </p>
                 <p className="mt-1 text-xs font-semibold opacity-70">
-                  Evolui até o nível {CARD_TIERS[sel.tier].maxLevel} (overall máx. {CARD_TIERS[sel.tier].maxOverall}).
+                  Potencial {potentialLabel(selPot!.grade)}: evolui até o nível {selPot!.maxLevel} e overall {selPot!.maxOverall} (teto {CARD_TIERS[sel.tier].label}:{" "}
+                  {CARD_TIERS[sel.tier].maxLevel} / {CARD_TIERS[sel.tier].maxOverall}).
                 </p>
                 <p className="mt-auto pt-2 text-xs font-bold">
                   {sel.ended ? "Encerrado" : <>Fecha em <span className="t-num">{fmtCountdown(sel.ends - now)}</span></>}

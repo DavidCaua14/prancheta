@@ -69,8 +69,8 @@ function Soon({ title, text }: { title: string; text: string }) {
 }
 
 /** Barra de XP do nível atual + o que entra no fim da temporada. */
-function XpBar({ xp, pending }: { xp: number; pending: number }) {
-  const max = CARD_TIERS.base.maxLevel;
+function XpBar({ xp, pending, maxLevel }: { xp: number; pending: number; maxLevel: number }) {
+  const max = maxLevel;
   const now = levelFromXp(xp, max);
   const after = levelFromXp(xp + pending, max);
   const pct = now.max ? 100 : Math.round((now.into / now.need) * 100);
@@ -350,8 +350,9 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
                 <p className="t-heading">Evolução das cartas</p>
                 <p className="mt-0.5 text-sm text-white/75">
                   Cada jogo da liga dá XP: jogar, nota boa, gol, assistência e vitória. Banco também treina. O XP entra no elenco
-                  quando a temporada fecha (+40 no acesso, +60 no título) e cada nível vale +1 de overall, até {CARD_TIERS.base.maxOverall} nas
-                  cartas Base.
+                  quando a temporada fecha (+40 no acesso, +60 no título). Cada carta tem o seu potencial (&quot;Pot&quot; na carta): o nível
+                  e o overall máximos dela — jovens costumam ir mais longe. O teto das cartas Base é nível {CARD_TIERS.base.maxLevel} e overall{" "}
+                  {CARD_TIERS.base.maxOverall}, mas poucas chegam lá.
                 </p>
                 {pending && pending.games > 0 && (
                   <p className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-2 py-1 text-xs font-extrabold text-[var(--sun)]">
@@ -374,7 +375,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
                     return (
                       <div key={c.key} className="flex w-full flex-col items-center gap-1.5">
                         <GameCard card={c} kit={kit} tag={club.tag} className="!text-[clamp(8px,2.45vw,12px)]" />
-                        <XpBar xp={club.xp?.[i] ?? 0} pending={pending?.xp[i] ?? 0} />
+                        <XpBar xp={club.xp?.[i] ?? 0} pending={pending?.xp[i] ?? 0} maxLevel={c.maxLevel ?? CARD_TIERS[c.tier ?? "base"].maxLevel} />
                       </div>
                     );
                   })}

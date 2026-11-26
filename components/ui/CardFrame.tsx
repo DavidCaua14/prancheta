@@ -15,6 +15,9 @@ export type CardPlayer = {
   club: { short: string; color: string };
   /** Exatamente 6 atributos. */
   stats: { label: string; value: number }[];
+  /** Potencial desta carta: nível máximo e overall nesse nível (sem = teto da raridade). */
+  maxLevel?: number;
+  potential?: number;
 };
 
 export const CARD_SIZES = {
@@ -45,12 +48,14 @@ export function CardFrame({
 }) {
   const tier = CARD_TIERS[player.tier];
   const stars = TIER_ORDER.indexOf(player.tier) + 1;
-  const pct = Math.round((player.level / tier.maxLevel) * 100);
+  const maxLevel = player.maxLevel ?? tier.maxLevel;
+  const potential = player.potential ?? tier.maxOverall;
+  const pct = Math.round((player.level / maxLevel) * 100);
 
   return (
     <article
       className={`pcard pcard-${player.tier} ${CARD_SIZES[size]} ${className}`}
-      aria-label={`${player.name}, ${player.position}, carta ${tier.label}, overall ${player.overall}, nível ${player.level}`}
+      aria-label={`${player.name}, ${player.position}, carta ${tier.label}, overall ${player.overall}, nível ${player.level} de ${maxLevel}, potencial ${potential}`}
     >
       <div className="pcard-inner">
         <div className="pcard-pattern" />
@@ -101,7 +106,8 @@ export function CardFrame({
           <div className="flex items-center justify-between text-[0.6em] font-extrabold uppercase leading-none">
             <span>
               Nv {player.level}
-              <span className="opacity-60">/{tier.maxLevel}</span>
+              <span className="opacity-60">/{maxLevel}</span>
+              {potential > player.overall && <span className="ml-[0.4em] text-[var(--accent)]">Pot {potential}</span>}
             </span>
             <span aria-hidden className="flex gap-[0.08em] text-[var(--ink)]">
               {[0, 1, 2, 3].map((k) => (

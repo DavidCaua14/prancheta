@@ -1,5 +1,6 @@
 "use client";
 
+import { potentialOf } from "@/lib/cards/evolution";
 import { memo } from "react";
 import type { BaseCard } from "@/lib/cards/generate";
 import { PALETTE, type Kit } from "@/lib/club/identity";
@@ -29,6 +30,7 @@ export const GameCard = memo(function GameCard({
   size?: keyof typeof CARD_SIZES;
   className?: string;
 }) {
+  const pot = potentialOf(card);
   return (
     <CardFrame
       size={size}
@@ -38,6 +40,8 @@ export const GameCard = memo(function GameCard({
         position: card.position,
         overall: card.overall,
         level: card.level,
+        maxLevel: pot.maxLevel,
+        potential: pot.maxOverall,
         tier: card.tier ?? "base",
         club: { short: tag, color: PALETTE[kit.c1].hex },
         stats: card.stats,

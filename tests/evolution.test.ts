@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { evolveCard, levelFromXp, matchXp, seasonBonus, xpToMax, XP_RULES } from "@/lib/cards/evolution";
+import { cardPotential, evolveCard, levelFromXp, matchXp, overallAtLevel, seasonBonus, xpToMax, XP_RULES } from "@/lib/cards/evolution";
+import { generateCard, hash32 } from "@/lib/cards/generate";
+import { CARD_TIERS } from "@/lib/game-config";
 import { clubCards, draftOption } from "@/lib/cards/squad";
 import { botTeam } from "@/lib/league/bots";
 import { buildLeagueData, clubMatchXp, type LeagueClub, type LeagueRow } from "@/lib/league/core";
@@ -17,16 +19,55 @@ test("curva de níveis", () => {
   assert.equal(levelFromXp(99999, 10).max, true);
 });
 
-test("nível soma overall e atributos, até o teto da carta Base (70)", () => {
+test("nível soma overall e atributos, até o potencial da carta", () => {
   const c = draftOption("clube-teste", 0, 0);
-  assert.equal(evolveCard(c, 0), c);
+  const pot = cardPotential(c);
+  const lv1 = evolveCard(c, 0);
+  assert.equal(lv1.overall, c.overall);
+  assert.equal(lv1.level, 1);
+  assert.equal(lv1.maxLevel, pot.maxLevel);
+  assert.equal(lv1.potential, pot.maxOverall);
   const lv5 = evolveCard(c, 50 + 75 + 100 + 125);
-  assert.equal(lv5.level, 5);
-  assert.equal(lv5.overall, Math.min(70, c.overall + 4));
+  assert.equal(lv5.level, Math.min(5, pot.maxLevel));
+  assert.equal(lv5.overall, overallAtLevel(c.overall, pot, 5));
   assert.equal(lv5.stats[0].value, c.stats[0].value + (lv5.overall - c.overall));
-  const max = evolveCard({ ...c, overall: 66 }, 5000);
-  assert.equal(max.level, 10);
-  assert.equal(max.overall, 70);
+  const max = evolveCard(c, 99999);
+  assert.equal(max.level, pot.maxLevel);
+  assert.equal(max.overall, pot.maxOverall);
+  // o overall só sobe com o nível
+  for (let n = 1; n < pot.maxLevel; n++) assert.ok(overallAtLevel(c.overall, pot, n + 1) >= overallAtLevel(c.overall, pot, n));
+});
+
+test("potencial varia de carta para carta: o teto da raridade é o máximo, não o padrão", () => {
+  const tiers = ["base", "destaque", "epica", "especial"] as const;
+  const positions = ["GOL", "ZAG", "LD", "VOL", "MC", "MEI", "PD", "ATA"] as const;
+  for (const tier of tiers) {
+    const T = CARD_TIERS[tier];
+    const pots: { start: number; age: number; p: ReturnType<typeof cardPotential> }[] = [];
+    for (let i = 0; i < 2000; i++) {
+      const c = generateCard(hash32(`teste-potencial:${tier}:${i}`), positions[i % positions.length], `t-${i}`, tier);
+      pots.push({ start: c.overall, age: c.age, p: cardPotential(c) });
+    }
+    const atCap = pots.filter((x) => x.p.maxOverall === T.maxOverall).length / pots.length;
+    const atMaxLevel = pots.filter((x) => x.p.maxLevel === T.maxLevel).length / pots.length;
+    const growth = pots.reduce((s, x) => s + (x.p.maxOverall - x.start), 0) / pots.length;
+    const levels = new Set(pots.map((x) => x.p.maxLevel));
+    // ninguém passa do teto; poucas chegam nele; níveis máximos variados
+    assert.ok(pots.every((x) => x.p.maxOverall <= T.maxOverall && x.p.maxLevel <= T.maxLevel && x.p.maxLevel >= Math.ceil(T.maxLevel / 2)));
+    assert.ok(atCap > 0.003 && atCap < 0.2, `${tier}: ${(atCap * 100).toFixed(1)}% chegam ao overall máximo`);
+    assert.ok(atMaxLevel > 0.003 && atMaxLevel < 0.2, `${tier}: ${(atMaxLevel * 100).toFixed(1)}% chegam ao nível máximo`);
+    assert.ok(levels.size >= Math.min(5, T.maxLevel / 2), `${tier}: só ${levels.size} níveis máximos diferentes`);
+    // toda carta evolui um pouco (salvo se já nasceu colada no teto)
+    assert.ok(pots.every((x) => x.p.maxOverall - x.start >= Math.min(2, T.maxOverall - x.start)));
+    // ganho médio parecido com o de antes (Base: ~+8), agora com variação
+    if (tier === "base") assert.ok(growth > 6 && growth < 10, `base cresce em média +${growth.toFixed(1)}`);
+    // jovens têm mais potencial que veteranos
+    const avg = (f: (a: number) => boolean) => {
+      const l = pots.filter((x) => f(x.age));
+      return l.reduce((s, x) => s + x.p.grade, 0) / l.length;
+    };
+    assert.ok(avg((a) => a <= 21) > avg((a) => a >= 30) + 0.2, `${tier}: jovens ${avg((a) => a <= 21).toFixed(2)} × veteranos ${avg((a) => a >= 30).toFixed(2)}`);
+  }
 });
 
 test("XP por jogo: quem joga ganha mais que o banco; gol e assistência contam", () => {
@@ -81,6 +122,6 @@ test("clube com XP fica mais forte nos jogos da liga", () => {
   const squad = "1:21021021021012";
   const base = clubCards(id, squad, null);
   const maxed = clubCards(id, squad, Array(14).fill(1350));
-  assert.ok(maxed.every((c, i) => c.level === 10 && c.overall >= base[i].overall));
-  assert.ok(maxed.reduce((s, c) => s + c.overall, 0) > base.reduce((s, c) => s + c.overall, 0) + 14 * 6);
+  assert.ok(maxed.every((c, i) => c.level === c.maxLevel && c.overall === c.potential && c.overall >= base[i].overall));
+  assert.ok(maxed.reduce((s, c) => s + c.overall, 0) > base.reduce((s, c) => s + c.overall, 0) + 14 * 4);
 });

@@ -145,11 +145,11 @@ export function CardsShowcase() {
                 </div>
                 <dl className="mt-3 grid grid-cols-2 overflow-hidden rounded-xl border-[3px] border-[var(--ink)] bg-[var(--paper)] text-center text-[var(--ink)]">
                   <div className="border-r-[3px] border-[var(--ink)] py-2">
-                    <dt className="text-[0.65rem] font-extrabold uppercase tracking-wider opacity-55">OVR máx</dt>
+                    <dt className="text-[0.65rem] font-extrabold uppercase tracking-wider opacity-55">Teto OVR</dt>
                     <dd className="t-num text-xl">{tier.maxOverall}</dd>
                   </div>
                   <div className="py-2">
-                    <dt className="text-[0.65rem] font-extrabold uppercase tracking-wider opacity-55">Nível máx</dt>
+                    <dt className="text-[0.65rem] font-extrabold uppercase tracking-wider opacity-55">Teto nível</dt>
                     <dd className="t-num text-xl">{tier.maxLevel}</dd>
                   </div>
                 </dl>

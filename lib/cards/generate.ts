@@ -45,6 +45,12 @@ export type BaseCard = {
   foot: "D" | "E";
   stats: { label: string; value: number }[];
   look: { skin: string; hair: string; hairStyle: HairStyle; beard: boolean; headband?: string };
+  /** Potencial (preenchido pela evolução, ver cardPotential): nível máximo desta carta. */
+  maxLevel?: number;
+  /** Overall que esta carta alcança no nível máximo. */
+  potential?: number;
+  /** 0–1: nota de potencial (para rótulos como "Promessa"). */
+  grade?: number;
 };
 
 /* ------------------------------------------------------------------ */

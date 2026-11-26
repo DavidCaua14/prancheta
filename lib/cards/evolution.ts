@@ -10,7 +10,7 @@
  */
 import { CARD_TIERS } from "@/lib/game-config";
 import type { MatchResult } from "@/lib/sim/engine";
-import type { BaseCard } from "./generate";
+import { hash32, rng, type BaseCard } from "./generate";
 
 export const XP_RULES = {
   /** jogou desde o início / entrou no decorrer */
@@ -58,19 +58,97 @@ export function xpToMax(maxLevel: number) {
   return t;
 }
 
-/** Carta com o nível aplicado: +1 de overall e de cada atributo por nível, até o teto da raridade. */
-export function evolveCard(card: BaseCard, xp: number): BaseCard {
+/* ------------------------------------------------------------------ */
+/* Potencial: cada carta tem o seu teto                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * O teto da raridade (Base 70 / nível 10, Destaque 79 / 20, Épica 89 / 35,
+ * Especial 99 / 50) é o MÁXIMO possível — não o destino de toda carta. Cada
+ * carta nasce com o seu potencial: até que nível ela chega e quanto de overall
+ * ganha no caminho. Jovens costumam ter mais espaço para crescer; veteranos,
+ * menos. Só as melhores promessas encostam no teto da raridade.
+ *
+ * Calculado da seed da carta (sorteio próprio): igual em todo aparelho e no
+ * servidor, sem nada no banco, e sem mudar as cartas já geradas.
+ */
+export type Potential = {
+  /** nível máximo desta carta (≤ teto da raridade) */
+  maxLevel: number;
+  /** overall no nível máximo (≤ teto da raridade) */
+  maxOverall: number;
+  /** 0–1: o quanto do espaço até o teto da raridade a carta aproveita */
+  grade: number;
+};
+
+/** Faixa de potencial pela idade (média do quanto aproveita do espaço até o teto). */
+function ageMean(age: number) {
+  if (age <= 20) return 0.66;
+  if (age <= 23) return 0.56;
+  if (age <= 27) return 0.46;
+  if (age <= 30) return 0.36;
+  return 0.26;
+}
+
+/** Ganho mínimo de overall até o nível máximo (até a carta mais limitada evolui um pouco). */
+const MIN_GROWTH = 2;
+
+/**
+ * Potencial da carta. `card` precisa estar no nível 1 (como sai do gerador):
+ * o overall dela é o ponto de partida.
+ */
+export function cardPotential(card: BaseCard): Potential {
   const tier = CARD_TIERS[card.tier ?? "base"];
-  const { level } = levelFromXp(xp, tier.maxLevel);
-  const target = Math.min(tier.maxOverall, Math.max(card.overall, card.overall + level - 1));
-  const bonus = target - card.overall;
-  if (level === card.level && bonus === 0) return card;
-  return { ...card, level, overall: target, stats: card.stats.map((s) => ({ ...s, value: Math.min(99, s.value + bonus) })) };
+  const r = rng(hash32(`potencial:${card.seed}:${card.key}`));
+  // nota de potencial: idade + sorteio (soma de 3 → concentra no meio, extremos raros)
+  const noise = (r() + r() + r() - 1.5) * 0.36;
+  const grade = Math.min(1, Math.max(0.12, ageMean(card.age) + noise));
+  const room = Math.max(0, tier.maxOverall - card.overall);
+  const growth = Math.min(room, Math.max(MIN_GROWTH, Math.round(room * grade)));
+  // quem tem mais potencial também vai mais longe nos níveis (com um pouco de variação)
+  const lvlGrade = Math.min(1, Math.max(0, grade + (r() - 0.5) * 0.2));
+  const minLevel = Math.max(2, Math.ceil(tier.maxLevel * 0.5));
+  const maxLevel = Math.min(tier.maxLevel, Math.round(minLevel + (tier.maxLevel - minLevel) * lvlGrade));
+  return { maxLevel, maxOverall: Math.min(tier.maxOverall, card.overall + growth), grade };
+}
+
+/** Rótulo do potencial para as telas. */
+export function potentialLabel(grade: number) {
+  return grade >= 0.66 ? "alto" : grade >= 0.4 ? "médio" : "baixo";
+}
+
+/** Overall da carta num nível: o ganho se espalha do nível 1 até o nível máximo dela. */
+export function overallAtLevel(start: number, pot: Potential, level: number) {
+  if (pot.maxLevel <= 1) return start;
+  const n = Math.min(level, pot.maxLevel);
+  return start + Math.round(((pot.maxOverall - start) * (n - 1)) / (pot.maxLevel - 1));
+}
+
+/** Potencial de uma carta já evoluída (ou recém-gerada). */
+export function potentialOf(card: BaseCard): Potential {
+  if (card.maxLevel !== undefined && card.potential !== undefined) return { maxLevel: card.maxLevel, maxOverall: card.potential, grade: card.grade ?? 0.5 };
+  return cardPotential(card);
+}
+
+/** Carta com o nível aplicado: overall e atributos sobem até o potencial dela. */
+export function evolveCard(card: BaseCard, xp: number): BaseCard {
+  const pot = cardPotential(card);
+  const { level } = levelFromXp(xp, pot.maxLevel);
+  const overall = overallAtLevel(card.overall, pot, level);
+  const bonus = overall - card.overall;
+  return {
+    ...card,
+    level,
+    overall,
+    maxLevel: pot.maxLevel,
+    potential: pot.maxOverall,
+    grade: pot.grade,
+    stats: bonus ? card.stats.map((s) => ({ ...s, value: Math.min(99, s.value + bonus) })) : card.stats,
+  };
 }
 
 export function evolveSquad(cards: BaseCard[], xp: readonly number[] | null | undefined): BaseCard[] {
-  if (!xp) return cards;
-  return cards.map((c, i) => evolveCard(c, xp[i] ?? 0));
+  return cards.map((c, i) => evolveCard(c, xp?.[i] ?? 0));
 }
 
 /** XP de cada carta (índice do elenco) num jogo. `side`: 0 = mandante, 1 = visitante. */

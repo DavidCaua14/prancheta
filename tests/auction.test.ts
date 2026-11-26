@@ -36,9 +36,12 @@ test("carta do lote: determinística e na faixa da raridade", () => {
       assert.ok(a.overall >= lo && a.overall <= hi, `${tier} ${a.overall}`);
     }
   }
-  const d = { ...lotCard(1000, 0), overall: 77 };
-  assert.equal(evolveCard(d, 99999).overall, CARD_TIERS.destaque.maxOverall);
-  assert.equal(evolveCard(d, 99999).level, CARD_TIERS.destaque.maxLevel);
+  // evoluída ao máximo: chega ao potencial dela, nunca passa do teto da raridade
+  const d = lotCard(1000, 0);
+  const top = evolveCard(d, 99999);
+  assert.equal(top.level, top.maxLevel);
+  assert.equal(top.overall, top.potential);
+  assert.ok(top.overall <= CARD_TIERS.destaque.maxOverall && top.maxLevel! <= CARD_TIERS.destaque.maxLevel);
 });
 
 test("cartas arrematadas entram no fim do elenco, em ordem estável", () => {
