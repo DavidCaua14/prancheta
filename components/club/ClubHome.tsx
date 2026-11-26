@@ -23,6 +23,7 @@ import { FORMATIONS, strength } from "@/lib/tactics/formations";
 import { POSTURES, lineupFor } from "@/lib/tactics/lineup";
 import { CrestSvg } from "./CrestSvg";
 import { ClubTab } from "./ClubTab";
+import { RankingTeaser } from "@/components/ranking/RankingTeaser";
 import { collectHomeIncome } from "@/lib/club/structure";
 
 type Tab = "inicio" | "elenco" | "jogos" | "leilao" | "clube";
@@ -338,6 +339,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
                   </button>
                 ))}
               </div>
+              <RankingTeaser />
             </div>
 
             {/* time titular */}
