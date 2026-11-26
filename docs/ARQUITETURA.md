@@ -364,6 +364,13 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
   `:LWT`; mudanças ao vivo `l0-2`, `w0-2`, `t0-2` (migração 0021).
 - **Testes de encaixe** (`tests/tactics.test.ts`): times montados com perfis claros — cada opção vence quando o
   elenco encaixa e perde quando não encaixa; num time comum nenhuma domina (diferença < 0,12 gol/jogo).
+- **Relógio do servidor nas mudanças ao vivo** (`0025_server_clock_changes.sql`): o aparelho não escolhe mais o
+  minuto da mudança. A RPC `send_changes(escopo, id, fase, mudanças[])` calcula agora + 4 pelo relógio do servidor
+  e grava tudo de uma vez (mesmas regras RLS); salvar de novo o mesmo ajuste nos mesmos 6 s vai para o minuto
+  seguinte (ordem clara). A tela usa `serverNow()` (`lib/time.ts`), acertado uma vez por sessão com
+  `server_now()` (`lib/clock.ts`): relógio de celular/PC atrasado não faz mais a mudança "chegar atrasada" nem
+  mostra o minuto errado. Erros têm aviso próprio (sem conexão, sessão expirada, jogo acabando) e a folha fica
+  aberta para tentar de novo.
 - **Tática ao vivo (rascunho + Salvar)**: a folha de tática guarda um rascunho; "Salvar" envia só o que mudou,
   numa única escrita, tudo valendo no mesmo minuto (agora + 4). A tela mostra o que vai valer (`tacticAt` em
   `lib/tactics/live.ts`, com as mudanças agendadas): botão amarelo com o minuto no celular, aviso "Salvo, vale

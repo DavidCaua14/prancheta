@@ -1,5 +1,6 @@
 "use client";
 
+import { serverNow } from "@/lib/time";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
@@ -106,7 +107,7 @@ export function FriendlyHub() {
       const list = await myFriendlies(me.id);
       setRows(list);
       // placares: só dos jogos que já acabaram (e lidos depois do apito final)
-      const ended = list.filter((f) => f.guest && Date.now() > new Date(f.kickoff).getTime() + 100 * TICK_SECONDS * 1000);
+      const ended = list.filter((f) => f.guest && serverNow() > new Date(f.kickoff).getTime() + 100 * TICK_SECONDS * 1000);
       const data = await loadFriendlies(ended.slice(0, 10));
       setGames(Object.fromEntries(data.map((d) => [d.f.id, d])));
       setError(null);
@@ -123,7 +124,7 @@ export function FriendlyHub() {
   // próximo apito ou fim de jogo com a tela aberta: relê a lista
   useEffect(() => {
     if (!rows) return;
-    const t = Date.now();
+    const t = serverNow();
     const moments = rows
       .filter((f) => f.guest)
       .flatMap((f) => {
@@ -269,7 +270,7 @@ function ShareButtons({ code, clubName, kickoff, onToast, compact = false }: { c
 /* ------------------------------------------------------------- marcar */
 
 function CreatePanel({ club, now, full, onCreated, onToast }: { club: Club; now: number; full: boolean; onCreated: () => Promise<void> | void; onToast: (t: string) => void }) {
-  const [base] = useState(() => Date.now());
+  const [base] = useState(() => serverNow());
   const { day: today, minutes: nowMin } = brt(now || base);
   // dia + hora (Brasília); padrão: hoje, na próxima hora cheia com folga
   const [dayIdx, setDayIdx] = useState(nowMin >= 22 * 60 ? 1 : 0);
@@ -434,7 +435,7 @@ function InviteCard({ code, club, now, onDone, onAccepted }: { code: string; clu
     try {
       const id = await acceptFriendly(code);
       await onAccepted();
-      if (Date.now() > k - 60_000) router.push(`/amistosos/jogo?id=${id}`);
+      if (serverNow() > k - 60_000) router.push(`/amistosos/jogo?id=${id}`);
       else {
         setInv((i) => (i ? { ...i, guest: club.id, guest_name: club.name, guest_tag: club.tag } : i));
       }

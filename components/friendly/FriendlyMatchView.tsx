@@ -1,5 +1,6 @@
 "use client";
 
+import { serverNow } from "@/lib/time";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -38,7 +39,7 @@ export function FriendlyMatchView() {
   useEffect(() => {
     if (!data?.f.guest) return;
     const id = window.setInterval(async () => {
-      const t = Date.now();
+      const t = serverNow();
       if (t < data.kickoff || t > data.kickoff + FRIENDLY_MATCH_MS) return;
       setData(await refreshFriendlyChanges(data));
     }, 10_000);
@@ -48,7 +49,7 @@ export function FriendlyMatchView() {
   // apito e fim do jogo com a tela aberta: relê tudo (escalação do apito, últimas mudanças)
   useEffect(() => {
     if (!data) return;
-    const t = Date.now();
+    const t = serverNow();
     const moments = [data.kickoff + 2_000, data.kickoff + FRIENDLY_MATCH_MS + 2_000].filter((m) => m > t);
     if (!moments.length) return;
     const wait = Math.min(...moments) - t;
@@ -91,10 +92,10 @@ export function FriendlyMatchView() {
       changes={data.changes}
       title={`Amistoso · ${data.f.code}`}
       backHref="/amistosos"
-      onSend={async (tick, list) => {
-        const ok = await sendFriendlyChange(data, club.id, tick, list);
-        if (ok) setData(await refreshFriendlyChanges(data));
-        return ok;
+      onSend={async (list) => {
+        const r = await sendFriendlyChange(data, list);
+        if (r.ok) setData(await refreshFriendlyChanges(data));
+        return r;
       }}
     />
   );

@@ -1,5 +1,7 @@
 "use client";
 
+import { syncClock } from "@/lib/clock";
+import { serverNow } from "@/lib/time";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
@@ -48,8 +50,10 @@ export function useNow(ms = 1000) {
   const [now, setNow] = useState(0);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- primeira leitura do relógio, só no navegador
-    setNow(Date.now());
-    const id = window.setInterval(() => setNow(Date.now()), ms);
+    setNow(serverNow());
+    // relógio do servidor: o minuto da partida é o mesmo em todo aparelho
+    void syncClock().then(() => setNow(serverNow()));
+    const id = window.setInterval(() => setNow(serverNow()), ms);
     return () => window.clearInterval(id);
   }, [ms]);
   return now;
@@ -81,7 +85,7 @@ export function useLeague({ autoJoin = true }: { autoJoin?: boolean } = {}) {
       setError(null);
 
       let d = c.league_id ? memory.get(c.league_id) : undefined;
-      if (c.league_id && (!d || Date.now() - d.loadedAt > 120_000)) {
+      if (c.league_id && (!d || serverNow() - d.loadedAt > 120_000)) {
         try {
           d = await loadLeague(c.league_id);
           memory.set(c.league_id, d);
@@ -89,14 +93,14 @@ export function useLeague({ autoJoin = true }: { autoJoin?: boolean } = {}) {
           d = undefined;
         }
       }
-      const over = !c.league_id || !d || Date.now() > new Date(d.league.ends_at).getTime();
+      const over = !c.league_id || !d || serverNow() > new Date(d.league.ends_at).getTime();
       if ((over && autoJoin) || opts.forceJoin) {
         setJoining(true);
         const prev = c.league_id;
         const oldData = d;
         try {
           // temporada acabou: o servidor recalcula a tabela e decide quem sobe/cai
-          if (prev && d && !d.league.closed_at && Date.now() > new Date(d.league.ends_at).getTime()) {
+          if (prev && d && !d.league.closed_at && serverNow() > new Date(d.league.ends_at).getTime()) {
             await closeLeague(prev);
           }
           const id = await joinLeague();
@@ -136,7 +140,7 @@ export function useLeague({ autoJoin = true }: { autoJoin?: boolean } = {}) {
   // fim da temporada com a tela aberta: fecha e vai para a próxima sozinho
   useEffect(() => {
     if (!data || !autoJoin) return;
-    const wait = new Date(data.league.ends_at).getTime() - Date.now() + 2_000;
+    const wait = new Date(data.league.ends_at).getTime() - serverNow() + 2_000;
     if (wait <= 0 || wait > 86400_000) return;
     const id = window.setTimeout(() => void load(), wait);
     return () => window.clearTimeout(id);
@@ -146,7 +150,7 @@ export function useLeague({ autoJoin = true }: { autoJoin?: boolean } = {}) {
   useEffect(() => {
     if (!data) return;
     const id = window.setInterval(async () => {
-      const c = clockAt(data, Date.now());
+      const c = clockAt(data, serverNow());
       if (!c.live) return;
       // a rodada começou depois da última leitura completa: relê escalações (valem as do apito)
       const next = data.loadedAt < data.kickoffs[c.live - 1] + 5_000 ? await loadLeague(data.league.id).catch(() => data) : await refreshChanges(data, c.live);

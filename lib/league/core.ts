@@ -3,6 +3,7 @@
  * Código puro (sem banco, sem navegador) — roda igual no aparelho e na
  * Edge Function que fecha a temporada (supabase/functions/close-league).
  */
+import { serverNow } from "@/lib/time";
 import type { BaseCard } from "@/lib/cards/generate";
 import { hash32 } from "@/lib/cards/generate";
 import { wonAt, type WonLot } from "@/lib/auction/lots";
@@ -97,7 +98,7 @@ export function buildLeagueData(raw: {
     logs,
     changes: raw.changes,
     fixtures: doubleRoundRobin(raw.league.size),
-    loadedAt: Date.now(),
+    loadedAt: serverNow(),
   };
 }
 
@@ -402,7 +403,7 @@ export function fmtKickoff(ms: number, withDay = true) {
   const time = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
   if (!withDay) return time;
   const today = new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
-  const tomorrow = new Date(Date.now() + 86400_000).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+  const tomorrow = new Date(serverNow() + 86400_000).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
   const day = d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
   const label = day === today ? "Hoje" : day === tomorrow ? "Amanhã" : d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" });
   return `${label}, ${time}`;

@@ -38,10 +38,10 @@ export function LeagueMatchView() {
       changes={data.changes}
       title={`${divisionInfo(data.league.division).name} · Rodada ${m.round}`}
       backHref="/liga?aba=rodadas"
-      onSend={async (tick, list) => {
-        const ok = await sendChange(data, m.round, club.id, tick, list);
-        if (ok) setData(await refreshChanges(data, m.round));
-        return ok;
+      onSend={async (list) => {
+        const r = await sendChange(data, m.round, list);
+        if (r.ok) setData(await refreshChanges(data, m.round));
+        return r;
       }}
     />
   );

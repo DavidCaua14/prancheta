@@ -6,6 +6,7 @@
  * até o apito e as mudanças ao vivo dos dois técnicos. Empate é empate.
  * Não dá moedas, XP nem conta nos eventos.
  */
+import { serverNow } from "@/lib/time";
 import { wonAt } from "@/lib/auction/lots";
 import { hash32, type BaseCard } from "@/lib/cards/generate";
 import { clubCards } from "@/lib/cards/squad";
@@ -108,7 +109,7 @@ export function buildFriendlyData(raw: { f: FriendlyRow; clubs: FriendlyClub[]; 
     lots: raw.lots,
     changes: raw.changes.map((c) => ({ round: 1, club_id: c.club_id, tick: c.tick, change: c.change })),
     kickoff: new Date(raw.f.kickoff).getTime(),
-    loadedAt: Date.now(),
+    loadedAt: serverNow(),
   };
 }
 

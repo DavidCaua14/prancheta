@@ -4,6 +4,7 @@
  * Leitura e escrita da liga no Supabase. O cálculo (jogos, tabela) está em
  * ./core — código puro, que também roda no servidor para fechar a temporada.
  */
+import { sendLiveChanges } from "@/lib/live-changes";
 import { supabase } from "@/lib/supabase/client";
 import { buildLeagueData, CLUB_COLS, LEAGUE_COLS, LOT_COLS, logsFrom, type ChangeRow, type LeagueData, type LeagueRow, type LogRow, type LeagueClub, type LotRow } from "./core";
 
@@ -57,12 +58,9 @@ export async function refreshChanges(data: LeagueData, round: number): Promise<L
   return { ...data, changes: [...data.changes.filter((c) => c.round !== round), ...((rows ?? []) as ChangeRow[])] };
 }
 
-/** Grava as mudanças do técnico (todas no mesmo minuto) numa única escrita. */
-export async function sendChange(data: LeagueData, round: number, clubId: string, tick: number, changes: string[]) {
-  const { error } = await supabase()
-    .from("match_changes")
-    .insert(changes.map((change) => ({ league_id: data.league.id, round, club_id: clubId, tick, change })));
-  return !error;
+/** Grava as mudanças do técnico (o servidor escolhe o minuto, todas juntas). */
+export function sendChange(data: LeagueData, round: number, changes: string[]) {
+  return sendLiveChanges("liga", data.league.id, round, changes);
 }
 
 /* ------------------------------------------------------------------ */

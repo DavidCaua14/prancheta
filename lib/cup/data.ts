@@ -2,6 +2,7 @@
 
 /** Leitura e escrita das copas no Supabase. O cálculo está em ./core. */
 import { LOT_COLS, type ChangeRow, type LogRow, type LotRow } from "@/lib/league/core";
+import { sendLiveChanges } from "@/lib/live-changes";
 import { supabase } from "@/lib/supabase/client";
 import { buildCupData, CUP_COLS, ENTRY_COLS, type CupConfig, type CupData, type CupEntry, type CupRow } from "./core";
 
@@ -63,11 +64,8 @@ export async function refreshCupChanges(data: CupData, round: number): Promise<C
   return { ...data, changes: [...data.changes.filter((c) => c.round !== round), ...((rows ?? []) as ChangeRow[])] };
 }
 
-export async function sendCupChange(data: CupData, round: number, clubId: string, tick: number, changes: string[]) {
-  const { error } = await supabase()
-    .from("cup_changes")
-    .insert(changes.map((change) => ({ cup_id: data.cup.id, round, club_id: clubId, tick, change })));
-  return !error;
+export function sendCupChange(data: CupData, round: number, changes: string[]) {
+  return sendLiveChanges("copa", data.cup.id, round, changes);
 }
 
 /** Último título de divisão (1º lugar) do clube: quando a temporada fechou, ou null. */

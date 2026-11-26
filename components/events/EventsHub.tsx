@@ -1,5 +1,6 @@
 "use client";
 
+import { serverNow } from "@/lib/time";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
@@ -93,7 +94,7 @@ export function EventsHub() {
       setProg(p);
       setList(t);
       setError(false);
-      setPending(await pendingStats(c, Date.now()));
+      setPending(await pendingStats(c, serverNow()));
     } catch {
       setError(true);
     }

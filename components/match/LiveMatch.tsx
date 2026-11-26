@@ -1,5 +1,6 @@
 "use client";
 
+import { serverNow } from "@/lib/time";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { MatchBoard } from "@/components/match/MatchBoard";
@@ -12,6 +13,7 @@ import { TACTIC_GROUPS, TACTIC_LETTERS, tacticAt, type TacticLetter } from "@/li
 import { TICK_SECONDS, fmtCountdown, fmtKickoff, matchDone, type ChangeRow, type LeagueMatch } from "@/lib/league/data";
 import { useNow } from "@/lib/league/useLeague";
 import { useCamera } from "@/lib/sim/useCamera";
+import { sendMessage, type SendResult } from "@/lib/live-changes";
 
 /** Folga entre pedir a mudança e ela valer (para chegar a todos os aparelhos). */
 const CHANGE_DELAY_TICKS = 4;
@@ -30,8 +32,8 @@ export type LiveMatchProps = {
   /** linha de cima: "Série D · Rodada 3" / "Copa da Várzea · Quartas" */
   title: string;
   backHref: string;
-  /** envia as mudanças (todas valendo no minuto `tick`); true = gravou */
-  onSend: (tick: number, changes: string[]) => Promise<boolean>;
+  /** envia as mudanças; o servidor escolhe o minuto (agora + 4) e devolve qual */
+  onSend: (changes: string[]) => Promise<SendResult>;
   /** placar final diferente de "FIM" (ex.: pênaltis) */
   finalStatus?: string;
   /** painel extra depois do apito final (ex.: disputa de pênaltis) */
@@ -57,7 +59,7 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
   }, [toast]);
 
   // quadro animado: minuto contínuo da partida (6 s por minuto)
-  const getTime = useCallback(() => (Date.now() - m.kickoff) / (TICK_SECONDS * 1000), [m.kickoff]);
+  const getTime = useCallback(() => (serverNow() - m.kickoff) / (TICK_SECONDS * 1000), [m.kickoff]);
   const homeSide = useMemo(() => ({ lineup: m.homeLineup, squad: m.home.squad, tag: m.home.tag }), [m.homeLineup, m.home.squad, m.home.tag]);
   const awaySide = useMemo(() => ({ lineup: m.awayLineup, squad: m.away.squad, tag: m.away.tag }), [m.awayLineup, m.away.squad, m.away.tag]);
   const plan = useMemo(() => buildPlan(m.result, homeSide, awaySide, m.kickoff), [m.result, homeSide, awaySide, m.kickoff]);
@@ -122,14 +124,11 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
 
   async function act(list: string[]) {
     setSending(true);
-    const at = tick + CHANGE_DELAY_TICKS;
-    const ok = await onSend(at, list);
-    if (ok) {
-      setToast(`Ok! Vale a partir do minuto ${Math.min(90, at)}.`);
-    } else {
-      setToast("Não deu tempo: o lance já passou. Tente de novo.");
-    }
+    const r = await onSend(list);
+    setToast(sendMessage(r));
     setSending(false);
+    // deu errado: a folha fica aberta com as escolhas, para tentar de novo
+    if (!r.ok) return;
     setSheet(null);
     setSubOut(null);
   }

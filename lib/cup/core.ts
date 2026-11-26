@@ -7,6 +7,7 @@
  * 1ª fase: vaga 0 × 1, 2 × 3, ... (as vagas são sorteadas na inscrição).
  * Fases seguintes: vencedor do jogo 2i × vencedor do jogo 2i+1.
  */
+import { serverNow } from "@/lib/time";
 import { wonAt, type WonLot } from "@/lib/auction/lots";
 import { hash32, rng, type BaseCard } from "@/lib/cards/generate";
 import { LENDAS_CLUBS, SERIE_A_CLUBS, SERIE_B_CLUBS, SERIE_C_CLUBS, SERIE_D_CLUBS, VARZEA_CLUBS } from "@/lib/cards/names";
@@ -166,7 +167,7 @@ export function buildCupData(raw: { cup: CupRow; entries: CupEntry[]; logs: LogR
     changes: raw.changes,
     lots: raw.lots ?? [],
     kickoffs: Array.from({ length: roundsOf(raw.cup.size) }, (_, i) => start + i * CUP_ROUND_GAP_MS),
-    loadedAt: Date.now(),
+    loadedAt: serverNow(),
   };
 }
 

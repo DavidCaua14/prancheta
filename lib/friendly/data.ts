@@ -1,7 +1,9 @@
 "use client";
 
 /** Leitura e escrita dos amistosos no Supabase. O cálculo está em ./core. */
+import { serverNow } from "@/lib/time";
 import { LOT_COLS, type LogRow, type LotRow } from "@/lib/league/core";
+import { sendLiveChanges } from "@/lib/live-changes";
 import { supabase } from "@/lib/supabase/client";
 import { buildFriendlyData, FRIENDLY_COLS, type FriendlyClub, type FriendlyData, type FriendlyRow } from "./core";
 
@@ -125,12 +127,9 @@ export async function loadFriendly(id: number): Promise<FriendlyData | null> {
 export async function refreshFriendlyChanges(data: FriendlyData): Promise<FriendlyData> {
   const { data: rows, error } = await supabase().from("friendly_changes").select("club_id,tick,change").eq("friendly_id", data.f.id);
   if (error) return data;
-  return { ...data, changes: ((rows ?? []) as { club_id: string; tick: number; change: string }[]).map((c) => ({ round: 1, ...c })), loadedAt: Date.now() };
+  return { ...data, changes: ((rows ?? []) as { club_id: string; tick: number; change: string }[]).map((c) => ({ round: 1, ...c })), loadedAt: serverNow() };
 }
 
-export async function sendFriendlyChange(data: FriendlyData, clubId: string, tick: number, changes: string[]) {
-  const { error } = await supabase()
-    .from("friendly_changes")
-    .insert(changes.map((change) => ({ friendly_id: data.f.id, club_id: clubId, tick, change })));
-  return !error;
+export function sendFriendlyChange(data: FriendlyData, changes: string[]) {
+  return sendLiveChanges("amistoso", data.f.id, 1, changes);
 }
