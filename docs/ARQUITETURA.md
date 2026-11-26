@@ -341,6 +341,18 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
 - **Telas**: `/ranking` (pódio do top 3, tabela até o 50º, sua linha fixa embaixo quando está fora, abas Geral e
   Semana, "Como pontua") e o atalho na sede com a sua posição e o líder. Arte opcional: `icon-ranking`.
 
+### Ranking jogo a jogo (implementado)
+
+- **Pontua logo depois de cada partida** (`0030_match_points.sql`): a Edge Function `score-round` recalcula a rodada
+  da liga (ou fase da copa) com o mesmo motor assim que ela termina (apito + 10 min) e grava o resultado de cada
+  técnico real em `match_points` (V/E/D, gols, goleada, passou de fase) via `record_rounds` (só service_role);
+  `scored_rounds` garante uma gravação por rodada. Quem dispara: o aparelho de quem está na liga/copa
+  (`useAutoScore` em `useLeague`/`useCup`: recupera rodadas encerradas ao abrir e agenda o fim de cada rodada) e,
+  como rede de segurança, `close-league`/`close-cup` gravam tudo o que ficou de fora. Cálculo em `lib/scoring.ts`
+  (conferido: os números jogo a jogo batem com o que o fechamento grava em `club_seasons`).
+- **Ranking** = jogos (vitória 10, empate 3, goleada +5 × divisão; fase de copa 15 × copa) + bônus no fechamento
+  (título +150, acesso +75 × divisão; campeão de copa +60 × copa). "Semana" usa a hora do jogo.
+
 ## Amistosos entre amigos (implementado)
 
 - **Fluxo**: em `/amistosos` o técnico escolhe o horário (em 5 min, 15 min, 1 h, ou dia + hora de Brasília, de

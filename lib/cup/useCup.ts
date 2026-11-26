@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { getMyClub, getSession, type Club } from "@/lib/club/api";
 import { MAX_TICKS, TICK_SECONDS } from "@/lib/league/core";
+import { useAutoScore } from "@/lib/score-client";
 import { closeCup, joinCup, loadCup, myLastEntry, refreshCupChanges, type CupData, type MyEntry } from "./data";
 
 /** Dados em memória (ir e voltar entre a chave e o jogo não relê o banco). */
@@ -151,6 +152,9 @@ export function useCup(kind = 0) {
     memory.set(d.cup.id, d);
     setData(d);
   }, []);
+
+  // ranking: pontua cada fase logo depois do apito final
+  useAutoScore("copa", data?.cup.id, data?.kickoffs);
 
   return { club, entry, data, ready, joining, error, join, reload: load, setData: update };
 }

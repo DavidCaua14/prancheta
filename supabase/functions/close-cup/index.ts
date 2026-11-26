@@ -6,6 +6,7 @@
  * prêmios em moedas. Idempotente: copa já fechada só devolve o campeão.
  * Empacotada com esbuild (npm run fn:build) e publicada com npm run fn:deploy.
  */
+import { recordCupRounds } from "../_shared/game";
 import { buildCupData, CUP_COLS, cupReach, cupStats, ENTRY_COLS, type CupEntry, type CupRow } from "../../../lib/cup/core";
 import { LOT_COLS, type LotRow } from "../../../lib/league/core";
 
@@ -65,6 +66,8 @@ Deno.serve(async (req) => {
       : [[], []];
 
     const data = buildCupData({ cup, entries, logs, changes, lots });
+    // ranking: grava as fases que ninguém pediu (nada fica de fora)
+    await recordCupRounds(data);
     const reach = cupReach(data);
     // números de cada vaga com técnico (alimentam os eventos semanais)
     const stats: Record<string, unknown> = {};

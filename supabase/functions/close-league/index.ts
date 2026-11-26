@@ -10,6 +10,7 @@
  * Este arquivo é empacotado com esbuild (npm run fn:build) porque importa
  * o código do jogo; o deploy envia o pacote pronto (npm run fn:deploy).
  */
+import { recordLeagueRounds } from "../_shared/game";
 import { buildLeagueData, CLUB_COLS, clubLeagueStats, clubMatchXp, finalCode, finalTable, LEAGUE_COLS, LOT_COLS, logsFrom, type LeagueClub, type LeagueRow, type LotRow } from "../../../lib/league/core";
 
 declare const Deno: { env: { get(k: string): string | undefined }; serve(h: (req: Request) => Response | Promise<Response>): void };
@@ -73,6 +74,8 @@ Deno.serve(async (req) => {
       : [];
 
     const data = buildLeagueData({ league, rounds, clubs, logs, changes, lots });
+    // ranking: grava as rodadas que ninguém pediu durante a temporada (nada fica de fora)
+    await recordLeagueRounds(data);
     const table = finalTable(data);
     const points = Array.from({ length: league.size }, (_, slot) => table.find((r) => r.slot === slot)!.p);
     const xp: Record<string, number[]> = {};

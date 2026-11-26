@@ -1,6 +1,7 @@
 "use client";
 
 import { syncClock } from "@/lib/clock";
+import { useAutoScore } from "@/lib/score-client";
 import { serverNow } from "@/lib/time";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -171,6 +172,9 @@ export function useLeague({ autoJoin = true }: { autoJoin?: boolean } = {}) {
     pendingSeason = null;
     setSeason(null);
   }, [season, club]);
+
+  // ranking: pontua cada rodada logo depois do apito final
+  useAutoScore("liga", data?.league.id, data?.kickoffs);
 
   return { session, club, data, error, joining, reload: load, setData, season, dismissSeason };
 }

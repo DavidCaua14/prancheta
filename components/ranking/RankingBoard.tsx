@@ -156,7 +156,7 @@ export function RankingBoard() {
         {/* como pontua */}
         <Panel>
           <p className="t-heading">Como pontua</p>
-          <p className="mt-1 text-sm text-white/70">Só técnicos reais disputam. Vale o que já terminou — temporadas e copas encerradas.</p>
+          <p className="mt-1 text-sm text-white/70">Só técnicos reais disputam. Cada jogo pontua logo depois do apito final — conferido pelo servidor.</p>
           <dl className="mt-3 grid grid-cols-1 gap-1 text-sm">
             {(
               [
@@ -175,7 +175,7 @@ export function RankingBoard() {
               </div>
             ))}
           </dl>
-          <p className="mt-2 text-xs text-white/65">Na liga, tudo vale × divisão; nas copas, × copa. Os pontos entram quando a temporada ou a copa termina.</p>
+          <p className="mt-2 text-xs text-white/65">Na liga, tudo vale × divisão; nas copas, × copa. Vitória, empate, goleada e fase de copa contam na hora; título, acesso e campeão de copa, quando a competição termina.</p>
           <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
             <div className="rounded-xl bg-white/10 p-2">
               <p className="mb-1 font-extrabold uppercase text-white/60">Divisão</p>
@@ -196,7 +196,7 @@ export function RankingBoard() {
               ))}
             </div>
           </div>
-          <p className="mt-3 text-xs text-white/60">A aba Semana conta só o que terminou nos últimos 7 dias: todo mundo tem chance de chegar ao topo. Empate no ranking: divisão atual, títulos, vitórias.</p>
+          <p className="mt-3 text-xs text-white/60">A aba Semana conta só os jogos (e títulos) dos últimos 7 dias: todo mundo tem chance de chegar ao topo. Empate no ranking: divisão atual, títulos, vitórias.</p>
         </Panel>
       </div>
     </div>
