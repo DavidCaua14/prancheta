@@ -17,6 +17,9 @@ const CHECK_INTERVAL_MS = 60_000;
  *
  * Custo: um GET pequeno e estático por minuto por aba ativa; nada de banco.
  */
+/** Novidades mostradas no aviso (as mais recentes primeiro). */
+const MAX_NOTES = 4;
+
 export function UpdateWatcher() {
   const [update, setUpdate] = useState<VersionPayload | null>(null);
 
@@ -72,11 +75,12 @@ export function UpdateWatcher() {
       aria-modal="true"
       aria-labelledby="update-title"
       aria-describedby="update-desc"
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(27,16,56,0.82)] p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(27,16,56,0.82)] px-4 pb-4 pt-12 backdrop-blur-sm"
     >
-      <div className="panel halftone anim-pop relative w-full max-w-sm p-6 pt-14 text-center">
-        <div className="absolute -top-10 left-1/2 flex h-20 w-20 -translate-x-1/2 items-center justify-center rounded-2xl border-[3px] border-[var(--ink)] bg-[var(--sun)] shadow-[0_4px_0_var(--ink)]">
-          <svg viewBox="0 0 48 48" className="h-12 w-12" aria-hidden>
+      {/* cabe em qualquer tela: altura limitada, só a lista de novidades rola */}
+      <div className="panel halftone anim-pop relative flex max-h-full w-full max-w-sm flex-col p-5 pt-11 text-center sm:p-6 sm:pt-12">
+        <div className="absolute -top-8 left-1/2 flex h-16 w-16 -translate-x-1/2 items-center justify-center rounded-2xl border-[3px] border-[var(--ink)] bg-[var(--sun)] shadow-[0_4px_0_var(--ink)]">
+          <svg viewBox="0 0 48 48" className="h-10 w-10" aria-hidden>
             <circle cx="24" cy="24" r="18" fill="#fff" stroke="var(--ink)" strokeWidth="3" />
             <path
               d="M24 10l6 5-2 7h-8l-2-7zM12 22l6 2 2 7-4 5-6-3M36 22l-6 2-2 7 4 5 6-3M20 31h8"
@@ -87,17 +91,17 @@ export function UpdateWatcher() {
             />
           </svg>
         </div>
-        <h2 id="update-title" className="t-heading text-2xl">
+        <h2 id="update-title" className="t-heading text-xl sm:text-2xl">
           Apito! Tem atualização
         </h2>
-        <p id="update-desc" className="mt-3 font-bold">
+        <p id="update-desc" className="mt-2 text-sm font-bold sm:text-base">
           Saiu uma versão nova do Prancheta. Para continuar jogando, atualize o jogo.
         </p>
         {update.notes.length > 0 && (
-          <ul className="mt-4 space-y-1 rounded-xl border-[3px] border-[var(--ink)] bg-white px-4 py-3 text-left text-sm font-semibold">
-            {update.notes.map((note) => (
+          <ul className="mt-3 min-h-0 flex-1 space-y-1.5 overflow-y-auto rounded-xl border-[3px] border-[var(--ink)] bg-white px-3 py-2.5 text-left text-[0.82rem] font-semibold leading-snug">
+            {update.notes.slice(0, MAX_NOTES).map((note) => (
               <li key={note} className="flex gap-2">
-                <Icon name="star" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--grass-2)]" />
+                <Icon name="star" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--grass-2)]" />
                 {note}
               </li>
             ))}
@@ -107,11 +111,11 @@ export function UpdateWatcher() {
           type="button"
           autoFocus
           onClick={() => window.location.reload()}
-          className="btn btn-green btn-lg mt-6 w-full"
+          className="btn btn-green btn-lg mt-4 w-full shrink-0"
         >
           Atualizar agora
         </button>
-        <p className="mt-3 text-xs font-bold opacity-60">
+        <p className="mt-2 shrink-0 text-xs font-bold opacity-60">
           Seu clube está salvo. Leva só um segundinho.
         </p>
       </div>

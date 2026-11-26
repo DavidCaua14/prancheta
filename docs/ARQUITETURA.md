@@ -241,6 +241,16 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
 
 ## Leilão (implementado)
 
+- **Reposição na hora** (`0026_auction_refill.sql`): carta arrematada antes do fim da rodada dá lugar à seguinte
+  da mesma raridade. Índice = vaga + 12 × geração (vaga 3: 3, 15, 27…, até 20 gerações); `lotTier` usa a vaga
+  (`idx % 12`). `place_bid` só aceita a geração g se a g−1 tem lance e fechou antes do fim da rodada;
+  `currentLotIdx` escolhe o lote em exibição em cada vaga. Obs.: `P0004` (lote encerrado/não aberto) é o código
+  `assert_failure` do Postgres — `when others` não o captura.
+- **Potencial à vista**: cada lote mostra "Potencial alto/médio/baixo", overall hoje → máximo e nível máximo; a
+  folha de lance tem o painel com barras contra o teto da raridade.
+- **Arremate comemorado** (`WinReveal`): quando um lote que eu liderava fecha, a tela relê o resultado 1,5 s depois
+  do fim e só então mostra "É sua!" (carta virando, selo ARREMATADO!, moedas caindo e o valor pago). Uma vez por
+  carta por aparelho (`prancheta:arremates:<clube>`); na 1ª vez, só o que fechou nas últimas 6 h.
 - **Lotes sem tabela**: a cada 2 h (rodada = `floor(epoch/7200)`, 24 h por dia) abrem **8 lotes**: 5 Destaque,
   2 Épica e o 8º é Especial a cada 4 rodadas (senão Destaque). A carta do lote sai de `(rodada, índice)` em
   `lib/auction/lots.ts` (`lotCard`) — o banco não guarda cartas.

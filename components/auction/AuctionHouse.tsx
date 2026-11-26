@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { GameCard } from "@/components/cards/GameCard";
+import { WinReveal } from "@/components/auction/WinReveal";
 import { cardPotential, potentialLabel } from "@/lib/cards/evolution";
 import { CrestSvg } from "@/components/club/CrestSvg";
 import { ArtImg } from "@/components/ui/ArtImg";
@@ -13,6 +14,7 @@ import {
   BID_WINDOW_SECONDS,
   LOTS_PER_ROUND,
   MIN_BID,
+  currentLotIdx,
   lotCard,
   lotTier,
   nextMinBid,
@@ -25,6 +27,8 @@ import { decodeCrest, decodeKit } from "@/lib/club/identity";
 import { CARD_TIERS } from "@/lib/game-config";
 import { fmtCountdown } from "@/lib/league/data";
 import { useNow } from "@/lib/league/useLeague";
+import { serverNow } from "@/lib/time";
+import type { BaseCard } from "@/lib/cards/generate";
 
 const TIER_STYLE: Record<LotTier, string> = {
   base: "bg-[#c97d3c] text-white",
@@ -43,6 +47,92 @@ const BID_ERRORS: Record<BidError, string> = {
 };
 
 const key = (round: number, idx: number) => `${round}-${idx}`;
+
+/** Arremates já comemorados (a tela de "É sua!" aparece uma vez por carta, por aparelho). */
+const SEEN_KEY = (clubId: string) => `prancheta:arremates:${clubId}`;
+function readSeen(clubId: string): Set<string> | null {
+  try {
+    const raw = localStorage.getItem(SEEN_KEY(clubId));
+    return raw ? new Set(JSON.parse(raw) as string[]) : null;
+  } catch {
+    return null;
+  }
+}
+function writeSeen(clubId: string, seen: Set<string>) {
+  try {
+    localStorage.setItem(SEEN_KEY(clubId), JSON.stringify([...seen].slice(-300)));
+  } catch {}
+}
+
+const POT_STYLE = { alto: "bg-[var(--grass)] text-[var(--ink)]", médio: "bg-[var(--sun)] text-[var(--ink)]", baixo: "bg-[var(--ink)]/15 text-[var(--ink)]" } as const;
+
+/** Potencial na vitrine do lote: até onde a carta chega (overall e nível). */
+function PotentialStrip({ card }: { card: BaseCard }) {
+  const pot = cardPotential(card);
+  const label = potentialLabel(pot.grade) as keyof typeof POT_STYLE;
+  return (
+    <div className="mt-1.5 rounded-lg border-2 border-[var(--ink)] bg-white text-[var(--ink)]" aria-label={`Potencial ${label}: overall máximo ${pot.maxOverall}, nível máximo ${pot.maxLevel}`}>
+      <p className={`rounded-t-[5px] px-1.5 py-0.5 text-center text-[0.58rem] font-extrabold uppercase tracking-wider ${POT_STYLE[label]}`}>Potencial {label}</p>
+      <div className="grid grid-cols-2 divide-x-2 divide-[var(--ink)]/15 py-0.5 text-center leading-tight">
+        <span>
+          <span className="t-num block text-sm">
+            {card.overall}
+            <span className="opacity-50">→</span>
+            {pot.maxOverall}
+          </span>
+          <span className="block text-[0.55rem] font-extrabold uppercase opacity-60">Overall</span>
+        </span>
+        <span>
+          <span className="t-num block text-sm">{pot.maxLevel}</span>
+          <span className="block text-[0.55rem] font-extrabold uppercase opacity-60">Nível máx</span>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** Potencial em destaque na folha de lance: barras de overall e de nível contra o teto da raridade. */
+function PotentialPanel({ card }: { card: BaseCard }) {
+  const pot = cardPotential(card);
+  const tier = CARD_TIERS[card.tier ?? "base"];
+  const label = potentialLabel(pot.grade) as keyof typeof POT_STYLE;
+  const lo = Math.max(30, tier.startOverall[0] - 10);
+  const pct = (v: number) => `${Math.round(((v - lo) / (tier.maxOverall - lo)) * 100)}%`;
+  return (
+    <div className="mt-3 rounded-2xl border-[3px] border-[var(--ink)] bg-white p-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="t-heading text-sm">Potencial desta carta</p>
+        <span className={`rounded-md px-1.5 py-0.5 text-[0.65rem] font-extrabold uppercase ${POT_STYLE[label]}`}>{label}</span>
+      </div>
+      <div className="mt-2 grid grid-cols-2 gap-2 text-center">
+        <div className="rounded-xl bg-[var(--cream)] py-1.5">
+          <p className="t-num text-2xl leading-none">
+            {card.overall}
+            <span className="mx-0.5 text-base opacity-40">→</span>
+            <span className="text-[var(--grass-2)]">{pot.maxOverall}</span>
+          </p>
+          <p className="mt-0.5 text-[0.6rem] font-extrabold uppercase opacity-60">Overall (hoje → máx)</p>
+        </div>
+        <div className="rounded-xl bg-[var(--cream)] py-1.5">
+          <p className="t-num text-2xl leading-none">
+            1<span className="mx-0.5 text-base opacity-40">→</span>
+            <span className="text-[var(--grass-2)]">{pot.maxLevel}</span>
+          </p>
+          <p className="mt-0.5 text-[0.6rem] font-extrabold uppercase opacity-60">Nível (hoje → máx)</p>
+        </div>
+      </div>
+      {/* barra: overall de hoje, até onde chega e o teto da raridade */}
+      <div className="relative mt-3 h-3 overflow-hidden rounded-full border-2 border-[var(--ink)] bg-[var(--ink)]/10" aria-hidden>
+        <div className="absolute inset-y-0 left-0 bg-[var(--grass)]" style={{ width: pct(pot.maxOverall) }} />
+        <div className="absolute inset-y-0 left-0 bg-[var(--ink)]" style={{ width: pct(card.overall) }} />
+      </div>
+      <p className="mt-1 flex justify-between text-[0.62rem] font-extrabold opacity-60">
+        <span>Hoje {card.overall}</span>
+        <span>Teto {tier.label}: {tier.maxOverall} · nível {tier.maxLevel}</span>
+      </p>
+    </div>
+  );
+}
 
 function Coins({ value, className = "" }: { value: number; className?: string }) {
   return (
@@ -69,14 +159,19 @@ export function AuctionHouse() {
   const [amount, setAmount] = useState(0);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  // quando "meus lances" foi lido (só comemora arremate lido DEPOIS do fim do lote)
+  const [mineAt, setMineAt] = useState(0);
+  const [seen, setSeen] = useState<Set<string> | null>(null);
   const round = now ? roundAt(now) : null;
 
   const refresh = useCallback(async (r: number, c: Club) => {
+    const at = serverNow();
     const [cur, my] = await Promise.all([loadLots([r, r - 1]), loadMine(c.id)]);
     const map = new Map(cur.map((l) => [key(l.round, l.idx), l]));
     for (const l of my) map.set(key(l.round, l.idx), l);
     setLots(map);
     setMine(my);
+    setMineAt(at);
     setNames(new Map(await loadBidders(cur.map((l) => l.best_club).filter((x): x is string => !!x))));
   }, []);
 
@@ -92,6 +187,8 @@ export function AuctionHouse() {
       if (!c.squad) return router.replace("/peneira");
       if (stop) return;
       setClub(c);
+      // 1ª vez neste aparelho: só comemora o que foi arrematado nas últimas 6 horas
+      setSeen((prev) => prev ?? readSeen(c.id) ?? new Set<string>(["__init__"]));
       await refresh(round, c).catch(() => setToast("Não deu para carregar o leilão."));
     })();
     return () => {
@@ -108,6 +205,18 @@ export function AuctionHouse() {
     }, 8_000);
     return () => window.clearInterval(id);
   }, [club, round, refresh]);
+
+  // lote que eu lidero fechando: relê logo depois do fim (resultado final, sem palpite)
+  useEffect(() => {
+    if (!club || round === null) return;
+    const t = serverNow();
+    const ends = mine.map((l) => new Date(l.ends_at).getTime()).filter((e) => e > t);
+    if (!ends.length) return;
+    const wait = Math.min(...ends) - t + 1_500;
+    if (wait > 3 * 3600_000) return;
+    const id = window.setTimeout(() => void refresh(round, club).catch(() => {}), wait);
+    return () => window.clearTimeout(id);
+  }, [mine, club, round, refresh]);
 
   useEffect(() => {
     if (!toast) return;
@@ -133,6 +242,35 @@ export function AuctionHouse() {
     const ended = now >= ends;
     const leader = st?.best_club ?? null;
     return { st, tier, ends, ended, leader, me: leader === club.id, min: nextMinBid(tier, st?.best_amount ?? null) };
+  };
+
+  // vaga → lote em exibição (a carta arrematada dá lugar à seguinte)
+  const endsAt = (r: number) => (i: number) => {
+    const st = lots.get(key(r, i));
+    return st ? new Date(st.ends_at).getTime() : null;
+  };
+  const slotIdx = (slot: number) => currentLotIdx(round, slot, endsAt(round), now);
+
+  // arremates para comemorar: fechados antes da última leitura, ainda não vistos neste aparelho
+  const firstRun = seen?.has("__init__") ?? false;
+  const toCelebrate = seen
+    ? mine
+        .filter((l) => {
+          const e = new Date(l.ends_at).getTime();
+          return e <= mineAt - 1_000 && !seen.has(key(l.round, l.idx)) && !(firstRun && e < now - 6 * 3600_000);
+        })
+        .sort((a, b) => new Date(a.ends_at).getTime() - new Date(b.ends_at).getTime())
+    : [];
+  const celebrating = toCelebrate[0] ?? null;
+  const dismissWin = () => {
+    if (!celebrating || !seen) return;
+    const next = new Set(seen);
+    next.delete("__init__");
+    // marca este e, na 1ª vez, também os antigos (para não comemorar o histórico inteiro)
+    next.add(key(celebrating.round, celebrating.idx));
+    if (firstRun) for (const l of mine) if (new Date(l.ends_at).getTime() < now - 6 * 3600_000) next.add(key(l.round, l.idx));
+    writeSeen(club.id, next);
+    setSeen(next);
   };
 
   const openBid = (r: number, idx: number) => {
@@ -172,7 +310,10 @@ export function AuctionHouse() {
                 return (
                   <article key={key(r, idx)} className="flex min-w-0 flex-col rounded-[18px] border-[3px] border-[var(--ink)] bg-[var(--paper)] p-2 text-[var(--ink)] shadow-[0_4px_0_var(--ink)]">
                     <div className="flex items-center justify-between gap-1">
-                      <span className={`rounded-md px-1.5 py-0.5 text-[0.6rem] font-extrabold uppercase tracking-wider ${TIER_STYLE[info.tier]}`}>{CARD_TIERS[info.tier].label}</span>
+                      <span className="flex min-w-0 items-center gap-1">
+                        <span className={`rounded-md px-1.5 py-0.5 text-[0.6rem] font-extrabold uppercase tracking-wider ${TIER_STYLE[info.tier]}`}>{CARD_TIERS[info.tier].label}</span>
+                        {idx >= LOTS_PER_ROUND && !info.st && <span className="anim-blink rounded bg-[var(--red)] px-1 text-[0.55rem] font-extrabold uppercase text-white">Nova</span>}
+                      </span>
                       <span className={`t-num text-[0.68rem] ${info.ends - now < 5 * 60_000 && !info.ended ? "text-[var(--red)]" : "opacity-60"}`}>
                         {info.ended ? "Encerrado" : fmtCountdown(info.ends - now)}
                       </span>
@@ -180,6 +321,7 @@ export function AuctionHouse() {
                     <button type="button" onClick={() => openBid(r, idx)} className="mt-1.5 flex justify-center" aria-label={`Ver lote: ${card.name}`}>
                       <GameCard card={card} kit={kit} tag={club.tag} className="!text-[clamp(7.5px,2.35vw,11px)]" />
                     </button>
+                    <PotentialStrip card={card} />
                     <div className="mt-2 min-h-[2.4rem] text-xs font-bold leading-tight">
                       {info.st ? (
                         <>
@@ -228,7 +370,6 @@ export function AuctionHouse() {
   const won = mine.filter((l) => new Date(l.ends_at).getTime() <= now);
   const sel = open ? lotInfo(open.round, open.idx) : null;
   const selCard = open ? lotCard(open.round, open.idx) : null;
-  const selPot = selCard ? cardPotential(selCard) : null;
   const step = sel ? Math.max(10, Math.ceil(sel.min * 0.05)) : 10;
 
   return (
@@ -276,7 +417,8 @@ export function AuctionHouse() {
             <Panel className="flex items-start gap-3 !p-3">
               <Icon name="gavel" className="mt-0.5 h-5 w-5 shrink-0 text-[var(--sun)]" />
               <p className="text-xs font-semibold text-white/80 sm:text-sm">
-                A cada 2 horas, 12 cartas novas: 4 Base boas e 8 raras. Suas moedas ficam reservadas no lance e voltam na hora se alguém cobrir. Cada lance novo faz o
+                A cada 2 horas, 12 cartas novas: 4 Base boas e 8 raras — e carta arrematada dá lugar a outra da mesma raridade na hora. Veja o
+                potencial de cada uma: até onde ela chega de overall e de nível. Suas moedas ficam reservadas no lance e voltam na hora se alguém cobrir. Cada lance novo faz o
                 lote fechar {BID_WINDOW_SECONDS / 60} minutos depois — tempo para os outros técnicos verem e cobrirem. Quem tiver o maior lance no fim leva a carta para o elenco — sem limite de cartas{extras ? ` (você já tem ${extras} do leilão)` : ""}.
               </p>
             </Panel>
@@ -293,7 +435,7 @@ export function AuctionHouse() {
               </>
             )}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {Array.from({ length: LOTS_PER_ROUND }, (_, idx) => renderLot(round, idx))}
+              {Array.from({ length: LOTS_PER_ROUND }, (_, slot) => renderLot(round, slotIdx(slot)))}
             </div>
             <p className="text-center text-xs font-bold text-white/60">
               Base a partir de {MIN_BID.base.toLocaleString("pt-BR")}, Destaque de {MIN_BID.destaque.toLocaleString("pt-BR")}, Épica de{" "}
@@ -352,7 +494,7 @@ export function AuctionHouse() {
       {open && sel && selCard && (
         <div role="dialog" aria-modal="true" aria-label="Dar lance" className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(27,16,56,0.8)] sm:items-center sm:p-4" onClick={() => setOpen(null)}>
           <div
-            className="anim-pop w-full max-w-md rounded-t-[24px] border-[3px] border-[var(--ink)] bg-[var(--paper)] p-4 text-[var(--ink)] shadow-[0_-4px_0_var(--ink)] sm:rounded-[24px] sm:shadow-[0_6px_0_var(--ink)]"
+            className="anim-pop max-h-[94dvh] w-full max-w-md overflow-y-auto rounded-t-[24px] border-[3px] border-[var(--ink)] bg-[var(--paper)] p-4 text-[var(--ink)] shadow-[0_-4px_0_var(--ink)] sm:rounded-[24px] sm:shadow-[0_6px_0_var(--ink)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex gap-3">
@@ -363,15 +505,12 @@ export function AuctionHouse() {
                 <p className="text-xs font-bold opacity-70">
                   {selCard.position} · {selCard.age} anos · OVR {selCard.overall}
                 </p>
-                <p className="mt-1 text-xs font-semibold opacity-70">
-                  Potencial {potentialLabel(selPot!.grade)}: evolui até o nível {selPot!.maxLevel} e overall {selPot!.maxOverall} (teto {CARD_TIERS[sel.tier].label}:{" "}
-                  {CARD_TIERS[sel.tier].maxLevel} / {CARD_TIERS[sel.tier].maxOverall}).
-                </p>
                 <p className="mt-auto pt-2 text-xs font-bold">
                   {sel.ended ? "Encerrado" : <>Fecha em <span className="t-num">{fmtCountdown(sel.ends - now)}</span></>}
                 </p>
               </div>
             </div>
+            <PotentialPanel card={selCard} />
             {!sel.ended && !sel.me && (
               <>
                 <div className="mt-4 flex items-center gap-2">
@@ -406,6 +545,18 @@ export function AuctionHouse() {
             </div>
           </div>
         </div>
+      )}
+
+      {celebrating && (
+        <WinReveal
+          key={key(celebrating.round, celebrating.idx)}
+          card={lotCard(celebrating.round, celebrating.idx)}
+          amount={celebrating.best_amount}
+          kit={kit}
+          tag={club.tag}
+          left={toCelebrate.length - 1}
+          onClose={dismissWin}
+        />
       )}
 
       {toast && (

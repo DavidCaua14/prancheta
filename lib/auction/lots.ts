@@ -2,18 +2,29 @@
  * Leilão do Prancheta — regras compartilhadas (aparelho, Edge Function e,
  * espelhadas em SQL, o banco: auction_tier(), auction_min(), place_bid()).
  *
- * A cada 2 horas abre uma RODADA com 8 lotes. O lote é só um número
+ * A cada 2 horas abre uma RODADA com 12 vagas. O lote é só um número
  * (rodada, índice): raridade, posição e a carta inteira saem dele, sempre
  * iguais, em qualquer aparelho. O banco guarda apenas o maior lance de cada
  * lote que recebeu lance (auction_lots).
+ *
+ * Reposição: quando um lote é arrematado antes do fim da rodada, a vaga
+ * recebe a carta seguinte na hora (mesma raridade). Índice = vaga + 12 ×
+ * geração (vaga 3: lotes 3, 15, 27...). Espelho em place_bid.
  */
 import { generateCard, hash32, type BaseCard, type Position } from "@/lib/cards/generate";
 import type { CardTier } from "@/lib/game-config";
 
 /** Duração da rodada (o mesmo valor está em place_bid). */
 export const ROUND_SECONDS = 7200;
-/** 8 lotes raros (0–7) + 4 lotes de cartas Base boas (8–11). */
+/** 12 vagas por rodada: 8 raras (0–7) + 4 de cartas Base boas (8–11). */
 export const LOTS_PER_ROUND = 12;
+/** Gerações por vaga numa rodada (cartas que entram no lugar das arrematadas); espelho de place_bid. */
+export const MAX_GENERATIONS = 20;
+
+/** Vaga (0–11) de um índice de lote. */
+export function slotOf(idx: number) {
+  return idx % LOTS_PER_ROUND;
+}
 /** Cada lance novo marca o fim do lote para daqui a 10 minutos (espelho de place_bid). */
 export const BID_WINDOW_SECONDS = 600;
 /** Moedas iniciais: ver lib/economy.ts (START_COINS). */
@@ -29,9 +40,10 @@ export const MIN_BID: Record<LotTier, number> = { base: 100, destaque: 1500, epi
 
 /** Raridade do lote (espelho de auction_tier no SQL). */
 export function lotTier(round: number, idx: number): LotTier {
-  if (idx >= 8) return "base";
-  if (idx <= 4) return "destaque";
-  if (idx <= 6) return "epica";
+  const slot = slotOf(idx);
+  if (slot >= 8) return "base";
+  if (slot <= 4) return "destaque";
+  if (slot <= 6) return "epica";
   return round % 4 === 0 ? "especial" : "destaque";
 }
 
@@ -66,6 +78,21 @@ export function lotCard(round: number, idx: number): BaseCard {
     if (c.overall > best.overall) best = c;
   }
   return best;
+}
+
+/**
+ * Lote em exibição numa vaga: a geração mais nova. Um lote arrematado antes
+ * do fim da rodada abre a vez do seguinte (que começa sem lances).
+ */
+export function currentLotIdx(round: number, slot: number, endsAt: (idx: number) => number | null, now: number): number {
+  const end = roundEnd(round);
+  let idx = slot;
+  for (let g = 0; g < MAX_GENERATIONS - 1; g++) {
+    const e = endsAt(idx);
+    if (e === null || e > now || e >= end) return idx;
+    idx += LOTS_PER_ROUND;
+  }
+  return idx;
 }
 
 /** Lote arrematado por um clube. */

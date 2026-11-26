@@ -112,3 +112,27 @@ test("lote Base: carta boa (melhor de 3 sorteios)", () => {
   assert.equal(lotCard(1000, 3).key, "L1000-3");
   assert.equal(lotCard(1000, 3).tier, "destaque");
 });
+
+test("reposição: carta arrematada dá lugar à seguinte, mesma raridade, só dentro da rodada", async () => {
+  const { currentLotIdx, LOTS_PER_ROUND, slotOf } = await import("@/lib/auction/lots");
+  const r = 2001;
+  const start = roundStart(r);
+  const end = roundEnd(r);
+  // raridade da vaga se mantém em todas as gerações
+  for (let slot = 0; slot < LOTS_PER_ROUND; slot++) for (let g = 1; g < 5; g++) assert.equal(lotTier(r, slot + 12 * g), lotTier(r, slot));
+  assert.equal(slotOf(27), 3);
+  // cartas diferentes a cada geração
+  assert.notEqual(lotCard(r, 3).name + lotCard(r, 3).overall, lotCard(r, 15).name + lotCard(r, 15).overall);
+  const ends = new Map<number, number>();
+  const at = (i: number) => ends.get(i) ?? null;
+  const t = start + 30 * 60_000;
+  assert.equal(currentLotIdx(r, 3, at, t), 3); // sem lances
+  ends.set(3, t + 5 * 60_000);
+  assert.equal(currentLotIdx(r, 3, at, t), 3); // em disputa
+  assert.equal(currentLotIdx(r, 3, at, t + 6 * 60_000), 15); // arrematada: entra a seguinte
+  ends.set(15, t + 20 * 60_000);
+  assert.equal(currentLotIdx(r, 3, at, t + 25 * 60_000), 27);
+  // arrematada depois do fim da rodada: não repõe (a rodada nova já trouxe cartas)
+  ends.set(27, end + 60_000);
+  assert.equal(currentLotIdx(r, 3, at, end + 2 * 60_000), 27);
+});
