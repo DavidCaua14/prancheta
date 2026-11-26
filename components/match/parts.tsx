@@ -167,3 +167,23 @@ export function IconButton({
     </button>
   );
 }
+
+/** Liga/desliga a câmera (quadro animado em campo). Acesa = amarela. */
+export function CameraButton({ on, onClick, wide = false }: { on: boolean; onClick: () => void; wide?: boolean }) {
+  const label = on ? "Desligar câmera" : "Ver em campo";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={on}
+      aria-label={label}
+      title={label}
+      className={`flex h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-xl border-[3px] border-[var(--ink)] px-2.5 text-sm font-extrabold shadow-[0_3px_0_var(--ink)] transition-transform active:translate-y-0.5 ${
+        on ? "bg-[var(--sun)] text-[var(--ink)]" : "bg-[var(--paper)] text-[var(--ink)]"
+      }`}
+    >
+      <Icon name="tv" className="h-5 w-5" />
+      <span className={wide ? "inline" : "hidden sm:inline"}>{on ? "Câmera ligada" : "Câmera"}</span>
+    </button>
+  );
+}

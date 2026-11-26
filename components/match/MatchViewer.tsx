@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CrestSvg } from "@/components/club/CrestSvg";
-import { Feed, IconButton } from "@/components/match/parts";
+import { CameraButton, Feed, IconButton } from "@/components/match/parts";
+import { useCamera } from "@/lib/sim/useCamera";
 import { Icon } from "@/components/ui/Icon";
 import { getMyClub, getSession, type Club } from "@/lib/club/api";
 import { decodeCrest } from "@/lib/club/identity";
@@ -54,6 +55,7 @@ export function MatchViewer() {
   const [sheet, setSheet] = useState<null | "tatica" | "subs">(null);
   const [subOut, setSubOut] = useState<number | null>(null);
   const [halfDone, setHalfDone] = useState(false);
+  const [camera, toggleCamera] = useCamera();
 
   useEffect(() => {
     let alive = true;
@@ -345,7 +347,7 @@ export function MatchViewer() {
             </div>
           )}
 
-          {boardSides && (
+          {boardSides && camera && (
             <div className="mb-4">
               <MatchBoard
                 plan={plan}
@@ -425,6 +427,7 @@ export function MatchViewer() {
               <IconButton icon="swap" label="Substituir" showLabel disabled={!canChange || subsDone >= 5} onClick={() => setSheet("subs")} />
             </div>
             <span className="hidden flex-1 lg:block" />
+            <CameraButton on={camera} onClick={toggleCamera} />
             <IconButton
               icon="skip"
               label="Ir para o fim"

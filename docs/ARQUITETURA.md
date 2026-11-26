@@ -325,6 +325,10 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
   `:LWT`; mudanças ao vivo `l0-2`, `w0-2`, `t0-2` (migração 0021).
 - **Testes de encaixe** (`tests/tactics.test.ts`): times montados com perfis claros — cada opção vence quando o
   elenco encaixa e perde quando não encaixa; num time comum nenhuma domina (diferença < 0,12 gol/jogo).
+- **Câmera opcional**: por padrão a partida mostra só placar, narração e estatísticas. O botão de câmera
+  (barra de baixo no celular; acima da narração na liga/copa no desktop; nos controles do treino) liga o quadro
+  animado. A escolha fica no `localStorage` (`prancheta:camera`, via `lib/sim/useCamera.ts`); com a câmera
+  desligada o `MatchBoard` nem é montado (sem loop de animação, mais leve no celular).
 - **Quadro animado** (`lib/sim/board.ts` + `components/match/MatchBoard.tsx`), no treino, na liga e nas copas:
   o motor já sabe a partida inteira, então cada minuto vira um roteiro (quem tem a bola, passes, quem chuta).
   O lance narrado no minuto T é encenado entre T−1 e T e termina junto com o texto. Coerência garantida

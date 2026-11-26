@@ -4,12 +4,13 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { MatchBoard } from "@/components/match/MatchBoard";
 import { buildPlan, scoreAtTime, visibleEvents } from "@/lib/sim/board";
-import { Feed, Scoreboard, StatsPanel, liveStats, tickClock } from "@/components/match/parts";
+import { CameraButton, Feed, Scoreboard, StatsPanel, liveStats, tickClock } from "@/components/match/parts";
 import { Icon } from "@/components/ui/Icon";
 import { fitLevel, FORMATIONS } from "@/lib/tactics/formations";
 import { LINES, POSTURES, TEMPOS, WIDTHS } from "@/lib/tactics/lineup";
 import { TICK_SECONDS, fmtCountdown, fmtKickoff, matchDone, type ChangeRow, type LeagueMatch } from "@/lib/league/data";
 import { useNow } from "@/lib/league/useLeague";
+import { useCamera } from "@/lib/sim/useCamera";
 
 /** Folga entre pedir a mudança e ela valer (para chegar a todos os aparelhos). */
 const CHANGE_DELAY_TICKS = 4;
@@ -44,6 +45,7 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
   const [subOut, setSubOut] = useState<number | null>(null);
   const [sending, setSending] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [camera, toggleCamera] = useCamera();
 
   useEffect(() => {
     if (!toast) return;
@@ -175,7 +177,12 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
             </div>
           )}
 
-          {!before && <MatchBoard plan={plan} getTime={getTime} labels={labels} />}
+          {!before && (
+            <div className="hidden justify-end lg:flex">
+              <CameraButton on={camera} onClick={toggleCamera} wide />
+            </div>
+          )}
+          {!before && camera && <MatchBoard plan={plan} getTime={getTime} labels={labels} />}
           {done && after}
           {!before && <Feed events={feed} tags={tags} mine={mySide ?? undefined} />}
         </section>
@@ -215,18 +222,25 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
         </aside>
       </div>
 
-      {mySide !== null && live && (
+      {!before && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t-[3px] border-[var(--ink)] bg-[var(--night-2)] px-3 pb-[calc(0.6rem+env(safe-area-inset-bottom))] pt-2.5 lg:hidden">
           <div className="mx-auto flex max-w-lg gap-2">
-            <button type="button" disabled={!canAct || sending} onClick={() => setSheet("tatica")} className="btn btn-paper min-w-0 flex-1 !px-2 disabled:opacity-50">
-              <Icon name="clipboard" className="h-5 w-5 shrink-0" />
-              <span className="truncate">{POSTURES[posture].label}</span>
-            </button>
-            <button type="button" disabled={!canAct || sending || subsDone >= 5} onClick={() => setSheet("subs")} className="btn btn-paper min-w-0 flex-1 !px-2 disabled:opacity-50">
-              <Icon name="swap" className="h-5 w-5 shrink-0" />
-              <span className="truncate">Substituir</span>
-              <span className="t-num shrink-0 rounded bg-[var(--ink)] px-1 text-[0.65rem] text-white">{subsDone}/5</span>
-            </button>
+            {mySide !== null && live ? (
+              <>
+                <button type="button" disabled={!canAct || sending} onClick={() => setSheet("tatica")} className="btn btn-paper min-w-0 flex-1 !px-2 disabled:opacity-50">
+                  <Icon name="clipboard" className="h-5 w-5 shrink-0" />
+                  <span className="truncate">{POSTURES[posture].label}</span>
+                </button>
+                <button type="button" disabled={!canAct || sending || subsDone >= 5} onClick={() => setSheet("subs")} className="btn btn-paper min-w-0 flex-1 !px-2 disabled:opacity-50">
+                  <Icon name="swap" className="h-5 w-5 shrink-0" />
+                  <span className="hidden truncate min-[360px]:inline">Substituir</span>
+                  <span className="t-num shrink-0 rounded bg-[var(--ink)] px-1 text-[0.65rem] text-white">{subsDone}/5</span>
+                </button>
+              </>
+            ) : (
+              <span className="flex min-w-0 flex-1 items-center text-sm font-bold text-white/70">{done ? "Partida encerrada" : "Assistindo ao vivo"}</span>
+            )}
+            <CameraButton on={camera} onClick={toggleCamera} />
           </div>
         </div>
       )}
