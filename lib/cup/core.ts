@@ -88,7 +88,24 @@ export const CUP_KINDS: Record<number, CupConfig> = {
     weekday: 0,
     requiresTitle: true,
   },
+  3: {
+    id: "copa-lendas",
+    name: "Copa das Lendas",
+    art: "trophy-copa-lendas",
+    size: 32,
+    firstMinute: 12 * 60 + 30,
+    deadlineMinute: 12 * 60 + 15,
+    minDivision: 5,
+    botDivision: 5,
+    botNames: [...LENDAS_CLUBS, ...SERIE_A_CLUBS],
+    prizes: [50, 100, 150, 250, 500, 1000],
+    tagline: "Todo sábado · 32 clubes · só a Liga das Lendas",
+    weekday: 6,
+  },
 };
+
+/** Nome do dia da semana (0 = domingo) para os textos das copas semanais. */
+export const WEEKDAYS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"] as const;
 export type CupKind = number;
 
 export function cupConfig(kind: number): CupConfig {

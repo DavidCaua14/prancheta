@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { ArtImg } from "@/components/ui/ArtImg";
 import { Icon } from "@/components/ui/Icon";
 import { getMyClub, getSession, type Club } from "@/lib/club/api";
-import { cupStats, loadCup, myLastEntry } from "@/lib/cup/data";
+import { CUP_KINDS, cupStats, loadCup, myLastEntry } from "@/lib/cup/data";
 import { claimMission, currentEvent, METRIC_LABEL, myProgress, templates, type Metric, type Progress, type Template, type WeekEvent } from "@/lib/events/data";
 import { clubLeagueStats, emptyStats, fmtCountdown, loadLeague } from "@/lib/league/data";
 import { useNow } from "@/lib/league/useLeague";
@@ -38,7 +38,7 @@ async function pendingStats(club: Club, now: number): Promise<Pending> {
       add("big_wins", s.big_wins);
     }
   }
-  for (const kind of [0, 1, 2]) {
+  for (const kind of Object.keys(CUP_KINDS).map(Number)) {
     const e = await myLastEntry(club.id, kind).catch(() => null);
     if (!e || e.cups.closed_at || now < new Date(e.cups.starts_at).getTime()) continue;
     const d = await loadCup(e.cup_id).catch(() => null);

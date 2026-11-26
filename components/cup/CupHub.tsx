@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { CrestSvg } from "@/components/club/CrestSvg";
 import { ArtImg } from "@/components/ui/ArtImg";
 import { Icon } from "@/components/ui/Icon";
-import { CUP_KINDS, cupConfig, cupMatch, lastTitle, nextEditionStart, TITLE_VALID_DAYS, pathOf, roundName, roundsOf, slotsIn, type CupData, type CupMatch } from "@/lib/cup/data";
+import { CUP_KINDS, cupConfig, cupMatch, lastTitle, nextEditionStart, TITLE_VALID_DAYS, WEEKDAYS, pathOf, roundName, roundsOf, slotsIn, type CupData, type CupMatch } from "@/lib/cup/data";
 import { divisionInfo } from "@/lib/league/divisions";
 import { liveRound, pairsKnown, roundOver, scoresKnown, useCup } from "@/lib/cup/useCup";
 import { CUPS } from "@/lib/game-config";
@@ -276,7 +276,9 @@ function CupView({ kind, onPick }: { kind: number; onPick: (k: number) => void }
               </>
             ) : (
               <>
-                <p className="t-heading mt-2 text-xl">A {KIND.name} é a partir da {divisionInfo(KIND.minDivision).name}</p>
+                <p className="t-heading mt-2 text-xl">
+                  A {KIND.name} é {KIND.minDivision >= 5 ? "só para a" : "a partir da"} {divisionInfo(KIND.minDivision).name}
+                </p>
                 <p className="mt-1 text-sm text-white/75">
                   O {club.name} está na {divisionInfo(club.division).name}. Suba na liga para disputar — enquanto isso, a Copa da Várzea está aberta todo dia.
                 </p>
@@ -299,7 +301,7 @@ function CupView({ kind, onPick }: { kind: number; onPick: (k: number) => void }
             <p className="mt-1 text-sm text-white/75">
               Próxima edição: <b className="text-[var(--sun)]">{next ? fmtKickoff(next) : "..."}</b>. {KIND.weekday === undefined
                 ? `Inscrições até ${hhmm(KIND.deadlineMinute)} de cada dia; depois disso, a inscrição vale para a copa do dia seguinte.`
-                : `Inscrições até ${hhmm(KIND.deadlineMinute)} do domingo; depois disso, a inscrição vale para o domingo seguinte.`}
+                : `Inscrições até ${hhmm(KIND.deadlineMinute)} de ${WEEKDAYS[KIND.weekday]}; depois disso, a inscrição vale para a semana seguinte.`}
             </p>
             <button type="button" onClick={() => void join()} disabled={joining} className="btn btn-green mt-3">
               <Icon name="trophy" className="h-5 w-5" /> {joining ? "Inscrevendo..." : "Inscrever na copa"}
@@ -346,10 +348,11 @@ function CupView({ kind, onPick }: { kind: number; onPick: (k: number) => void }
           <p className="t-heading">Como funciona</p>
           <ul className="mt-2 space-y-1.5 text-sm text-white/80">
             <li className="flex gap-2">
-              <Icon name="clock" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sun)]" /> {KIND.weekday === undefined ? "Todo dia" : "Todo domingo"}, mata-mata de{" "}
+              <Icon name="clock" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sun)]" /> {KIND.weekday === undefined ? "Todo dia" : `Todo ${WEEKDAYS[KIND.weekday]}`}, mata-mata de{" "}
               {KIND.size} clubes:{" "}
               {Array.from({ length: total }, (_, k) => `${roundName(k + 1, total).toLowerCase()} às ${hhmm(KIND.firstMinute + k * 120)}`).join(", ")} (Brasília).
-              {KIND.minDivision > 0 && ` Só clubes da ${divisionInfo(KIND.minDivision).name} para cima; as vagas livres ficam com a CPU da ${divisionInfo(KIND.botDivision).name}.`}
+              {KIND.minDivision >= 5 && ` Só clubes da ${divisionInfo(KIND.minDivision).name}; as vagas livres ficam com a CPU das Lendas.`}
+              {KIND.minDivision > 0 && KIND.minDivision < 5 && ` Só clubes da ${divisionInfo(KIND.minDivision).name} para cima; as vagas livres ficam com a CPU da ${divisionInfo(KIND.botDivision).name}.`}
               {KIND.requiresTitle && ` Só campeões de divisão (1º lugar numa temporada dos últimos ${TITLE_VALID_DAYS} dias); as vagas livres ficam com a CPU da ${divisionInfo(KIND.botDivision).name}.`}
             </li>
             <li className="flex gap-2">

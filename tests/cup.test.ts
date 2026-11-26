@@ -140,3 +140,31 @@ test("Supercopa: 16 campeões, 4 fases, todo domingo", () => {
   assert.equal(nextEditionStart(brt(14, 14, 15), CUP_KINDS[2]), brt(21, 14, 30));
   assert.equal(nextEditionStart(brt(13, 23, 0), CUP_KINDS[2]), brt(14, 14, 30));
 });
+
+test("Copa das Lendas: 32 clubes da elite, 5 fases, todo sábado", () => {
+  const d = cup(41, [], 3);
+  assert.deepEqual([1, 2, 3, 4, 5].map((r) => slotsIn(d, r).length), [32, 16, 8, 4, 2]);
+  const reach = cupReach(d);
+  assert.deepEqual([0, 1, 2, 3, 4, 5].map((r) => reach.filter((x) => x === r).length), [16, 8, 4, 2, 1, 1]);
+  assert.equal(new Set(Array.from({ length: 32 }, (_, s) => cupTeam(d, s, d.kickoffs[0]).name)).size, 32);
+  assert.equal(CUP_KINDS[3].minDivision, 5);
+  assert.equal(CUP_KINDS[3].weekday, 6);
+  assert.deepEqual(CUP_KINDS[3].prizes, [50, 100, 150, 250, 500, 1000]);
+  // 2026-06-10 é quarta-feira; sábados: 13/06 e 20/06
+  const brt = (day: number, h: number, m: number) => Date.UTC(2026, 5, day, h + 3, m);
+  assert.equal(nextEditionStart(brt(10, 9, 0), CUP_KINDS[3]), brt(13, 12, 30));
+  assert.equal(nextEditionStart(brt(13, 12, 14), CUP_KINDS[3]), brt(13, 12, 30));
+  assert.equal(nextEditionStart(brt(13, 12, 15), CUP_KINDS[3]), brt(20, 12, 30));
+  // fases sem bater com a liga (horas pares cheias) nem com as copas diárias (horas ímpares)
+  for (let r = 0; r < 5; r++) assert.equal((CUP_KINDS[3].firstMinute + r * 120) % 60, 30);
+});
+
+test("CPU da Copa das Lendas é mais forte que a da Copa da Várzea", () => {
+  const ovr = (kind: number) => {
+    const d = cup(50 + kind, [], kind);
+    let sum = 0;
+    for (let s = 0; s < 32; s++) sum += cupTeam(d, s, d.kickoffs[0]).squad.reduce((a, c) => a + c.overall, 0) / 11;
+    return sum / 32;
+  };
+  assert.ok(ovr(3) > ovr(0) + 5, `lendas ${ovr(3)} × várzea ${ovr(0)}`);
+});

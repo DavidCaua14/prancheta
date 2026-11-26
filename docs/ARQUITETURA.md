@@ -252,7 +252,7 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
 - **Custo**: lances = 1 linha por lote disputado (no máximo 8 a cada 2 h, ~100 por dia). A tela relê só os
   lotes da rodada a cada 8 s enquanto está aberta.
 
-## Copas — Copa da Várzea, Copa Nacional e Supercopa (implementado)
+## Copas — Várzea, Nacional, Supercopa e Copa das Lendas (implementado)
 
 - **Formato**: mata-mata diário de 32 clubes, jogo único em campo neutro, empate vai para os pênaltis
   (`lib/cup/shootout.ts`, seed própria). Fases às 13h, 15h, 17h, 19h e 21h (Brasília) — horas ímpares, sem
@@ -268,21 +268,27 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
   A tela só mostra os confrontos de uma fase quando a anterior terminou e os dados foram relidos depois disso
   (senão o "vencedor" seria calculado sem as últimas mudanças dos técnicos).
 - **Fechamento**: a Edge Function `close-cup` recalcula o mata-mata e chama `close_cup()` (só service_role),
-  que confere a chave (16/8/4/2/1/1 por fase), grava a fase alcançada e paga as moedas: campeão 600, vice 300,
-  semi 150, quartas 60, oitavas 30. A copa **não dá XP** (mudaria a força das cartas no meio da liga).
+  que confere a chave (16/8/4/2/1/1 por fase), grava a fase alcançada e paga as moedas: campeão 300, vice 150,
+  semi 80, quartas 40, oitavas 20. A copa **não dá XP** (mudaria a força das cartas no meio da liga).
 - **Copa Nacional** (`kind = 1`, implementado): mata-mata diário de **64 clubes**, só da **Série C para cima**
   (`join_cup` recusa com `P0009`). Fases às 11h30, 13h30, 15h30, 17h30, 19h30 e 21h30 — meia hora depois da
   liga/Copa da Várzea, sem bater com elas; inscrição até 11h15. CPU no nível da Série C. Prêmios: campeão
-  1.600, vice 600, semi 250, quartas 100, oitavas 50, 2ª fase 25. Um clube pode jogar as duas copas no mesmo dia.
+  500, vice 300, semi 150, quartas 80, oitavas 40, 2ª fase 20. Um clube pode jogar as duas copas no mesmo dia.
 - **Configuração**: `CUP_KINDS` (`lib/cup/core.ts`) espelhado em `cup_config()` e `cup_prize()` no SQL. Os
   times da CPU usam uma lista de nomes própria de cada copa, embaralhada por edição, sem repetir na chave.
 - **Supercopa** (`kind = 2`, implementado): a copa dos campeões, **semanal, todo domingo**. Só entra quem
   terminou em **1º lugar** a temporada da sua divisão (qualquer divisão) numa temporada fechada nos **últimos
   7 dias** (`join_cup` recusa com `P0010`). 16 clubes: oitavas 14h30, quartas 16h30, semi 18h30, final 20h30
   (horários livres de liga e das outras copas); inscrição até 14h15 de domingo. CPU no nível da Série B com
-  nomes da Série A e das Lendas. Prêmios: campeão 2.000, vice 900, semi 500, quartas 250, oitavas 100.
-- **Próxima copa** (ver `CUPS` em `lib/game-config.ts`): Copa das Lendas — um `kind` novo em `CUP_KINDS`,
-  `cup_config()`, `cup_prize()` e `join_cup()`.
+  nomes da Série A e das Lendas. Prêmios: campeão 800, vice 400, semi 250, quartas 150, oitavas 100.
+- **Copa das Lendas** (`kind = 3`, implementado): a copa da elite, **semanal, todo sábado**. Só clubes da
+  **Liga das Lendas** (`join_cup` recusa com `P0009`). 32 clubes: 1ª fase 12h30, oitavas 14h30, quartas 16h30,
+  semi 18h30, final 20h30 (horas pares e meia — livres da liga, das copas diárias e da Supercopa, que é no
+  domingo); inscrição até 12h15 de sábado. CPU no nível das Lendas, com nomes das Lendas e da Série A.
+  Prêmios: campeão 1.000, vice 500, semi 250, quartas 150, oitavas 100, 1ª fase 50 (todo mundo leva algo —
+  chegar lá já é mérito). Migração `0022_copa_lendas.sql`; `close-cup` republicada com o novo `CUP_KINDS`.
+- **Copa nova**: um `kind` em `CUP_KINDS` + `cup_config()`, `cup_prize()` e a lista de `join_cup()` no SQL, e
+  republicar a `close-cup` (ela usa `CUP_KINDS` para montar a CPU — sem isso a chave da CPU sairia errada).
 
 ## Economia, loja e eventos (implementado)
 
@@ -294,7 +300,7 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
   Épica 5.000 · Especial 15.000. Os 8 lotes raros (índices 0–7) não mudaram; os Base são os índices 8–11.
 - **Prêmio de temporada**: 1º lugar 300 (Várzea) · 350 (D) · 400 (C) · 500 (B) · 600 (A) · 700 (Lendas),
   **+50% para o campeão** (450 a 1.050), caindo até 25% no último (Várzea: 75).
-- **Copas**: Copa da Várzea até 300 · Copa Nacional até 500 · Supercopa 100 a 800.
+- **Copas**: Copa da Várzea até 300 · Copa Nacional até 500 · Supercopa 100 a 800 · Copa das Lendas 50 a 1.000.
 - **Eventos semanais**: ~1.500 moedas por semana (6 missões).
 - **Técnico ativo sem pagar nada**: ~2.300 moedas por semana (liga ~600 + copas ~200 + eventos ~1.500) →
   uma Destaque por semana, uma Épica em ~2 semanas, uma Especial em ~6–7 semanas. Começa com 500.
@@ -396,7 +402,7 @@ friendlies(id, codigo, casa_id, fora_id, inicio_em, match_id)
 1. ~~Supercopa~~ ✅
 1. ~~Economia, loja (vitrine) e eventos semanais~~ ✅
 1. ~~Táticas avançadas e quadro animado da partida~~ ✅
-1. Copa das Lendas; pagamento da loja; amistosos entre amigos.
+1. ~~Copa das Lendas~~ ✅; pagamento da loja; amistosos entre amigos.
 2. Motor de simulação completo (`lib/sim/`) com testes de determinismo.
 3. Tela de escalação/prancheta.
 4. Ligas da Várzea + job de rodadas.
