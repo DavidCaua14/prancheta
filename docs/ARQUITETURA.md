@@ -333,9 +333,10 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
 
 - **Só clubes reais** (a CPU não fica na tabela `clubs`). RPC `ranking(semana, limite)` (`0028_ranking.sql`) calcula
   na hora a partir do que o servidor já gravou — ninguém forja pontos:
-  temporada fechada = pontos × divisão (Várzea ×1, D ×1,25, C ×1,5, B ×2, A ×2,5, Lendas ×3) + título 50 × divisão +
-  acesso 25 × divisão; copa fechada = fase alcançada × 10 × copa + campeão 40 × copa (Várzea ×1, Nacional ×1,5,
-  Supercopa ×2, Lendas ×3). "Semana" = só o que fechou nos últimos 7 dias. Desempate: divisão atual, títulos.
+  liga (× divisão: Várzea ×1, D ×1,25, C ×1,5, B ×2, A ×2,5, Lendas ×3) = **vitória 10**, empate 3, goleada (3+
+  gols) +5, título +150, acesso +75; copa (× copa: Várzea ×1, Nacional ×1,5, Supercopa ×2, Lendas ×3) = cada fase
+  vencida 15, campeão +60 (`0029_ranking_wins.sql`; vitórias/empates/goleadas vêm de `club_seasons`/`cup_entries`,
+  gravados no fechamento). "Semana" = só o que fechou nos últimos 7 dias. Desempate: divisão atual, títulos.
   Devolve o top N e sempre a linha de quem pergunta (`me`). Com muitos clubes, materializar (hoje é barato).
 - **Telas**: `/ranking` (pódio do top 3, tabela até o 50º, sua linha fixa embaixo quando está fora, abas Geral e
   Semana, "Como pontua") e o atalho na sede com a sua posição e o líder. Arte opcional: `icon-ranking`.

@@ -9,7 +9,7 @@ import { Icon } from "@/components/ui/Icon";
 import { getMyClub, getSession } from "@/lib/club/api";
 import { decodeCrest } from "@/lib/club/identity";
 import { divisionInfo } from "@/lib/league/divisions";
-import { CUP_MULT, DIVISION_MULT, loadRanking, type RankRow } from "@/lib/ranking";
+import { CUP_MULT, DIVISION_MULT, RANK_POINTS as P, loadRanking, type RankRow } from "@/lib/ranking";
 
 function Panel({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <section className={`rounded-[20px] border-[3px] border-[var(--ink)] bg-[var(--night-2)] p-4 text-white shadow-[0_5px_0_var(--ink)] ${className}`}>{children}</section>;
@@ -157,20 +157,25 @@ export function RankingBoard() {
         <Panel>
           <p className="t-heading">Como pontua</p>
           <p className="mt-1 text-sm text-white/70">Só técnicos reais disputam. Vale o que já terminou — temporadas e copas encerradas.</p>
-          <ul className="mt-3 space-y-2 text-sm">
-            <li className="flex gap-2">
-              <Icon name="star" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sun)]" />
-              <span>
-                <b>Temporada:</b> seus pontos na tabela × divisão. Título <b>+50</b> e acesso <b>+25</b> (também × divisão).
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <Icon name="trophy" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sun)]" />
-              <span>
-                <b>Copas:</b> cada fase alcançada vale <b>10</b> × copa; campeão ganha <b>+40</b> × copa.
-              </span>
-            </li>
-          </ul>
+          <dl className="mt-3 grid grid-cols-1 gap-1 text-sm">
+            {(
+              [
+                ["Vitória na liga", P.win],
+                ["Empate", P.draw],
+                ["Goleada (3+ gols)", `+${P.bigWin}`],
+                ["Título da divisão", `+${P.title}`],
+                ["Acesso", `+${P.promotion}`],
+                ["Fase vencida na copa", P.cupRound],
+                ["Campeão da copa", `+${P.cupChampion}`],
+              ] as const
+            ).map(([k, v], i) => (
+              <div key={k} className={`flex items-center justify-between gap-2 rounded-lg px-2 py-1 ${i === 0 ? "bg-[var(--grass)] text-[var(--ink)]" : "bg-white/10"}`}>
+                <dt className="truncate font-bold">{k}</dt>
+                <dd className="t-num shrink-0">{v}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="mt-2 text-xs text-white/65">Na liga, tudo vale × divisão; nas copas, × copa. Os pontos entram quando a temporada ou a copa termina.</p>
           <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
             <div className="rounded-xl bg-white/10 p-2">
               <p className="mb-1 font-extrabold uppercase text-white/60">Divisão</p>
@@ -191,7 +196,7 @@ export function RankingBoard() {
               ))}
             </div>
           </div>
-          <p className="mt-3 text-xs text-white/60">A aba Semana conta só o que terminou nos últimos 7 dias: todo mundo tem chance de chegar ao topo. Empate: divisão atual, depois títulos.</p>
+          <p className="mt-3 text-xs text-white/60">A aba Semana conta só o que terminou nos últimos 7 dias: todo mundo tem chance de chegar ao topo. Empate no ranking: divisão atual, títulos, vitórias.</p>
         </Panel>
       </div>
     </div>
@@ -210,6 +215,7 @@ function Row({ r }: { r: RankRow }) {
         </span>
         <span className={`block truncate text-[0.7rem] font-bold ${r.me ? "opacity-75" : "text-white/60"}`}>
           {divisionInfo(r.division).short}
+          {r.wins > 0 && ` · ${r.wins} ${r.wins === 1 ? "vitória" : "vitórias"}`}
           {r.titles > 0 && ` · ${r.titles} ${r.titles === 1 ? "título" : "títulos"}`}
           {r.cup_titles > 0 && ` · ${r.cup_titles} ${r.cup_titles === 1 ? "copa" : "copas"}`}
         </span>

@@ -7,7 +7,7 @@ export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
  */
 export const RELEASE_NOTES: string[] = [
   "Novo: ranking entre técnicos — geral e da semana, com pódio",
-  "Temporadas e copas valem pontos; quanto mais alta a divisão ou a copa, mais vale",
+  "Ranking: cada vitória vale pontos (goleada vale bônus); quanto mais alta a divisão ou a copa, mais vale",
   "Estrutura do clube com arte para cada nível, do Terrão à Arena",
 ];
 
