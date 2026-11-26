@@ -223,7 +223,7 @@ export function LeaguesAndCups() {
       {ART["icon-rodadas"] ? (
         // com a arte: no celular, imagem em cima e texto embaixo; no computador, lado a lado
         <div className="panel-dark mt-10 flex flex-col items-center gap-4 p-5 text-center sm:flex-row sm:gap-6 sm:p-6 sm:text-left">
-          <Art name="icon-rodadas" width={512} height={512} className="h-28 w-28 shrink-0 object-contain sm:h-32 sm:w-32" fallback={null} />
+          <Art name="icon-rodadas" width={278} height={384} className="h-28 w-28 shrink-0 object-contain sm:h-32 sm:w-32" fallback={null} />
           <div className="min-w-0">
             <span className="tag bg-[var(--sky)]">Rodadas</span>
             <p className="mt-2.5 leading-snug text-white/85 sm:text-lg">

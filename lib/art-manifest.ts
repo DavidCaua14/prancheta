@@ -51,6 +51,7 @@ export const ART: Record<string, string> = {
   "icon-moeda": "/art/icon-moeda.webp",
   "icon-pvp": "/art/icon-pvp.webp",
   "icon-ranking": "/art/icon-ranking.webp",
+  "icon-rodadas": "/art/icon-rodadas.webp",
   "icon-tatica": "/art/icon-tatica.webp",
   "icon-treino": "/art/icon-treino.webp",
   "logo-mark": "/art/logo-mark.webp",
