@@ -16,6 +16,7 @@ import { CARD_TIERS } from "@/lib/game-config";
 import { divisionInfo } from "@/lib/league/divisions";
 import { useLeague, useNow } from "@/lib/league/useLeague";
 import { SeasonSummary } from "@/components/league/SeasonSummary";
+import { PENDING_INVITE } from "@/lib/friendly/core";
 import { scoreAt } from "@/components/league/LeagueHub";
 import { clubCards } from "@/lib/cards/squad";
 import { FORMATIONS, strength } from "@/lib/tactics/formations";
@@ -99,6 +100,17 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
   const [isNew, setIsNew] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
+  // convite de amistoso aberto antes de entrar / montar o clube: volta para ele
+  useEffect(() => {
+    if (!club?.squad) return;
+    let next: string | null = null;
+    try {
+      next = localStorage.getItem(PENDING_INVITE);
+      if (next) localStorage.removeItem(PENDING_INVITE);
+    } catch {}
+    if (next?.startsWith("/amistosos")) router.push(next);
+  }, [club?.squad, router]);
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- lê ?novo=1 da URL uma vez
     setIsNew(new URLSearchParams(window.location.search).has("novo"));
@@ -148,7 +160,8 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
     { label: "Elenco", icon: "icon-elenco", fallback: "cards", action: () => setTab("elenco"), ready: true },
     { label: "Escalação", icon: "icon-tatica", fallback: "clipboard", action: goLineup, ready: true },
     { label: "Liga", icon: "icon-liga", alt: div.art, fallback: "trophy", action: () => router.push("/liga"), ready: true },
-    { label: "Treino", icon: "icon-treino", alt: "icon-pvp", fallback: "whistle", action: () => router.push("/partida"), ready: true },
+    { label: "Treino", icon: "icon-treino", fallback: "whistle", action: () => router.push("/partida"), ready: true },
+    { label: "Amistosos", icon: "icon-pvp", fallback: "swap", action: () => router.push("/amistosos"), ready: true },
     { label: "Leilão", icon: "icon-leilao", fallback: "gavel", action: () => router.push("/leilao"), ready: true },
     { label: "Copas", icon: "trophy-copa-varzea", fallback: "trophy", action: () => router.push("/copas"), ready: true },
     { label: "Eventos", icon: "icon-eventos", fallback: "star", action: () => router.push("/eventos"), ready: true },
@@ -284,7 +297,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
               </Panel>
 
               {/* atalhos */}
-              <div className="grid grid-cols-4 gap-2 sm:gap-3">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 {tiles.map((t) => (
                   <button
                     key={t.label}

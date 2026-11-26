@@ -22,6 +22,8 @@ export type IconName =
   | "clipboard"
   | "swap"
   | "check"
+  | "copy"
+  | "share"
   | "close"
   | "dice"
   | "bolt"
@@ -68,6 +70,20 @@ const PATHS: Record<IconName, ReactNode> = {
   ),
   swap: <path d="M7 4L3.5 7.5 7 11M3.5 7.5H17M17 13l3.5 3.5L17 20M20.5 16.5H7" />,
   check: <path d="M4.5 12.5l5 5 10-11" />,
+  copy: (
+    <>
+      <rect x="8.5" y="8.5" width="11" height="11" rx="2" />
+      <path d="M15.5 8.5V6.5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2" />
+    </>
+  ),
+  share: (
+    <>
+      <circle cx="17.5" cy="5.5" r="2.5" />
+      <circle cx="6.5" cy="12" r="2.5" />
+      <circle cx="17.5" cy="18.5" r="2.5" />
+      <path d="M8.7 10.8l6.6-4M8.7 13.2l6.6 4" />
+    </>
+  ),
   close: <path d="M6 6l12 12M18 6L6 18" />,
   dice: (
     <>

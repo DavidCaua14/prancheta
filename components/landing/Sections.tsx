@@ -319,7 +319,7 @@ export function Friends() {
             </div>
           </div>
           <div className="mt-6 flex items-center gap-2 rounded-xl border-[3px] border-[var(--ink)] bg-white p-1.5 pl-3">
-            <span className="min-w-0 flex-1 truncate font-mono text-sm font-bold">prancheta.gg/x/RESENHA-7</span>
+            <span className="min-w-0 flex-1 truncate font-mono text-sm font-bold">prancheta.gg/amistosos?c=RESENHA-7K2Q</span>
             <span className="btn btn-sm shrink-0">Copiar</span>
           </div>
           <p className="mt-3 text-center text-sm font-semibold opacity-60">Sábado, 21h · Estádio dos Tubarões</p>

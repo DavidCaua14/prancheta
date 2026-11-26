@@ -290,6 +290,26 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
 - **Copa nova**: um `kind` em `CUP_KINDS` + `cup_config()`, `cup_prize()` e a lista de `join_cup()` no SQL, e
   republicar a `close-cup` (ela usa `CUP_KINDS` para montar a CPU — sem isso a chave da CPU sairia errada).
 
+## Amistosos entre amigos (implementado)
+
+- **Fluxo**: em `/amistosos` o técnico escolhe o horário (em 5 min, 15 min, 1 h, ou dia + hora de Brasília, de
+  2 min a 7 dias) e recebe um código (`PALAVRA-XXXX`, ex.: `RESENHA-7K2Q`) e o link `/amistosos?c=CÓDIGO`, com
+  botões de copiar, WhatsApp e compartilhar. O amigo abre o link, vê o convite e aceita até 30 s antes do apito.
+  Sem login, o link fica guardado (`prancheta:convite`) e a sede (`/jogo`) volta para ele depois de entrar e
+  montar o clube. Também dá para digitar o código na tela.
+- **Jogo**: `/amistosos/jogo?id=N` usa a mesma `LiveMatch` da liga e das copas (câmera, tática, substituições).
+  Quem convida é o mandante; empate é empate. Vale a escalação salva no apito; a força (XP) fica congelada no
+  aceite; cartas do leilão contam se arrematadas até o apito. Mudanças ao vivo em `friendly_changes` (30 por
+  clube, só minuto futuro); relidas a cada 10 s durante o jogo.
+- **Banco** (`0023_friendlies.sql`): `friendlies` (1 linha por amistoso) e `friendly_changes`. RPCs
+  `create_friendly` (limite de 5 amistosos por jogar por clube, `P0011`; faxina de convites vencidos e jogos com
+  mais de 30 dias), `friendly_invite` (lê o convite pelo código), `accept_friendly` (`P0012` é seu, `P0013` já
+  aceito, `P0014` expirou) e `leave_friendly` (quem marcou cancela; quem aceitou desiste). RLS: cada clube só lê
+  os próprios amistosos — convite alheio só pelo código.
+- **Cálculo no aparelho** (`lib/friendly/core.ts`): sem Edge Function — amistoso **não dá moedas, XP nem conta nos
+  eventos** (nada para combinar entre amigos e "farmar"). A lista de resultados carrega os jogos encerrados em
+  lote (4 leituras para até 10 jogos).
+
 ## Economia, loja e eventos (implementado)
 
 - **Filosofia**: prêmios de liga e copa compram **cartas Base boas**; Destaque, Épica e Especial pedem
@@ -402,7 +422,7 @@ friendlies(id, codigo, casa_id, fora_id, inicio_em, match_id)
 1. ~~Supercopa~~ ✅
 1. ~~Economia, loja (vitrine) e eventos semanais~~ ✅
 1. ~~Táticas avançadas e quadro animado da partida~~ ✅
-1. ~~Copa das Lendas~~ ✅; pagamento da loja; amistosos entre amigos.
+1. ~~Copa das Lendas~~ ✅; ~~amistosos entre amigos~~ ✅; pagamento da loja.
 2. Motor de simulação completo (`lib/sim/`) com testes de determinismo.
 3. Tela de escalação/prancheta.
 4. Ligas da Várzea + job de rodadas.

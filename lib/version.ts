@@ -6,7 +6,8 @@ export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
  * de atualização obrigatória que os jogadores veem.
  */
 export const RELEASE_NOTES: string[] = [
-  "Nova: Copa das Lendas — todo sábado, 32 clubes, só para a Liga das Lendas (campeão leva 1.000 moedas)",
+  "Novo: amistosos entre amigos — marque o horário, mande o link no grupo e jogue ao vivo",
+  "Nova: Copa das Lendas — todo sábado, 32 clubes, só para a Liga das Lendas",
   "Partidas abrem no placar e na narração; toque na câmera para ver os lances em campo",
 ];
 

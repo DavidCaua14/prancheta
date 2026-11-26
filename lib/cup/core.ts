@@ -203,7 +203,7 @@ function lineupAt(data: CupData, team: TeamView, kickoff: number): Lineup {
   return lineupFor(code, team.squad);
 }
 
-function toChanges(rows: ChangeRow[], round: number, clubId: string | undefined, side: 0 | 1): Change[] {
+export function toChanges(rows: ChangeRow[], round: number, clubId: string | undefined, side: 0 | 1): Change[] {
   if (!clubId) return [];
   return rows
     .filter((c) => c.round === round && c.club_id === clubId)
