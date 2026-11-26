@@ -36,10 +36,9 @@ export function useAutoScore(kind: Kind, id: number | null | undefined, kickoffs
       if (!ended.length) return;
       const { data } = await supabase().rpc("scored", { p_kind: kind === "liga" ? 0 : 1, p_ref: id });
       const done = new Set(((data ?? []) as number[]).map(Number));
-      for (const x of ended) {
-        if (stop) return;
-        if (!done.has(x.r)) await askScore(kind, id, x.r);
-      }
+      // um pedido só: o servidor grava todas as rodadas encerradas que faltam
+      const missing = ended.filter((x) => !done.has(x.r));
+      if (!stop && missing.length) await askScore(kind, id, missing[missing.length - 1].r);
     })();
     // durante: no fim de cada rodada das próximas 6 horas (tela aberta)
     const now = serverNow();

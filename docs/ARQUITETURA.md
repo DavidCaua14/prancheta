@@ -359,6 +359,23 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
 - **Ranking** = jogos (vitória 10, empate 3, goleada +5 × divisão; fase de copa 15 × copa) + bônus no fechamento
   (título +150, acesso +75 × divisão; campeão de copa +60 × copa). "Semana" usa a hora do jogo.
 
+## Teste de carga: temporada completa com 50 técnicos (feito)
+
+Roteiro fora do repositório: 50 contas de teste agindo pela API pública com a sessão de cada uma (como o app),
+relógio das ligas/copas adiantado no banco para jogar uma temporada inteira. Achados e correções:
+
+- **Corrida na última vaga** (`0032_join_race.sql`): dois técnicos entrando juntos — o segundo ficava na liga
+  **sem vaga** (não jogava). Agora tenta de novo; e o banco exige vaga quando há liga (`clubs_league_slot_check`).
+- **Edições duplicadas** (`0033_join_lock.sql`): 15 inscrições simultâneas sem copa aberta criavam 8 copas com 1
+  clube. `join_league`/`join_cup` passam por um bloqueio curto por divisão/tipo de copa (50 juntos: 32 + 18, ~1 s).
+- **Ranking jogo a jogo**: 50 técnicos abrindo juntos pediam rodada por rodada (778 chamadas, 20 s). Agora 1 pedido
+  grava todas as rodadas encerradas que faltam e sai na hora se já está tudo gravado (3,3 s, mesmo resultado).
+- **Conferido**: ordem final do servidor = a do aparelho nas 6 ligas; acessos (4 por liga na Várzea), prêmios, XP,
+  copas (930 moedas = tabela), leilão (carta escalada), amistoso ao vivo, renda em casa (nada pago 2×) e o caixa
+  inteiro (25.000 − obras − leilão + prêmios + renda = saldo final, exato). Telas com dados reais: sem erros.
+- **Tempos** (50 simultâneos): leituras e RPCs ~0,1–0,5 s; fechar liga ~2,5 s; fechar copa ~1,3 s; cálculo da
+  temporada no aparelho ~60 ms.
+
 ## Amistosos entre amigos (implementado)
 
 - **Fluxo**: em `/amistosos` o técnico escolhe o horário (em 5 min, 15 min, 1 h, ou dia + hora de Brasília, de

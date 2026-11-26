@@ -27,6 +27,7 @@ export async function recentHomeIncome(clubId: string, limit = 8): Promise<HomeI
     .from("home_income")
     .select("league_id,round,stadium,snack,shop,coins,paid_at")
     .eq("club_id", clubId)
+    .gt("coins", 0) // jogos sem estrutura (0 moedas) não entram na lista
     .order("paid_at", { ascending: false })
     .limit(limit);
   return (data ?? []) as HomeIncomeRow[];

@@ -215,7 +215,11 @@ export function ClubTab({ club, onChanged, onSignOut }: { club: Club; onChanged:
           {income === null ? (
             <p className="mt-2 text-sm text-white/60">Carregando...</p>
           ) : income.length === 0 ? (
-            <p className="mt-2 text-sm text-white/70">A renda dos jogos em casa aparece aqui depois do apito final.</p>
+            <p className="mt-2 text-sm text-white/70">
+              {levels.some((l) => l > 0)
+                ? "A renda dos jogos em casa aparece aqui depois do apito final."
+                : "Construa o estádio, a lanchonete ou a loja para faturar a cada jogo em casa."}
+            </p>
           ) : (
             <ul className="mt-2 divide-y divide-white/10">
               {income.map((r) => (
