@@ -6,10 +6,9 @@ export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
  * de atualização obrigatória que os jogadores veem.
  */
 export const RELEASE_NOTES: string[] = [
-  "Novo: ranking entre técnicos — geral e da semana, com pódio",
-  "Ranking ao vivo: cada vitória pontua logo depois do apito final",
   "Fim de jogo mostra os pontos ganhos e a sua subida no ranking, com animação",
-  "Estrutura do clube com arte para cada nível, do Terrão à Arena",
+  "Ranking ao vivo: cada vitória pontua logo depois do apito final",
+  "Página inicial atualizada com ranking, estrutura do clube, eventos e treino",
 ];
 
 export type VersionPayload = {

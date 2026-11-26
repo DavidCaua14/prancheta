@@ -61,7 +61,7 @@ export function Perks() {
   const perks: { icon: GameIconName; title: string; text: string }[] = [
     { icon: "gratis", title: "Grátis pra começar", text: "Clube, cartas Base, ligas e copas sem gastar nada." },
     { icon: "celular", title: "Roda no celular", text: "Leve, abre no navegador e gasta pouca internet." },
-    { icon: "pvp", title: "Técnicos de verdade", text: "Todo adversário é outra pessoa, não um robô." },
+    { icon: "pvp", title: "Técnicos de verdade", text: "Ligas, copas e ranking contra outras pessoas. Vaga livre fica com a CPU, e a rodada nunca para." },
   ];
   return (
     <Section compact>
@@ -97,8 +97,8 @@ export function LiveMatch() {
 
 export function HowItWorks() {
   const steps: { icon: GameIconName; title: string; text: string }[] = [
-    { icon: "clube", title: "Funde seu clube", text: "Escolha nome, escudo e cores. Você recebe um elenco de cartas Base e entra numa liga na hora." },
-    { icon: "tatica", title: "Arme a prancheta", text: "Escale os titulares, escolha o esquema e o estilo de jogo: retranca, toque de bola ou pressão." },
+    { icon: "clube", title: "Funde seu clube", text: "Escolha nome, escudo e cores, monte o elenco na peneira escolhendo suas cartas Base e entre numa liga na hora." },
+    { icon: "tatica", title: "Arme a prancheta", text: "Escale os titulares, escolha o esquema e a tática: postura, linha defensiva, jogo pelo meio ou pelas pontas e ritmo." },
     { icon: "ao-vivo", title: "A rodada acontece", text: "Os jogos têm hora marcada. Acompanhe ao vivo e faça mudanças, ou deixe o time jogar sozinho." },
     { icon: "acesso", title: "Suba de divisão", text: "Vença, evolua suas cartas e suba da Várzea até a Liga das Lendas, liberando copas e prêmios." },
   ];
@@ -127,8 +127,8 @@ export function CardsShowcase() {
   return (
     <Section id="cartas" tone="band">
       <SectionTitle kicker="Sistema de cartas" title={<>Cartas que <span className="text-[var(--sun)]">evoluem</span></>}>
-        Cada jogador é uma carta. Jogando, ela ganha experiência, sobe de nível e aumenta o overall — até o limite da sua
-        raridade.
+        Cada jogador é uma carta. Jogando, ela ganha experiência, sobe de nível e aumenta o overall. Cada carta tem o seu
+        potencial — jovens costumam ir mais longe — e só as melhores promessas chegam ao teto da raridade.
       </SectionTitle>
 
       <ul className="grid grid-cols-2 gap-x-4 gap-y-8 lg:grid-cols-4 lg:gap-6">
@@ -169,8 +169,8 @@ export function LeaguesAndCups() {
   return (
     <Section id="ligas">
       <SectionTitle kicker="Ligas e copas" title={<>Da várzea às <span className="text-[var(--orange)]">lendas</span></>}>
-        Entrou hoje? Tem liga com vaga esperando. Todo clube começa na Várzea e cada acesso libera copas novas, prêmios
-        maiores e cartas melhores no leilão.
+        Entrou hoje? Tem liga com vaga esperando. Todo clube começa na Várzea e cada acesso libera copas novas e prêmios
+        maiores — e vale mais pontos no ranking.
       </SectionTitle>
 
       <h3 className="t-heading mb-4 text-xl text-[var(--sun)]">Divisões</h3>
@@ -214,7 +214,7 @@ export function LeaguesAndCups() {
               />
             </div>
             <h4 className="t-heading mt-3 text-base leading-tight sm:text-lg">{c.name}</h4>
-            <p className="mt-1.5 text-sm opacity-65">{c.unlock}</p>
+            <p className="mt-1.5 text-sm opacity-65">{c.when}</p>
           </li>
         ))}
       </ul>
@@ -222,8 +222,8 @@ export function LeaguesAndCups() {
       <p className="panel-dark mt-10 flex items-start gap-3 p-4 sm:items-center sm:p-5">
         <span className="tag shrink-0 bg-[var(--sky)]">Rodadas</span>
         <span className="leading-snug text-white/85">
-          O calendário é do jogo: as partidas acontecem no horário marcado. Se você não estiver online, o time entra com a
-          última escalação salva.
+          O calendário é do jogo: uma rodada a cada 2 horas, das 8h às 22h, e as copas no horário de cada uma. Se você não
+          estiver online, o time entra com a última escalação salva.
         </span>
       </p>
     </Section>
@@ -235,15 +235,15 @@ export function LeaguesAndCups() {
 export function Auction() {
   const card = SAMPLE_CARDS[2];
   const bids = [
-    { who: "Tubarões da Vila", value: "31.500" },
-    { who: "Bola Murcha EC", value: "29.000" },
-    { who: "Real Várzea", value: "26.750" },
+    { who: "Tubarões da Vila", value: "6.300" },
+    { who: "Bola Murcha EC", value: "6.000" },
+    { who: "Real Várzea", value: "5.500" },
   ];
   return (
     <Section id="leilao" tone="band">
       <SectionTitle kicker="Leilão" title={<>Arremate seu <span className="text-[var(--orange)]">craque</span></>}>
-        Cartas raras vão a leilão para todos os técnicos. Use as moedas que o clube ganha jogando e leve o craque que
-        falta no seu time.
+        A cada 2 horas, 12 cartas — Base boas e raras — vão a leilão para todos os técnicos. Veja o potencial de cada uma,
+        use as moedas que o clube ganha jogando e leve o craque que falta. Cada lance novo dá 10 minutos para alguém cobrir.
       </SectionTitle>
 
       <div className="panel halftone mx-auto grid max-w-4xl items-center gap-8 p-5 sm:p-8 md:grid-cols-[auto_1fr] md:gap-10">
@@ -255,12 +255,12 @@ export function Auction() {
             <span className="tag bg-[var(--red)] text-white">
               <span className="h-2 w-2 rounded-full bg-white" /> Ao vivo
             </span>
-            <span className="tag bg-white">Termina em 02:14:07</span>
+            <span className="tag bg-white">Fecha em 07:42</span>
           </div>
           <p className="mt-5 text-xs font-extrabold uppercase tracking-[0.15em] opacity-55">Maior lance</p>
           <p className="mt-1 flex items-center gap-2">
             <GameIcon name="moeda" className="h-10 w-10" />
-            <span className="t-num text-4xl sm:text-5xl">31.500</span>
+            <span className="t-num text-4xl sm:text-5xl">6.300</span>
           </p>
           <ol className="mt-5 overflow-hidden rounded-xl border-[3px] border-[var(--ink)]">
             {bids.map((b, i) => (
@@ -280,6 +280,68 @@ export function Auction() {
           </a>
         </div>
       </div>
+    </Section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+export function ClubLife() {
+  const items: { art: string; w: number; h: number; tag: string; title: string; text: string; fallback: ReactNode }[] = [
+    {
+      art: "icon-ranking",
+      w: 238,
+      h: 256,
+      tag: "Ranking",
+      title: "Dispute o topo",
+      text: "Cada vitória pontua logo depois do apito final, e quanto mais alta a divisão, mais vale. Ranking geral e da semana.",
+      fallback: <TrophyIcon className="h-20 w-20" color="var(--sun)" />,
+    },
+    {
+      art: "facility-estadio",
+      w: 600,
+      h: 366,
+      tag: "Estrutura",
+      title: "Do terrão à arena",
+      text: "Invista no estádio, na lanchonete e na loja oficial: cada jogo em casa rende moedas para o clube.",
+      fallback: <GameIcon name="clube" className="h-20 w-20" />,
+    },
+    {
+      art: "icon-eventos",
+      w: 512,
+      h: 512,
+      tag: "Eventos",
+      title: "Missões da semana",
+      text: "Marque gols, vença jogos e dispute copas para ganhar moedas grátis toda semana.",
+      fallback: <GameIcon name="gratis" className="h-20 w-20" />,
+    },
+    {
+      art: "icon-treino",
+      w: 512,
+      h: 512,
+      tag: "Treino",
+      title: "Teste a tática",
+      text: "Jogue amistosos de treino contra a CPU quando quiser, no seu ritmo, e acerte o time antes da rodada.",
+      fallback: <GameIcon name="tatica" className="h-20 w-20" />,
+    },
+  ];
+  return (
+    <Section id="clube">
+      <SectionTitle kicker="Além do campo" title={<>Seu clube <span className="text-[var(--grass)]">cresce</span></>}>
+        O Prancheta não para entre as rodadas: suba no ranking, faça obras no clube e cumpra missões para juntar moedas.
+      </SectionTitle>
+      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {items.map((it) => (
+          <li key={it.tag} className="panel halftone flex h-full flex-col p-4 sm:p-5">
+            <div className="flex h-28 items-center justify-center rounded-2xl border-[3px] border-[var(--ink)] bg-[var(--cream)] p-2">
+              <Art name={it.art} width={it.w} height={it.h} className="h-full w-full object-contain" fallback={it.fallback} />
+            </div>
+            <span className="tag mt-4 self-start">{it.tag}</span>
+            <h3 className="t-heading mt-2 text-lg sm:text-xl">{it.title}</h3>
+            <p className="mt-1.5 leading-snug opacity-75">{it.text}</p>
+          </li>
+        ))}
+      </ul>
     </Section>
   );
 }

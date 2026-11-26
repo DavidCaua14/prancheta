@@ -17,7 +17,7 @@ const BALL: [number, number] = [82, 33];
 
 const FEED = [
   { min: "67", text: "GOOOL! Faísca recebe na área e bate cruzado. Tubarões na frente!", kind: "goal" },
-  { min: "64", text: "Técnico do TUB muda para “Pra cima!” e coloca Biscoito no jogo.", kind: "coach" },
+  { min: "64", text: "Tubarões da Vila muda a tática: Tudo pra frente, linha adiantada. Biscoito entra no jogo.", kind: "coach" },
   { min: "58", text: "Na trave! Canhota arrisca de fora e quase empata de novo.", kind: "chance" },
   { min: "51", text: "Cartão amarelo para Galo, falta dura no meio-campo.", kind: "card" },
   { min: "38", text: "GOOOL! Dr. Canhota cobra falta no ângulo. Empate no Morro!", kind: "goal" },
@@ -25,7 +25,7 @@ const FEED = [
 
 const POINTS = [
   { title: "Narração lance a lance", text: "Igual aos managers clássicos: você lê o jogo acontecer, com gols, chances, cartões e substituições." },
-  { title: "Mexa no time durante o jogo", text: "Mude a tática, faça substituições e veja o efeito em campo na hora." },
+  { title: "Mexa no time durante o jogo", text: "Mude a tática e faça substituições: a mudança vale poucos minutos de jogo depois. Ligue a câmera para ver os lances no campo." },
   { title: "Ou só veja o resultado", text: "A rodada acontece no horário marcado, com ou sem você online. Seu time entra com a última escalação salva." },
 ];
 
@@ -97,7 +97,7 @@ export function MatchShowcase() {
         <div className="relative mt-2.5 overflow-hidden rounded-2xl border-[3px] border-[var(--ink)]">
           <Pitch />
           <span className="absolute left-2 top-2 rounded-lg border-2 border-[var(--ink)] bg-[var(--paper)] px-2 py-0.5 text-[0.7rem] font-extrabold text-[var(--ink)] sm:left-3 sm:top-3 sm:text-xs">
-            TUB · 4-3-3 · Pra cima!
+            TUB · 4-3-3 · Tudo pra frente
           </span>
         </div>
 

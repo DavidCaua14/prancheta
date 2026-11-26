@@ -28,7 +28,7 @@ export const CARD_TIERS: Record<CardTier, TierInfo> = {
     maxOverall: 70,
     startOverall: [45, 60],
     maxLevel: 10,
-    howToGet: "Grátis: base do clube, recompensas e olheiro",
+    howToGet: "Grátis na peneira e no leilão, a partir de 100 moedas",
     squadLimit: null,
   },
   destaque: {
@@ -37,7 +37,7 @@ export const CARD_TIERS: Record<CardTier, TierInfo> = {
     maxOverall: 79,
     startOverall: [58, 68],
     maxLevel: 20,
-    howToGet: "Prêmios de liga, copas e leilão",
+    howToGet: "Leilão, a partir de 1.500 moedas",
     squadLimit: 8,
   },
   epica: {
@@ -46,7 +46,7 @@ export const CARD_TIERS: Record<CardTier, TierInfo> = {
     maxOverall: 89,
     startOverall: [66, 76],
     maxLevel: 35,
-    howToGet: "Leilão, títulos e eventos",
+    howToGet: "Leilão, a partir de 5.000 moedas",
     squadLimit: 4,
   },
   especial: {
@@ -55,7 +55,7 @@ export const CARD_TIERS: Record<CardTier, TierInfo> = {
     maxOverall: 99,
     startOverall: [74, 84],
     maxLevel: 50,
-    howToGet: "Leilão e eventos raros",
+    howToGet: "Leilão a cada 8 horas, a partir de 15.000 moedas",
     squadLimit: 2,
   },
 };
@@ -79,11 +79,11 @@ export const DIVISIONS: Division[] = [
   { id: "liga-lendas", name: "Liga das Lendas", short: "★", description: "Só os melhores técnicos do servidor." },
 ];
 
-export type Cup = { id: string; name: string; unlock: string; color: string };
+export type Cup = { id: string; name: string; unlock: string; color: string; when: string };
 
 export const CUPS: Cup[] = [
-  { id: "copa-varzea", name: "Copa da Várzea", unlock: "Liberada desde o 1º dia", color: "var(--orange)" },
-  { id: "copa-nacional", name: "Copa Nacional", unlock: "A partir da Série C", color: "var(--sky)" },
-  { id: "supercopa", name: "Supercopa", unlock: "Campeões de divisão", color: "var(--hot)" },
-  { id: "copa-lendas", name: "Copa das Lendas", unlock: "Liga das Lendas", color: "var(--sun)" },
+  { id: "copa-varzea", name: "Copa da Várzea", unlock: "Liberada desde o 1º dia", color: "var(--orange)", when: "Todo dia · aberta a todos" },
+  { id: "copa-nacional", name: "Copa Nacional", unlock: "A partir da Série C", color: "var(--sky)", when: "Todo dia · a partir da Série C" },
+  { id: "supercopa", name: "Supercopa", unlock: "Campeões de divisão", color: "var(--hot)", when: "Domingos · só campeões de divisão" },
+  { id: "copa-lendas", name: "Copa das Lendas", unlock: "Liga das Lendas", color: "var(--sun)", when: "Sábados · só a Liga das Lendas" },
 ];

@@ -8,11 +8,11 @@ const FAQ = [
   },
   {
     q: "Preciso pagar para jogar?",
-    a: "Não. Você cria o clube, ganha cartas Base, joga ligas e copas sem gastar nada. Cartas mais raras também podem ser conquistadas com moedas do jogo, em títulos e no leilão.",
+    a: "Não. Você cria o clube, monta o elenco de cartas Base na peneira e joga ligas, copas e amistosos sem gastar nada. As cartas raras saem no leilão, com as moedas que o clube ganha em prêmios de liga e copa, nas missões semanais e na renda do estádio.",
   },
   {
     q: "E se eu não estiver online na hora do jogo?",
-    a: "O jogo acontece do mesmo jeito. Seu time entra com a última escalação e tática salvas. Depois você pode ver o resumo e os melhores lances.",
+    a: "O jogo acontece do mesmo jeito. Seu time entra com a última escalação e tática salvas. Depois dá para rever a partida inteira, lance a lance.",
   },
   {
     q: "Roda no meu celular?",
@@ -20,15 +20,23 @@ const FAQ = [
   },
   {
     q: "Como as cartas evoluem?",
-    a: "Cada partida dá experiência às cartas que jogaram. Ao subir de nível, o overall aumenta até o limite da raridade: Base, Destaque, Épica ou Especial.",
+    a: "Cada jogo da liga dá experiência às cartas (mais para quem joga, faz gol e vence), que entra no fim da temporada. Ao subir de nível, o overall aumenta. Cada carta tem o seu potencial — o nível e o overall máximos dela —, e só as melhores chegam ao teto da raridade: Base, Destaque, Épica ou Especial.",
   },
   {
     q: "Como funciona o leilão?",
-    a: "Cartas são colocadas em leilão com tempo marcado. Todo mundo pode dar lances com moedas do clube; quem tiver o maior lance quando o martelo bater leva a carta.",
+    a: "A cada 2 horas, 12 cartas vão a leilão, e cada uma mostra o potencial dela. Todo mundo pode dar lances com as moedas do clube; cada lance novo dá mais 10 minutos para alguém cobrir. Quem tiver o maior lance no fim leva a carta, e outra entra no lugar na hora.",
   },
   {
     q: "Posso jogar contra meus amigos?",
-    a: "Pode! Marque um amistoso, mande o link e escolham o horário. A partida é simulada com os times e táticas de cada um.",
+    a: "Pode! Marque um amistoso, escolha o horário e mande o link no grupo. A partida é ao vivo, com os times e as táticas de cada um. Amistoso não vale moedas nem pontos no ranking: é só pela resenha.",
+  },
+  {
+    q: "Como funciona o ranking?",
+    a: "Só técnicos de verdade disputam. Cada vitória, empate e goleada na liga pontua logo depois do apito final, assim como cada fase vencida nas copas; título e acesso dão bônus. Quanto mais alta a divisão ou a copa, mais vale. Tem o ranking geral e o da semana.",
+  },
+  {
+    q: "Como meu clube ganha moedas?",
+    a: "Com prêmios de fim de temporada e de copa, com as missões dos eventos semanais e com a renda dos jogos em casa: invista no estádio, na lanchonete e na loja oficial para faturar a cada partida.",
   },
 ];
 

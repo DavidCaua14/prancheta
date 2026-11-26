@@ -3,6 +3,7 @@ import { Hero } from "@/components/landing/Hero";
 import {
   Auction,
   CardsShowcase,
+  ClubLife,
   Friends,
   HowItWorks,
   LeaguesAndCups,
@@ -23,6 +24,7 @@ export default function Home() {
         <CardsShowcase />
         <LeaguesAndCups />
         <Auction />
+        <ClubLife />
         <Friends />
         <Faq />
         <FinalCta />
