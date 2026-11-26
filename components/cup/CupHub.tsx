@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { memo, useEffect, useMemo, useState, type ReactNode } from "react";
 import { CrestSvg } from "@/components/club/CrestSvg";
 import { ArtImg } from "@/components/ui/ArtImg";
 import { Icon } from "@/components/ui/Icon";
@@ -44,10 +44,13 @@ function scoreOf(data: CupData, m: CupMatch, now: number) {
   return { status: "vivo" as const, text: last ? `${last.score[0]}-${last.score[1]}` : "0-0", clock: last ? clockText(last) : "0'" };
 }
 
-function MatchLine({ data, m, now, mySlot }: { data: CupData; m: CupMatch; now: number; mySlot: number | null }) {
-  const kind = data.cup.kind;
-  const s = scoreOf(data, m, now);
-  const mine = m.home.slot === mySlot || m.away.slot === mySlot;
+/**
+ * Um jogo da chave. O relógio da tela anda a cada segundo, mas o placar só
+ * muda a cada lance: a linha recebe o placar já pronto (texto) e só se
+ * redesenha quando ele muda.
+ */
+const MatchLine = memo(function MatchLine({ kind, m, mine, status, text, sub }: { kind: number; m: CupMatch; mine: boolean; status: "antes" | "fim" | "vivo"; text: string; sub: string }) {
+  const s = { status, text };
   const won = (side: 0 | 1) => s.status === "fim" && m.winner === side;
   return (
     <Link
@@ -63,7 +66,7 @@ function MatchLine({ data, m, now, mySlot }: { data: CupData; m: CupMatch; now: 
           {s.status === "antes" ? "×" : s.text}
         </span>
         <span className={`t-num text-[0.62rem] ${s.status === "vivo" ? "text-[var(--red)]" : "opacity-60"}`}>
-          {s.status === "vivo" ? s.clock : s.status === "fim" ? (s.pens ?? "Fim") : s.text}
+          {sub}
         </span>
       </span>
       <span className={`flex min-w-0 items-center gap-2 ${s.status === "fim" && !won(1) ? "opacity-50" : ""}`}>
@@ -72,7 +75,7 @@ function MatchLine({ data, m, now, mySlot }: { data: CupData; m: CupMatch; now: 
       </span>
     </Link>
   );
-}
+});
 
 /** Página das copas: escolhe a copa (?k=0 Várzea, ?k=1 Nacional) e mostra a edição. */
 export function CupHub() {
@@ -92,17 +95,19 @@ export function CupHub() {
 
 function CupView({ kind, onPick }: { kind: number; onPick: (k: number) => void }) {
   const KIND = cupConfig(kind);
-  const { club, entry, data, ready, joining, error, join, reload } = useCup(kind);
-  // Supercopa: precisa de um título de divisão recente (o banco confere de novo na inscrição)
-  const [title, setTitle] = useState<{ closed_at: string; division: number } | null | undefined>(KIND.requiresTitle ? undefined : null);
+  const { club, entry, data, title: bundled, ready, joining, error, join, reload } = useCup(kind);
+  // Supercopa: precisa de um título de divisão recente (vem junto com a copa; o banco confere de novo na inscrição)
+  const [fallbackTitle, setFallbackTitle] = useState<{ closed_at: string; division: number } | null | undefined>(undefined);
   useEffect(() => {
-    if (!KIND.requiresTitle || !club) return;
+    // sem a função nova no banco: lê o título à parte
+    if (!KIND.requiresTitle || !club || !ready || bundled !== undefined) return;
     let stop = false;
-    void lastTitle(club.id).then((t) => !stop && setTitle(t));
+    void lastTitle(club.id).then((t) => !stop && setFallbackTitle(t));
     return () => {
       stop = true;
     };
-  }, [KIND.requiresTitle, club]);
+  }, [KIND.requiresTitle, club, ready, bundled]);
+  const title = KIND.requiresTitle ? (bundled !== undefined ? bundled : fallbackTitle) : null;
   const now = useNow(1000);
   const [tab, setTab] = useState<number | null>(null);
 
@@ -334,7 +339,12 @@ function CupView({ kind, onPick }: { kind: number; onPick: (k: number) => void }
               {roundOver(data, shown, now) ? " · encerrada" : ""}
             </p>
             {pairsKnown(data, shown, now) ? (
-              Array.from({ length: slotsIn(data, shown).length / 2 }, (_, i) => <MatchLine key={i} data={data} m={cupMatch(data, shown, i)} now={now} mySlot={mySlot} />)
+              Array.from({ length: slotsIn(data, shown).length / 2 }, (_, i) => {
+                const m = cupMatch(data, shown, i);
+                const s = scoreOf(data, m, now);
+                const sub = s.status === "vivo" ? s.clock : s.status === "fim" ? (s.pens ?? "Fim") : s.text;
+                return <MatchLine key={i} kind={data.cup.kind} m={m} mine={m.home.slot === mySlot || m.away.slot === mySlot} status={s.status} text={s.text} sub={sub} />;
+              })
             ) : (
               <p className="px-4 py-8 text-center text-sm font-bold opacity-60">
                 Os confrontos da {roundName(shown, total).toLowerCase()} saem quando a fase anterior terminar.
@@ -343,40 +353,47 @@ function CupView({ kind, onPick }: { kind: number; onPick: (k: number) => void }
           </section>
         )}
 
-        {/* regras e prêmios */}
-        <Panel>
-          <p className="t-heading">Como funciona</p>
-          <ul className="mt-2 space-y-1.5 text-sm text-white/80">
-            <li className="flex gap-2">
-              <Icon name="clock" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sun)]" /> {KIND.weekday === undefined ? "Todo dia" : `Todo ${WEEKDAYS[KIND.weekday]}`}, mata-mata de{" "}
-              {KIND.size} clubes:{" "}
-              {Array.from({ length: total }, (_, k) => `${roundName(k + 1, total).toLowerCase()} às ${hhmm(KIND.firstMinute + k * 120)}`).join(", ")} (Brasília).
-              {KIND.minDivision >= 5 && ` Só clubes da ${divisionInfo(KIND.minDivision).name}; as vagas livres ficam com a CPU das Lendas.`}
-              {KIND.minDivision > 0 && KIND.minDivision < 5 && ` Só clubes da ${divisionInfo(KIND.minDivision).name} para cima; as vagas livres ficam com a CPU da ${divisionInfo(KIND.botDivision).name}.`}
-              {KIND.requiresTitle && ` Só campeões de divisão (1º lugar numa temporada dos últimos ${TITLE_VALID_DAYS} dias); as vagas livres ficam com a CPU da ${divisionInfo(KIND.botDivision).name}.`}
-            </li>
-            <li className="flex gap-2">
-              <Icon name="whistle" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sun)]" /> Jogo único em campo neutro. Empatou, vai para os pênaltis. Dá para mexer no time ao vivo, como na liga.
-            </li>
-            <li className="flex gap-2">
-              <Icon name="shield" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sun)]" /> Seu time entra com a força da inscrição; vale a escalação salva no apito de cada jogo.
-            </li>
-          </ul>
-          <div className="mt-3 grid grid-cols-3 gap-1 text-center text-[0.68rem] font-extrabold sm:grid-cols-6">
-            {KIND.prizes
-              .map((v, reach) => [reach === total ? "Campeão" : reach === total - 1 ? "Vice" : roundName(reach + 1, total).replace("Semifinal", "Semi"), v] as const)
-              .filter(([, v]) => v > 0)
-              .reverse()
-              .map(([label, v]) => (
-              <div key={label} className="rounded-lg bg-white/10 px-1 py-1.5">
-                <p className="opacity-70">{label}</p>
-                <p className="t-num text-sm text-[var(--sun)]">{v}</p>
-              </div>
-            ))}
-          </div>
-          <p className="mt-1 text-center text-[0.68rem] font-bold text-white/50">moedas por fase alcançada (a copa não dá XP)</p>
-        </Panel>
+        {/* regras e prêmios (não muda com o relógio) */}
+        <Rules kind={kind} total={total} />
       </div>
     </div>
   );
 }
+
+const Rules = memo(function Rules({ kind, total }: { kind: number; total: number }) {
+  const KIND = cupConfig(kind);
+  return (
+    <Panel>
+      <p className="t-heading">Como funciona</p>
+      <ul className="mt-2 space-y-1.5 text-sm text-white/80">
+        <li className="flex gap-2">
+          <Icon name="clock" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sun)]" /> {KIND.weekday === undefined ? "Todo dia" : `Todo ${WEEKDAYS[KIND.weekday]}`}, mata-mata de{" "}
+          {KIND.size} clubes:{" "}
+          {Array.from({ length: total }, (_, k) => `${roundName(k + 1, total).toLowerCase()} às ${hhmm(KIND.firstMinute + k * 120)}`).join(", ")} (Brasília).
+          {KIND.minDivision >= 5 && ` Só clubes da ${divisionInfo(KIND.minDivision).name}; as vagas livres ficam com a CPU das Lendas.`}
+          {KIND.minDivision > 0 && KIND.minDivision < 5 && ` Só clubes da ${divisionInfo(KIND.minDivision).name} para cima; as vagas livres ficam com a CPU da ${divisionInfo(KIND.botDivision).name}.`}
+          {KIND.requiresTitle && ` Só campeões de divisão (1º lugar numa temporada dos últimos ${TITLE_VALID_DAYS} dias); as vagas livres ficam com a CPU da ${divisionInfo(KIND.botDivision).name}.`}
+        </li>
+        <li className="flex gap-2">
+          <Icon name="whistle" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sun)]" /> Jogo único em campo neutro. Empatou, vai para os pênaltis. Dá para mexer no time ao vivo, como na liga.
+        </li>
+        <li className="flex gap-2">
+          <Icon name="shield" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--sun)]" /> Seu time entra com a força da inscrição; vale a escalação salva no apito de cada jogo.
+        </li>
+      </ul>
+      <div className="mt-3 grid grid-cols-3 gap-1 text-center text-[0.68rem] font-extrabold sm:grid-cols-6">
+        {KIND.prizes
+          .map((v, reach) => [reach === total ? "Campeão" : reach === total - 1 ? "Vice" : roundName(reach + 1, total).replace("Semifinal", "Semi"), v] as const)
+          .filter(([, v]) => v > 0)
+          .reverse()
+          .map(([label, v]) => (
+          <div key={label} className="rounded-lg bg-white/10 px-1 py-1.5">
+            <p className="opacity-70">{label}</p>
+            <p className="t-num text-sm text-[var(--sun)]">{v}</p>
+          </div>
+        ))}
+      </div>
+      <p className="mt-1 text-center text-[0.68rem] font-bold text-white/50">moedas por fase alcançada (a copa não dá XP)</p>
+    </Panel>
+  );
+});

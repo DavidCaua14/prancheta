@@ -388,6 +388,12 @@ relógio das ligas/copas adiantado no banco para jogar uma temporada inteira. Ac
   consulta (antes 2–3). `lotCard` e `cardPotential` guardam o resultado (a tela pede a cada segundo) e o quadro de
   potencial só redesenha quando a carta muda: processamento com a tela parada caiu ~pela metade. Sem a função, cai no
   caminho antigo.
+- **Tela das copas**: `cup_bundle(tipo, pular)` (`0037_cup_bundle.sql`) devolve minha última inscrição, a copa inteira
+  (vagas, mudanças ao vivo, escalações, cartas do leilão — via `cup_data(copa)`, usada também no apito de cada fase) e
+  o último título de divisão (Supercopa), num pedido que sai junto com a leitura do clube. `pular`: copa que o aparelho
+  já tem fresca na memória (ir e voltar do jogo não relê a chave). Abrir: ~0,89 s em 4 etapas → ~0,36 s. As linhas da
+  chave recebem o placar pronto e só redesenham quando ele muda (o relógio da tela anda a cada segundo); o quadro de
+  regras não redesenha: processamento com a tela parada ~38 ms → ~25–30 ms a cada 10 s. Sem as funções, caminho antigo.
 - **Tempos** (50 simultâneos): leituras e RPCs ~0,1–0,5 s; fechar liga ~2,5 s; fechar copa ~1,3 s; cálculo da
   temporada no aparelho ~60 ms.
 

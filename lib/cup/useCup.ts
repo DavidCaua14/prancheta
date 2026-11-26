@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getMyClub, getSession, type Club } from "@/lib/club/api";
 import { MAX_TICKS, TICK_SECONDS } from "@/lib/league/core";
 import { useAutoScore } from "@/lib/score-client";
-import { closeCup, joinCup, loadCup, myLastEntry, refreshCupChanges, type CupData, type MyEntry } from "./data";
+import { closeCup, joinCup, loadCup, loadCupHome, refreshCupChanges, type CupData, type MyEntry, type Title } from "./data";
 
 /** Dados em memória (ir e voltar entre a chave e o jogo não relê o banco). */
 const memory = new Map<number, CupData>();
@@ -55,29 +55,36 @@ export function useCup(kind = 0) {
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [title, setTitle] = useState<Title | null | undefined>(undefined);
+
   const load = useCallback(
     async (opts: { fresh?: boolean } = {}) => {
       const s = await getSession();
       if (!s) return router.replace("/entrar");
+      // a inscrição e a copa só precisam do id do técnico: saem junto com o clube (cache)
+      const cached = opts.fresh ? undefined : [...memory.values()].find((d) => d.cup.kind === kind && serverNow() - d.loadedAt <= 120_000);
+      const early = loadCupHome(kind, s.user.id, cached?.cup.id);
+      early.catch(() => {});
       const c = await getMyClub(s, { fresh: opts.fresh });
       if (!c) return router.replace("/clube/novo");
       if (!c.squad) return router.replace("/peneira");
       setClub(c);
       try {
-        let e = await myLastEntry(c.id, kind);
+        let home = await early;
+        let e = home.entry;
         if (e && !e.cups.closed_at && serverNow() > new Date(e.cups.ends_at).getTime()) {
           await closeCup(e.cup_id);
-          e = await myLastEntry(c.id, kind);
+          home = await loadCupHome(kind, c.id, cached?.cup.id);
+          e = home.entry;
           setClub((await getMyClub(s, { fresh: true })) ?? c);
         }
         setEntry(e);
+        if (home.title !== undefined) setTitle(home.title);
         // mostra a chave da edição atual e da que acabou há menos de 12 h
         if (e && serverNow() < new Date(e.cups.ends_at).getTime() + 12 * 3600_000) {
-          let d = memory.get(e.cup_id);
-          if (!d || opts.fresh || serverNow() - d.loadedAt > 120_000) {
-            d = await loadCup(e.cup_id);
-            memory.set(e.cup_id, d);
-          }
+          let d = home.data ?? (cached?.cup.id === e.cup_id ? cached : undefined);
+          if (!d) d = await loadCup(e.cup_id);
+          memory.set(e.cup_id, d);
           setData(d);
         } else {
           setData(null);
@@ -156,5 +163,5 @@ export function useCup(kind = 0) {
   // ranking: pontua cada fase logo depois do apito final
   useAutoScore("copa", data?.cup.id, data?.kickoffs);
 
-  return { club, entry, data, ready, joining, error, join, reload: load, setData: update };
+  return { club, entry, data, title, ready, joining, error, join, reload: load, setData: update };
 }

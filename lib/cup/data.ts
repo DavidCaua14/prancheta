@@ -30,7 +30,33 @@ export async function joinCup(kind = 0): Promise<number> {
   return data as number;
 }
 
+type CupRaw = { cup: CupRow; entries: CupEntry[]; changes: ChangeRow[]; logs: LogRow[]; lots: LotRow[] };
+export type Title = { closed_at: string; division: number };
+export type CupHome = { entry: MyEntry | null; data: CupData | null | undefined; title: Title | null | undefined };
+
+/**
+ * Abertura da tela: minha última inscrição + a copa dela (num pedido só,
+ * cup_bundle) + o último título de divisão. `skip`: copa que o aparelho já tem
+ * fresca na memória (não vem de novo). Sem a função no banco, cai no caminho
+ * antigo (data = undefined: quem chama lê a copa à parte; title = undefined).
+ */
+export async function loadCupHome(kind: number, clubId: string, skip?: number): Promise<CupHome> {
+  const { data, error } = await supabase().rpc("cup_bundle", { p_kind: kind, p_skip: skip ?? null });
+  if (!error && data && "entry" in data) {
+    const b = data as { entry: MyEntry | null; data: CupRaw | null; title: Title | null };
+    return { entry: b.entry, data: b.data ? buildCupData(b.data) : null, title: b.title };
+  }
+  return { entry: await myLastEntry(clubId, kind), data: undefined, title: undefined };
+}
+
+/** A copa inteira (vagas, mudanças ao vivo, escalações e cartas) num pedido só. */
 export async function loadCup(cupId: number): Promise<CupData> {
+  const { data, error } = await supabase().rpc("cup_data", { p_cup: cupId });
+  if (!error && data?.cup) return buildCupData(data as CupRaw);
+  return loadCupParts(cupId);
+}
+
+async function loadCupParts(cupId: number): Promise<CupData> {
   const sb = supabase();
   const [cup, entries, changes] = await Promise.all([
     sb.from("cups").select(CUP_COLS).eq("id", cupId).single(),
@@ -69,7 +95,7 @@ export function sendCupChange(data: CupData, round: number, changes: string[]) {
 }
 
 /** Último título de divisão (1º lugar) do clube: quando a temporada fechou, ou null. */
-export async function lastTitle(clubId: string): Promise<{ closed_at: string; division: number } | null> {
+export async function lastTitle(clubId: string): Promise<Title | null> {
   const { data, error } = await supabase()
     .from("club_seasons")
     .select("division,leagues!inner(closed_at)")
