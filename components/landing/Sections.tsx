@@ -352,7 +352,7 @@ export function Friends() {
   return (
     <Section id="amigos" tone="pink">
       <div className="grid items-center gap-10 md:grid-cols-2">
-        <div className="text-center md:text-left">
+        <div className="min-w-0 text-center md:text-left">
           <span className="tag bg-white">Amistosos</span>
           <h2 className="t-display mt-4 text-3xl sm:text-5xl">
             Desafie seus <span className="text-[var(--sun)]">amigos</span>
@@ -363,7 +363,7 @@ export function Friends() {
           </p>
         </div>
 
-        <div className="panel mx-auto w-full max-w-md p-5 sm:p-6">
+        <div className="panel mx-auto w-full min-w-0 max-w-md p-5 sm:p-6">
           <p className="text-center text-xs font-extrabold uppercase tracking-[0.15em] opacity-55">Convite de amistoso</p>
           <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
             <div className="flex flex-col items-center">
