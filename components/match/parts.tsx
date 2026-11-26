@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import { CrestSvg } from "@/components/club/CrestSvg";
 import { EventIcon, Icon } from "@/components/ui/Icon";
 import type { Crest } from "@/lib/club/identity";
@@ -96,7 +96,17 @@ export type FeedTeam = { tag: string; crest: Crest };
  * quem fez a jogada; lances neutros (apito, intervalo) deixam o espaço vazio
  * para tudo ficar alinhado.
  */
-export function Feed({ events, teams, mine }: { events: MatchEvent[]; teams: [FeedTeam, FeedTeam]; mine?: 0 | 1 }) {
+type FeedProps = { events: MatchEvent[]; teams: [FeedTeam, FeedTeam]; mine?: 0 | 1 };
+
+/** Mesmos lances (os mesmos objetos, na mesma ordem)? */
+function sameEvents(a: MatchEvent[], b: MatchEvent[]) {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
+
+export const Feed = memo(function Feed({ events, teams, mine }: FeedProps) {
   return (
     <ol className="overflow-hidden rounded-[20px] border-[3px] border-[var(--ink)] bg-[var(--paper)] text-[var(--ink)] shadow-[0_5px_0_var(--ink)]" aria-label="Narração">
       {events.length === 0 && <li className="px-4 py-6 text-center text-sm opacity-60">A narração aparece aqui, lance a lance.</li>}
@@ -128,9 +138,18 @@ export function Feed({ events, teams, mine }: { events: MatchEvent[]; teams: [Fe
       })}
     </ol>
   );
-}
+},
+// a tela da partida redesenha várias vezes por segundo (relógio); a narração só quando chega lance novo
+(a, b) =>
+  a.mine === b.mine &&
+  a.teams[0].tag === b.teams[0].tag &&
+  a.teams[1].tag === b.teams[1].tag &&
+  a.teams[0].crest === b.teams[0].crest &&
+  a.teams[1].crest === b.teams[1].crest &&
+  sameEvents(a.events, b.events));
 
-export function StatsPanel({ rows }: { rows: [string, string | number, string | number][] }) {
+type StatRows = [string, string | number, string | number][];
+export const StatsPanel = memo(function StatsPanel({ rows }: { rows: StatRows }) {
   return (
     <div className="rounded-[20px] border-[3px] border-[var(--ink)] bg-[var(--night-2)] p-4 text-white shadow-[0_5px_0_var(--ink)]">
       <p className="t-heading mb-3">Estatísticas</p>
@@ -143,7 +162,7 @@ export function StatsPanel({ rows }: { rows: [string, string | number, string | 
       ))}
     </div>
   );
-}
+}, (a, b) => a.rows.length === b.rows.length && a.rows.every((r, i) => r[0] === b.rows[i][0] && r[1] === b.rows[i][1] && r[2] === b.rows[i][2]));
 
 /** Botão quadrado só com ícone (barras de controle no celular). */
 export function IconButton({

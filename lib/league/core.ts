@@ -182,7 +182,18 @@ const resultCache = new WeakMap<LeagueData, Map<string, LeagueMatch>>();
  * outras (só os jogos daquela rodada dependem delas). Sem isso, reler as
  * mudanças a cada 10 s durante o jogo resimulava a temporada inteira.
  */
+/** As mudanças da rodada lidas agora são as mesmas que já estavam na memória? */
+export function sameRoundChanges(have: ChangeRow[], round: number, rows: ChangeRow[]) {
+  const key = (c: ChangeRow) => `${c.club_id}|${c.tick}|${c.change}`;
+  const old = have.filter((c) => c.round === round).map(key).sort();
+  if (old.length !== rows.length) return false;
+  const now = rows.map(key).sort();
+  return old.every((k, i) => k === now[i]);
+}
+
 export function withRoundChanges(data: LeagueData, round: number, rows: ChangeRow[]): LeagueData {
+  // nada mudou: devolve o mesmo objeto (a tela não recalcula nem redesenha o jogo)
+  if (sameRoundChanges(data.changes, round, rows)) return data;
   const next: LeagueData = { ...data, changes: [...data.changes.filter((c) => c.round !== round), ...rows] };
   const old = resultCache.get(data);
   if (old) resultCache.set(next, new Map([...old].filter(([k]) => !k.startsWith(`${round}:`))));

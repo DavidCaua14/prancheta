@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { memo, useId } from "react";
 import { PALETTE, type Crest } from "@/lib/club/identity";
 
 const INK = "#1b1038";
@@ -122,7 +122,8 @@ function Symbol({ symbol, color, tag }: { symbol: number; color: string; tag: st
 type Props = { crest: Crest; tag?: string; className?: string; title?: string };
 
 /** Escudo do clube desenhado a partir do código compacto. */
-export function CrestSvg({ crest, tag = "", className, title }: Props) {
+/** Escudo (memo: listas e placares redesenham várias vezes por segundo). */
+export const CrestSvg = memo(function CrestSvg({ crest, tag = "", className, title }: Props) {
   const id = useId().replace(/:/g, "");
   const shape = SHAPES[crest.shape] ?? SHAPES[0];
   const c1 = PALETTE[crest.c1].hex;
@@ -152,4 +153,4 @@ export function CrestSvg({ crest, tag = "", className, title }: Props) {
       </g>
     </svg>
   );
-}
+});

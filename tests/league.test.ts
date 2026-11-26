@@ -107,3 +107,15 @@ test("escalação salva há muito tempo (antes da janela antiga de 11 dias) vale
   assert.equal(mine(withLog).formation, 9);
   assert.notEqual(mine(without).formation, 9);
 });
+
+test("reler mudanças iguais não recalcula o jogo ao vivo (mesmo objeto); mudança nova recalcula", async () => {
+  const { withRoundChanges } = await import("@/lib/league/core");
+  const d = data(7);
+  const rows = [{ round: 3, club_id: "a", tick: 40, change: "p3" }];
+  const d1 = withRoundChanges(d, 3, rows);
+  assert.notEqual(d1, d);
+  // mesma lista, em outra ordem e outros objetos: nada mudou
+  assert.equal(withRoundChanges(d1, 3, [{ ...rows[0] }]), d1);
+  assert.notEqual(withRoundChanges(d1, 3, [...rows, { round: 3, club_id: "a", tick: 44, change: "t2" }]), d1);
+  assert.notEqual(withRoundChanges(d1, 3, []), d1);
+});

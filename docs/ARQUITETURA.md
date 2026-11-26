@@ -394,6 +394,13 @@ relógio das ligas/copas adiantado no banco para jogar uma temporada inteira. Ac
   já tem fresca na memória (ir e voltar do jogo não relê a chave). Abrir: ~0,89 s em 4 etapas → ~0,36 s. As linhas da
   chave recebem o placar pronto e só redesenham quando ele muda (o relógio da tela anda a cada segundo); o quadro de
   regras não redesenha: processamento com a tela parada ~38 ms → ~25–30 ms a cada 10 s. Sem as funções, caminho antigo.
+- **Tela da partida** (liga, copa, amistoso e treino): o relógio redesenha a tela 4–8× por segundo, mas a narração
+  (`Feed`), as estatísticas (`StatsPanel`) e os escudos (`CrestSvg`) são `memo` e só redesenham quando muda algo (lance
+  novo). O quadro animado (`MatchBoard`) só escreve no SVG o que se moveu (posição com 1 casa decimal, opacidade só ao
+  trocar) e só re-renderiza cartões/“GOL!” quando eles mudam. Reler as mudanças ao vivo a cada 10 s não recalcula o jogo
+  se nada mudou (`sameRoundChanges`: `withRoundChanges`/`withCupRoundChanges` devolvem o mesmo objeto). Celular, jogo
+  ao vivo, 10 s: só narração ~85 → ~42 ms de processamento; câmera ligada ~225 → ~155 ms de processamento e
+  ~115 → ~45 ms de estilo.
 - **Tempos** (50 simultâneos): leituras e RPCs ~0,1–0,5 s; fechar liga ~2,5 s; fechar copa ~1,3 s; cálculo da
   temporada no aparelho ~60 ms.
 

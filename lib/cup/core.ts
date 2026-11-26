@@ -14,7 +14,7 @@ import { LENDAS_CLUBS, SERIE_A_CLUBS, SERIE_B_CLUBS, SERIE_C_CLUBS, SERIE_D_CLUB
 import { clubCards } from "@/lib/cards/squad";
 import { decodeCrest, decodeKit } from "@/lib/club/identity";
 import { botTeam, tagOf } from "@/lib/league/bots";
-import { addGame, emptyStats, type ChangeRow, type LogRow, type LotRow, type MatchStats, type TeamView } from "@/lib/league/core";
+import { addGame, emptyStats, sameRoundChanges, type ChangeRow, type LogRow, type LotRow, type MatchStats, type TeamView } from "@/lib/league/core";
 import { simulate, type Change, type MatchResult, type TeamInput } from "@/lib/sim/engine";
 import { lineupFor, type Lineup } from "@/lib/tactics/lineup";
 import { shootout, type Shootout } from "./shootout";
@@ -241,6 +241,7 @@ const cache = new WeakMap<CupData, Map<string, CupMatch>>();
  * fases anteriores (as seguintes dependem de quem venceu, então recalculam).
  */
 export function withCupRoundChanges(data: CupData, round: number, rows: ChangeRow[]): CupData {
+  if (sameRoundChanges(data.changes, round, rows)) return data;
   const next: CupData = { ...data, changes: [...data.changes.filter((c) => c.round !== round), ...rows] };
   const old = cache.get(data);
   if (old) cache.set(next, new Map([...old].filter(([k]) => Number(k.split(":")[0]) < round)));

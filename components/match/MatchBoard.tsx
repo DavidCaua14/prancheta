@@ -26,6 +26,9 @@ export function MatchBoard({ plan, getTime, labels }: Props) {
   const shown = useRef<{ x: number; y: number }[]>([]);
   const ballShown = useRef<{ x: number; y: number } | null>(null);
   const [marks, setMarks] = useState<{ key: string; list: BoardFrame["overlays"]; flash: BoardFrame["flash"]; flipped: boolean }>({ key: "", list: [], flash: null, flipped: false });
+  /** último valor escrito em cada elemento (para não reescrever o mesmo) */
+  const writes = useRef<{ [i: number]: string; ball: string; pass: string }>({ ball: "", pass: "" });
+  const marksKey = useRef("");
   const getTimeRef = useRef(getTime);
   useEffect(() => {
     getTimeRef.current = getTime;
@@ -36,6 +39,8 @@ export function MatchBoard({ plan, getTime, labels }: Props) {
     let last = performance.now();
     shown.current = [];
     ballShown.current = null;
+    writes.current = { ball: "", pass: "" };
+    marksKey.current = "";
     const loop = (now: number) => {
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
@@ -48,8 +53,14 @@ export function MatchBoard({ plan, getTime, labels }: Props) {
         shown.current[i] = cur;
         const el = dotRefs.current[i];
         if (el) {
-          el.setAttribute("transform", `translate(${cur.x.toFixed(2)} ${cur.y.toFixed(2)})`);
-          el.style.opacity = d.hidden ? "0" : "1";
+          // só mexe no que mudou: parado não custa nada para o navegador redesenhar
+          const tr = `translate(${cur.x.toFixed(1)} ${cur.y.toFixed(1)})`;
+          if (writes.current[i] !== tr) {
+            writes.current[i] = tr;
+            el.setAttribute("transform", tr);
+          }
+          const op = d.hidden ? "0" : "1";
+          if (el.style.opacity !== op) el.style.opacity = op;
         }
       });
       // bola: segue o roteiro; só suaviza quando o roteiro "pula" (emenda de lances)
@@ -58,20 +69,31 @@ export function MatchBoard({ plan, getTime, labels }: Props) {
       const kb = jump > 5 ? 1 - Math.exp(-dt * 10) : 1;
       const b = { x: pb.x + (fr.ball.x - pb.x) * kb, y: pb.y + (fr.ball.y - pb.y) * kb };
       ballShown.current = b;
-      ballRef.current?.setAttribute("transform", `translate(${b.x.toFixed(2)} ${b.y.toFixed(2)})`);
+      const bt = `translate(${b.x.toFixed(1)} ${b.y.toFixed(1)})`;
+      if (writes.current.ball !== bt) {
+        writes.current.ball = bt;
+        ballRef.current?.setAttribute("transform", bt);
+      }
       const pl = passRef.current;
       if (pl) {
-        if (fr.pass) {
-          pl.setAttribute("x1", fr.pass.x1.toFixed(2));
-          pl.setAttribute("y1", fr.pass.y1.toFixed(2));
-          pl.setAttribute("x2", fr.pass.x2.toFixed(2));
-          pl.setAttribute("y2", fr.pass.y2.toFixed(2));
-          pl.style.opacity = "0.9";
-        } else pl.style.opacity = "0";
+        const pass = fr.pass ? `${fr.pass.x1.toFixed(1)},${fr.pass.y1.toFixed(1)},${fr.pass.x2.toFixed(1)},${fr.pass.y2.toFixed(1)}` : "";
+        if (writes.current.pass !== pass) {
+          writes.current.pass = pass;
+          if (fr.pass) {
+            pl.setAttribute("x1", fr.pass.x1.toFixed(1));
+            pl.setAttribute("y1", fr.pass.y1.toFixed(1));
+            pl.setAttribute("x2", fr.pass.x2.toFixed(1));
+            pl.setAttribute("y2", fr.pass.y2.toFixed(1));
+            pl.style.opacity = "0.9";
+          } else pl.style.opacity = "0";
+        }
       }
       // cartões, substituições e "GOL!" mudam pouco: só re-renderiza quando mudam
       const key = `${fr.flipped ? 1 : 0}|${fr.flash ?? ""}|${fr.overlays.map((o) => `${o.kind}${o.team}${Math.round(o.x)}${Math.round(o.y)}`).join(",")}`;
-      setMarks((m) => (m.key === key ? m : { key, list: fr.overlays, flash: fr.flash, flipped: fr.flipped }));
+      if (key !== marksKey.current) {
+        marksKey.current = key;
+        setMarks({ key, list: fr.overlays, flash: fr.flash, flipped: fr.flipped });
+      }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
