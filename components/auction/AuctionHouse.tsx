@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { GameCard } from "@/components/cards/GameCard";
 import { WinReveal } from "@/components/auction/WinReveal";
 import { cardPotential, potentialLabel } from "@/lib/cards/evolution";
 import { CrestSvg } from "@/components/club/CrestSvg";
 import { ArtImg } from "@/components/ui/ArtImg";
 import { Icon } from "@/components/ui/Icon";
-import { loadBidders, loadLots, loadMine, placeBid, type Bidder, type BidError, type LotState } from "@/lib/auction/data";
+import { loadAuction, placeBid, type AuctionBundle, type Bidder, type BidError, type LotState } from "@/lib/auction/data";
 import {
   BID_WINDOW_SECONDS,
   LOTS_PER_ROUND,
@@ -67,7 +67,7 @@ function writeSeen(clubId: string, seen: Set<string>) {
 const POT_STYLE = { alto: "bg-[var(--grass)] text-[var(--ink)]", médio: "bg-[var(--sun)] text-[var(--ink)]", baixo: "bg-[var(--ink)]/15 text-[var(--ink)]" } as const;
 
 /** Potencial na vitrine do lote: até onde a carta chega (overall e nível). */
-function PotentialStrip({ card }: { card: BaseCard }) {
+const PotentialStrip = memo(function PotentialStrip({ card }: { card: BaseCard }) {
   const pot = cardPotential(card);
   const label = potentialLabel(pot.grade) as keyof typeof POT_STYLE;
   return (
@@ -89,7 +89,7 @@ function PotentialStrip({ card }: { card: BaseCard }) {
       </div>
     </div>
   );
-}
+});
 
 /** Potencial em destaque na folha de lance: barras de overall e de nível contra o teto da raridade. */
 function PotentialPanel({ card }: { card: BaseCard }) {
@@ -164,15 +164,15 @@ export function AuctionHouse() {
   const [seen, setSeen] = useState<Set<string> | null>(null);
   const round = now ? roundAt(now) : null;
 
-  const refresh = useCallback(async (r: number, c: Club) => {
+  // um pedido só: lotes, meus lances, quem lidera e as moedas (auction_bundle)
+  const refresh = useCallback(async (r: number, c: Pick<Club, "id">, ready?: Promise<AuctionBundle>) => {
     const at = serverNow();
-    const [cur, my] = await Promise.all([loadLots([r, r - 1]), loadMine(c.id)]);
-    const map = new Map(cur.map((l) => [key(l.round, l.idx), l]));
-    for (const l of my) map.set(key(l.round, l.idx), l);
-    setLots(map);
-    setMine(my);
+    const b = await (ready ?? loadAuction(r, c.id));
+    setLots(new Map(b.lots.map((l) => [key(l.round, l.idx), l])));
+    setMine(b.mine);
     setMineAt(at);
-    setNames(new Map(await loadBidders(cur.map((l) => l.best_club).filter((x): x is string => !!x))));
+    setNames(b.bidders);
+    if (b.coins !== null) setClub((cur) => (cur && cur.coins !== b.coins ? { ...cur, coins: b.coins! } : cur));
   }, []);
 
   // carga inicial
@@ -182,14 +182,18 @@ export function AuctionHouse() {
     (async () => {
       const s = await getSession();
       if (!s) return router.replace("/entrar");
-      const c = await getMyClub(s, { fresh: true });
+      // o leilão só precisa do id (já na sessão): sai junto com a leitura do clube
+      const early = loadAuction(round, s.user.id);
+      early.catch(() => {});
+      // clube guardado no aparelho (escudo, uniforme): as moedas vêm junto com os lotes
+      const c = await getMyClub(s);
       if (!c) return router.replace("/clube/novo");
       if (!c.squad) return router.replace("/peneira");
       if (stop) return;
       setClub(c);
       // 1ª vez neste aparelho: só comemora o que foi arrematado nas últimas 6 horas
       setSeen((prev) => prev ?? readSeen(c.id) ?? new Set<string>(["__init__"]));
-      await refresh(round, c).catch(() => setToast("Não deu para carregar o leilão."));
+      await refresh(round, c, early).catch(() => setToast("Não deu para carregar o leilão."));
     })();
     return () => {
       stop = true;
@@ -288,14 +292,9 @@ export function AuctionHouse() {
       setLots((m) => new Map(m).set(key(res.lot.round, res.lot.idx), res.lot));
       setOpen(null);
       setToast("Lance dado! Você tem o maior lance.");
-      const s = await getSession();
-      if (s) {
-        const c = await getMyClub(s, { fresh: true });
-        if (c) {
-          setClub(c);
-          void refresh(round, c).catch(() => {});
-        }
-      }
+      void refresh(round, club).catch(() => {});
+      // atualiza o clube guardado no aparelho (moedas nas outras telas), sem esperar
+      void getSession().then((s) => s && getMyClub(s, { fresh: true }));
     } else {
       setToast(BID_ERRORS[res.error]);
       if (res.error === "min" || res.error === "closed") void refresh(round, club).catch(() => {});

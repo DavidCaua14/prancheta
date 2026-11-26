@@ -382,6 +382,12 @@ relógio das ligas/copas adiantado no banco para jogar uma temporada inteira. Ac
   se a função faltar, o app cai no caminho antigo). Durante o jogo ao vivo, reler as mudanças (`withRoundChanges` /
   `withCupRoundChanges`) mantém os jogos já calculados e recalcula só a rodada (na copa, a fase e as seguintes):
   ~78 ms → ~4 ms a cada 10 s. Teste confere que o resultado é idêntico ao cálculo do zero.
+- **Tela do leilão**: `auction_bundle(rodada)` (`0036_auction_bundle.sql`) devolve lotes (rodada atual, anterior e os
+  em disputa), meus lances, quem lidera e as moedas num pedido; sai junto com a leitura do clube (só precisa do id da
+  sessão). Abrir: lotes e lances juntos em ~0,32 s (antes lances em ~0,43 s, 6 consultas em 3 etapas); a cada 8 s, 1
+  consulta (antes 2–3). `lotCard` e `cardPotential` guardam o resultado (a tela pede a cada segundo) e o quadro de
+  potencial só redesenha quando a carta muda: processamento com a tela parada caiu ~pela metade. Sem a função, cai no
+  caminho antigo.
 - **Tempos** (50 simultâneos): leituras e RPCs ~0,1–0,5 s; fechar liga ~2,5 s; fechar copa ~1,3 s; cálculo da
   temporada no aparelho ~60 ms.
 

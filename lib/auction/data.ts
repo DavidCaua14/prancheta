@@ -40,6 +40,27 @@ export async function loadBidders(ids: string[]): Promise<Map<string, Bidder>> {
   return bidders;
 }
 
+export type AuctionBundle = { lots: LotState[]; mine: LotState[]; bidders: Map<string, Bidder>; coins: number | null };
+
+/**
+ * Tela do leilão num pedido só (auction_bundle): lotes da rodada atual e da
+ * anterior + os ainda em disputa, os meus lances, quem lidera e as minhas
+ * moedas. Se a função faltar, cai no caminho antigo (várias leituras).
+ */
+export async function loadAuction(round: number, clubId: string): Promise<AuctionBundle> {
+  const { data, error } = await supabase().rpc("auction_bundle", { p_round: round });
+  if (!error && data?.lots) {
+    const b = data as { lots: LotState[]; bidders: Bidder[]; coins: number | null };
+    for (const x of b.bidders) bidders.set(x.id, x);
+    const mine = b.lots.filter((l) => l.best_club === clubId).sort((a, c) => c.ends_at.localeCompare(a.ends_at));
+    const lots = b.lots.filter((l) => l.round >= round - 1 || new Date(l.ends_at).getTime() > Date.now() || l.best_club === clubId);
+    return { lots, mine, bidders: new Map(bidders), coins: b.coins };
+  }
+  const [cur, mine] = await Promise.all([loadLots([round, round - 1]), loadMine(clubId)]);
+  const names = await loadBidders(cur.map((l) => l.best_club).filter((x): x is string => !!x));
+  return { lots: [...cur, ...mine], mine, bidders: new Map(names), coins: null };
+}
+
 export type BidError = "min" | "leader" | "coins" | "full" | "closed" | "network";
 
 export async function placeBid(round: number, idx: number, amount: number): Promise<{ lot: LotState } | { error: BidError; detail?: string }> {

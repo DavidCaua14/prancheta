@@ -65,8 +65,20 @@ export function roundEnd(round: number) {
 
 const POSITIONS: Position[] = ["GOL", "ZAG", "ZAG", "LD", "LE", "VOL", "MC", "MEI", "PD", "PE", "ATA", "ATA"];
 
-/** A carta do lote (determinística). */
+const lotCache = new Map<string, BaseCard>();
+
+/** A carta do lote (determinística; guardada depois da 1ª vez — a tela pede a cada segundo). */
 export function lotCard(round: number, idx: number): BaseCard {
+  const k = `${round}:${idx}`;
+  const hit = lotCache.get(k);
+  if (hit) return hit;
+  if (lotCache.size > 2000) lotCache.clear();
+  const card = makeLotCard(round, idx);
+  lotCache.set(k, card);
+  return card;
+}
+
+function makeLotCard(round: number, idx: number): BaseCard {
   const seed = hash32(`leilao:v1:${round}:${idx}`);
   const position = POSITIONS[seed % POSITIONS.length];
   const tier = lotTier(round, idx);

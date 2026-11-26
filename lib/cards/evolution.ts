@@ -97,7 +97,20 @@ const MIN_GROWTH = 2;
  * Potencial da carta. `card` precisa estar no nível 1 (como sai do gerador):
  * o overall dela é o ponto de partida.
  */
+const potentialCache = new Map<string, Potential>();
+
 export function cardPotential(card: BaseCard): Potential {
+  // mesma carta (seed, chave, overall e idade de partida) → mesmo potencial
+  const ck = `${card.seed}:${card.key}:${card.overall}:${card.age}:${card.tier ?? "base"}`;
+  const hit = potentialCache.get(ck);
+  if (hit) return hit;
+  if (potentialCache.size > 5000) potentialCache.clear();
+  const pot = computePotential(card);
+  potentialCache.set(ck, pot);
+  return pot;
+}
+
+function computePotential(card: BaseCard): Potential {
   const tier = CARD_TIERS[card.tier ?? "base"];
   const r = rng(hash32(`potencial:${card.seed}:${card.key}`));
   // nota de potencial: idade + sorteio (soma de 3 → concentra no meio, extremos raros)
