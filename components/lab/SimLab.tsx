@@ -112,7 +112,13 @@ function Lab({ opts }: { opts: Opts }) {
 passes ${seg.passes.map((p) => `${p.at.toFixed(2)}→${p.to}`).join(" ")}  bola ${fr.ball.x.toFixed(1)},${fr.ball.y.toFixed(1)}${fr.flipped ? " (2º tempo)" : ""}`}
             </pre>
           )}
-          <Feed events={[...visible].reverse()} tags={[home.tag, away.tag]} />
+          <Feed
+            events={[...visible].reverse()}
+            teams={[
+              { tag: home.tag, crest: home.crest },
+              { tag: away.tag, crest: away.crest },
+            ]}
+          />
         </section>
         <aside className="flex flex-col gap-4">
           <StatsPanel

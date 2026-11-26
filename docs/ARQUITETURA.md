@@ -355,6 +355,9 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
   `:LWT`; mudanças ao vivo `l0-2`, `w0-2`, `t0-2` (migração 0021).
 - **Testes de encaixe** (`tests/tactics.test.ts`): times montados com perfis claros — cada opção vence quando o
   elenco encaixa e perde quando não encaixa; num time comum nenhuma domina (diferença < 0,12 gol/jogo).
+- **Narração (padrão do jogo)**: `Feed` (`components/match/parts.tsx`) recebe `teams` (sigla + escudo) e cada
+  lance de um time mostra o escudo, o ícone do lance e a sigla; lances neutros deixam a coluna vazia. Liga, copas,
+  amistosos, treino e laboratório usam o mesmo componente.
 - **Câmera opcional**: por padrão a partida mostra só placar, narração e estatísticas. O botão de câmera
   (barra de baixo no celular; acima da narração na liga/copa no desktop; nos controles do treino) liga o quadro
   animado. A escolha fica no `localStorage` (`prancheta:camera`, via `lib/sim/useCamera.ts`); com a câmera

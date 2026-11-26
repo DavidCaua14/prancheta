@@ -359,7 +359,14 @@ export function MatchViewer() {
               />
             </div>
           )}
-          <Feed events={feed} tags={[club.tag, rival.tag]} mine={0} />
+          <Feed
+            events={feed}
+            teams={[
+              { tag: club.tag, crest: decodeCrest(club.crest) },
+              { tag: rival.tag, crest: rival.crest },
+            ]}
+            mine={0}
+          />
         </section>
 
         {/* lado: estatísticas e tática (desktop) */}

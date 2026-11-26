@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { MatchBoard } from "@/components/match/MatchBoard";
 import { buildPlan, scoreAtTime, visibleEvents } from "@/lib/sim/board";
-import { CameraButton, Feed, Scoreboard, StatsPanel, liveStats, tickClock } from "@/components/match/parts";
+import { CameraButton, Feed, Scoreboard, type FeedTeam, StatsPanel, liveStats, tickClock } from "@/components/match/parts";
 import { Icon } from "@/components/ui/Icon";
 import { fitLevel, FORMATIONS } from "@/lib/tactics/formations";
 import { LINES, POSTURES, TEMPOS, WIDTHS } from "@/lib/tactics/lineup";
@@ -127,7 +127,10 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
     setSubOut(null);
   }
 
-  const tags: [string, string] = [m.home.tag, m.away.tag];
+  const feedTeams: [FeedTeam, FeedTeam] = [
+    { tag: m.home.tag, crest: m.home.crest },
+    { tag: m.away.tag, crest: m.away.crest },
+  ];
   const feed = [...visible].reverse();
 
   return (
@@ -184,7 +187,7 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
           )}
           {!before && camera && <MatchBoard plan={plan} getTime={getTime} labels={labels} />}
           {done && after}
-          {!before && <Feed events={feed} tags={tags} mine={mySide ?? undefined} />}
+          {!before && <Feed events={feed} teams={feedTeams} mine={mySide ?? undefined} />}
         </section>
 
         <aside className="flex flex-col gap-4">

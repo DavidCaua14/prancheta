@@ -88,7 +88,15 @@ export function Scoreboard({
   );
 }
 
-export function Feed({ events, tags, mine }: { events: MatchEvent[]; tags: [string, string]; mine?: 0 | 1 }) {
+/** Time na narração: escudo + sigla (padrão do jogo em toda lista de lances). */
+export type FeedTeam = { tag: string; crest: Crest };
+
+/**
+ * Narração lance a lance. Cada lance de um time mostra o escudo e a sigla de
+ * quem fez a jogada; lances neutros (apito, intervalo) deixam o espaço vazio
+ * para tudo ficar alinhado.
+ */
+export function Feed({ events, teams, mine }: { events: MatchEvent[]; teams: [FeedTeam, FeedTeam]; mine?: 0 | 1 }) {
   return (
     <ol className="overflow-hidden rounded-[20px] border-[3px] border-[var(--ink)] bg-[var(--paper)] text-[var(--ink)] shadow-[0_5px_0_var(--ink)]" aria-label="Narração">
       {events.length === 0 && <li className="px-4 py-6 text-center text-sm opacity-60">A narração aparece aqui, lance a lance.</li>}
@@ -102,11 +110,16 @@ export function Feed({ events, tags, mine }: { events: MatchEvent[]; tags: [stri
               goal ? (good ? "bg-[var(--grass)]/30 font-extrabold" : "bg-[var(--red)]/15 font-extrabold") : e.type === "halftime" || e.type === "fulltime" ? "bg-[var(--cream)] font-bold" : ""
             }`}
           >
-            <span className="t-num w-10 shrink-0 text-[var(--hot)] sm:w-11">{e.type === "kickoff" && e.tick === 0 ? "" : clockText(e)}</span>
+            <span className="t-num w-9 shrink-0 text-[var(--hot)] sm:w-11">{e.type === "kickoff" && e.tick === 0 ? "" : clockText(e)}</span>
+            {e.team !== undefined ? (
+              <CrestSvg crest={teams[e.team].crest} tag={teams[e.team].tag} className="-my-0.5 h-6 w-[22px] shrink-0" />
+            ) : (
+              <span className="w-[22px] shrink-0" aria-hidden />
+            )}
             <EventIcon type={e.type} className="mt-px h-[18px] w-[18px] shrink-0" />
             <span className="min-w-0 flex-1">
               {e.team !== undefined && (
-                <span className={`mr-1.5 rounded px-1 text-[0.62rem] font-extrabold ${e.team === 0 ? "bg-[var(--sky)]" : "bg-[var(--hot)] text-white"}`}>{tags[e.team]}</span>
+                <span className={`mr-1.5 rounded px-1 text-[0.62rem] font-extrabold ${e.team === 0 ? "bg-[var(--sky)]" : "bg-[var(--hot)] text-white"}`}>{teams[e.team].tag}</span>
               )}
               {e.text}
             </span>
