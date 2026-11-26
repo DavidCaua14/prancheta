@@ -7,6 +7,7 @@ export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
  */
 export const RELEASE_NOTES: string[] = [
   "Novo: amistosos entre amigos — marque o horário, mande o link no grupo e jogue ao vivo",
+  "Correção: clube que não mexe na escalação há dias agora joga com a escalação salva (não a automática)",
   "Nova: Copa das Lendas — todo sábado, 32 clubes, só para a Liga das Lendas",
   "Partidas abrem no placar e na narração; toque na câmera para ver os lances em campo",
 ];

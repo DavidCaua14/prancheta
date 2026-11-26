@@ -5,7 +5,7 @@
  * ./core — código puro, que também roda no servidor para fechar a temporada.
  */
 import { supabase } from "@/lib/supabase/client";
-import { buildLeagueData, CLUB_COLS, LEAGUE_COLS, LOT_COLS, logsSince, type ChangeRow, type LeagueData, type LeagueRow, type LogRow, type LeagueClub, type LotRow } from "./core";
+import { buildLeagueData, CLUB_COLS, LEAGUE_COLS, LOT_COLS, logsFrom, type ChangeRow, type LeagueData, type LeagueRow, type LogRow, type LeagueClub, type LotRow } from "./core";
 
 export * from "./core";
 
@@ -29,7 +29,7 @@ export async function loadLeague(leagueId: number): Promise<LeagueData> {
   const league = lg.data as LeagueRow;
   const ids = (clubs.data ?? []).map((c) => c.id);
   const logs = ids.length
-    ? await sb.from("lineup_log").select("club_id,at,lineup").in("club_id", ids).gte("at", logsSince(league)).order("at")
+    ? await sb.rpc("lineup_log_window", { p_clubs: ids, p_from: logsFrom(league) })
     : { data: [], error: null };
   if (logs.error) throw logs.error;
   const lots = ids.length

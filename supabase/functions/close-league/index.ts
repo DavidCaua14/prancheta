@@ -10,7 +10,7 @@
  * Este arquivo é empacotado com esbuild (npm run fn:build) porque importa
  * o código do jogo; o deploy envia o pacote pronto (npm run fn:deploy).
  */
-import { buildLeagueData, CLUB_COLS, clubLeagueStats, clubMatchXp, finalCode, finalTable, LEAGUE_COLS, LOT_COLS, logsSince, type LeagueClub, type LeagueRow, type LotRow } from "../../../lib/league/core";
+import { buildLeagueData, CLUB_COLS, clubLeagueStats, clubMatchXp, finalCode, finalTable, LEAGUE_COLS, LOT_COLS, logsFrom, type LeagueClub, type LeagueRow, type LotRow } from "../../../lib/league/core";
 
 declare const Deno: { env: { get(k: string): string | undefined }; serve(h: (req: Request) => Response | Promise<Response>): void };
 
@@ -63,9 +63,10 @@ Deno.serve(async (req) => {
     ]);
     const ids = clubs.map((c) => c.id);
     const logs = ids.length
-      ? await rest<{ club_id: string; at: string; lineup: string }[]>(
-          `lineup_log?club_id=in.(${ids.join(",")})&at=gte.${encodeURIComponent(logsSince(league))}&select=club_id,at,lineup&order=at`,
-        )
+      ? await rest<{ club_id: string; at: string; lineup: string }[]>("rpc/lineup_log_window", {
+          method: "POST",
+          body: JSON.stringify({ p_clubs: ids, p_from: logsFrom(league) }),
+        })
       : [];
     const lots = ids.length
       ? await rest<LotRow[]>(`auction_lots?best_club=in.(${ids.join(",")})&ends_at=lt.${encodeURIComponent(new Date().toISOString())}&select=${LOT_COLS}`)

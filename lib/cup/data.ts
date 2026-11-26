@@ -42,10 +42,9 @@ export async function loadCup(cupId: number): Promise<CupData> {
   const row = cup.data as CupRow;
   const list = (entries.data ?? []) as unknown as CupEntry[];
   const ids = list.map((e) => e.club_id);
-  const since = new Date(new Date(row.starts_at).getTime() - 11 * 86400_000).toISOString();
   const [logs, lots] = ids.length
     ? await Promise.all([
-        sb.from("lineup_log").select("club_id,at,lineup").in("club_id", ids).gte("at", since).order("at"),
+        sb.rpc("lineup_log_window", { p_clubs: ids, p_from: row.starts_at }),
         sb.from("auction_lots").select(LOT_COLS).in("best_club", ids).lt("ends_at", new Date().toISOString()),
       ])
     : [

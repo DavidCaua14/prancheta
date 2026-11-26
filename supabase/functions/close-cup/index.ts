@@ -57,10 +57,9 @@ Deno.serve(async (req) => {
       rest<{ round: number; club_id: string; tick: number; change: string }[]>(`cup_changes?cup_id=eq.${id}&select=round,club_id,tick,change`),
     ]);
     const ids = entries.map((e) => e.club_id);
-    const since = new Date(new Date(cup.starts_at).getTime() - 11 * 86400_000).toISOString();
     const [logs, lots] = ids.length
       ? await Promise.all([
-          rest<{ club_id: string; at: string; lineup: string }[]>(`lineup_log?club_id=in.(${ids.join(",")})&at=gte.${encodeURIComponent(since)}&select=club_id,at,lineup&order=at`),
+          rest<{ club_id: string; at: string; lineup: string }[]>("rpc/lineup_log_window", { method: "POST", body: JSON.stringify({ p_clubs: ids, p_from: cup.starts_at }) }),
           rest<LotRow[]>(`auction_lots?best_club=in.(${ids.join(",")})&ends_at=lt.${encodeURIComponent(cup.ends_at)}&select=${LOT_COLS}`),
         ])
       : [[], []];

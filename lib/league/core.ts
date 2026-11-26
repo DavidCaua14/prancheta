@@ -71,9 +71,12 @@ export type TeamView = {
 export const LEAGUE_COLS = "id,division,size,rounds,starts_at,ends_at,closed_at,final";
 export const CLUB_COLS = "id,name,tag,crest,kit,squad,league_slot,joined_round,xp";
 
-/** Escalações valem a partir de 11 dias antes do início (o banco guarda 10 + a última anterior). */
-export function logsSince(league: LeagueRow) {
-  return new Date(new Date(league.starts_at).getTime() - 11 * 86400_000).toISOString();
+/**
+ * Início da janela de escalações: a RPC lineup_log_window devolve, por clube,
+ * a última escalação salva até aqui (por mais antiga que seja) + as seguintes.
+ */
+export function logsFrom(league: LeagueRow) {
+  return league.starts_at;
 }
 
 export function buildLeagueData(raw: {

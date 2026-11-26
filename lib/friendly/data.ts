@@ -89,11 +89,13 @@ export async function loadFriendlies(rows: FriendlyRow[]): Promise<FriendlyData[
   if (!list.length) return [];
   const sb = supabase();
   const ids = [...new Set(list.flatMap((f) => [f.host, f.guest!]))];
-  const last = new Date(Math.max(...list.map((f) => new Date(f.kickoff).getTime()))).toISOString();
+  const kicks = list.map((f) => new Date(f.kickoff).getTime());
+  const first = new Date(Math.min(...kicks)).toISOString();
+  const last = new Date(Math.max(...kicks)).toISOString();
   const [clubs, logs, lots, changes] = await Promise.all([
     sb.from("clubs").select("id,name,tag,crest,kit,squad").in("id", ids),
-    // o histórico de escalações já é podado no banco (~10 dias): sem limite de início
-    sb.from("lineup_log").select("club_id,at,lineup").in("club_id", ids).lte("at", last).order("at"),
+    // por clube: a escalação valendo no 1º apito (por mais antiga que seja) + as seguintes
+    sb.rpc("lineup_log_window", { p_clubs: ids, p_from: first, p_to: last }),
     sb.from("auction_lots").select(LOT_COLS).in("best_club", ids).lt("ends_at", last),
     sb.from("friendly_changes").select("friendly_id,club_id,tick,change").in("friendly_id", list.map((f) => f.id)),
   ]);

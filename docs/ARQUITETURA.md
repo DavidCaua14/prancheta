@@ -166,7 +166,9 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
   com a 1ª rodada no próximo horário.
 - **Nenhum placar no banco**. O aparelho calcula tudo (`lib/league/data.ts`) a partir de:
   `league_rounds` (horários), `clubs.league_slot/joined_round` (quem ocupa cada vaga),
-  `lineup_log` (escalação em vigor no apito — gravada por gatilho a cada "Salvar") e
+  `lineup_log` (escalação em vigor no apito — gravada por gatilho a cada "Salvar"; lida pela RPC
+  `lineup_log_window(clubes, início, fim?)`, que devolve por clube a última escalação até o início — por mais antiga
+  que seja — e as seguintes; liga, copas, amistosos e as Edge Functions usam a mesma janela) e
   `match_changes` (mudanças ao vivo). Como o motor é determinístico, todos veem os mesmos resultados e
   ninguém consegue gravar um placar falso. Temporada inteira (90 jogos) = ~55 ms.
 - **Ao vivo**: o técnico muda postura e faz substituições durante o jogo; a mudança vale 4 minutos de jogo
@@ -309,6 +311,8 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
 - **Cálculo no aparelho** (`lib/friendly/core.ts`): sem Edge Function — amistoso **não dá moedas, XP nem conta nos
   eventos** (nada para combinar entre amigos e "farmar"). A lista de resultados carrega os jogos encerrados em
   lote (4 leituras para até 10 jogos).
+- **Correção** (`0024_lineup_window.sql`): antes, liga e copas liam só os últimos 11 dias de `lineup_log`; clube
+  sem mexer na escalação há mais tempo jogava com a escalação automática. Agora vale sempre a última salva.
 
 ## Economia, loja e eventos (implementado)
 
