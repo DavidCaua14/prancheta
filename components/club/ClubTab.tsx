@@ -146,13 +146,18 @@ export function ClubTab({ club, onChanged, onSignOut }: { club: Club; onChanged:
               const afford = cost !== null && coins >= cost;
               return (
                 <article key={f.id} className="flex flex-col rounded-[18px] border-[3px] border-[var(--ink)] bg-[var(--paper)] p-3 text-[var(--ink)] shadow-[0_4px_0_var(--ink)]">
-                  <div className="flex items-center gap-3 sm:flex-col sm:items-stretch lg:flex-row xl:flex-col">
-                    <div className="flex h-20 w-24 shrink-0 items-center justify-center rounded-xl border-[3px] border-[var(--ink)] bg-[var(--sky)]/40 sm:h-24 sm:w-full lg:h-20 lg:w-24 xl:h-24 xl:w-full">
+                  <div className="flex flex-col gap-2">
+                    <div className="relative flex h-36 w-full items-center justify-center overflow-hidden rounded-xl border-[3px] border-[var(--ink)] bg-[radial-gradient(circle_at_50%_70%,#fff_0%,#d9f1ff_55%,#a9dcff_100%)] p-1.5 sm:h-28 xl:h-32">
                       <ArtImg
                         name={`${f.art}-${Math.max(1, lvl)}`}
-                        className={`h-full w-full object-contain ${lvl === 0 ? "opacity-50 grayscale" : ""}`}
-                        fallback={<ArtImg name={f.art} className={`h-full w-full object-contain ${lvl === 0 ? "opacity-50 grayscale" : ""}`} fallback={<Icon name={FACILITY_ICON[f.id]} className={`h-10 w-10 ${lvl === 0 ? "opacity-40" : ""}`} />} />}
+                        className={`h-full w-full object-contain drop-shadow-[0_3px_0_rgba(27,16,56,0.25)] ${lvl === 0 ? "opacity-45 grayscale" : ""}`}
+                        fallback={<ArtImg name={f.art} className={`h-full w-full object-contain drop-shadow-[0_3px_0_rgba(27,16,56,0.25)] ${lvl === 0 ? "opacity-45 grayscale" : ""}`} fallback={<Icon name={FACILITY_ICON[f.id]} className={`h-10 w-10 ${lvl === 0 ? "opacity-40" : ""}`} />} />}
                       />
+                      {lvl === 0 ? (
+                        <span className="absolute left-1.5 top-1.5 rounded-md border-2 border-[var(--ink)] bg-[var(--sun)] px-1.5 text-[0.6rem] font-extrabold uppercase">A construir</span>
+                      ) : (
+                        <span className="t-num absolute left-1.5 top-1.5 rounded-md border-2 border-[var(--ink)] bg-[var(--grass)] px-1.5 text-[0.65rem]">Nv {lvl}</span>
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="t-heading leading-tight">{f.name}</p>
