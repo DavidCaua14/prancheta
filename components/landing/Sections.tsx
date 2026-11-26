@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { CARD_TIERS, CUPS, DIVISIONS, TIER_ORDER } from "@/lib/game-config";
 import { Art } from "@/components/ui/Art";
+import { ART } from "@/lib/art-manifest";
 import { GameIcon, type GameIconName } from "@/components/ui/GameIcon";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
 import { PlayerCard } from "@/components/ui/PlayerCard";
@@ -219,13 +220,27 @@ export function LeaguesAndCups() {
         ))}
       </ul>
 
-      <p className="panel-dark mt-10 flex items-start gap-3 p-4 sm:items-center sm:p-5">
-        <span className="tag shrink-0 bg-[var(--sky)]">Rodadas</span>
-        <span className="leading-snug text-white/85">
-          O calendário é do jogo: uma rodada a cada 2 horas, das 8h às 22h, e as copas no horário de cada uma. Se você não
-          estiver online, o time entra com a última escalação salva.
-        </span>
-      </p>
+      {ART["icon-rodadas"] ? (
+        // com a arte: no celular, imagem em cima e texto embaixo; no computador, lado a lado
+        <div className="panel-dark mt-10 flex flex-col items-center gap-4 p-5 text-center sm:flex-row sm:gap-6 sm:p-6 sm:text-left">
+          <Art name="icon-rodadas" width={512} height={512} className="h-28 w-28 shrink-0 object-contain sm:h-32 sm:w-32" fallback={null} />
+          <div className="min-w-0">
+            <span className="tag bg-[var(--sky)]">Rodadas</span>
+            <p className="mt-2.5 leading-snug text-white/85 sm:text-lg">
+              O calendário é do jogo: uma rodada a cada 2 horas, das 8h às 22h, e as copas no horário de cada uma. Se você
+              não estiver online, o time entra com a última escalação salva.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <p className="panel-dark mt-10 flex items-start gap-3 p-4 sm:items-center sm:p-5">
+          <span className="tag shrink-0 bg-[var(--sky)]">Rodadas</span>
+          <span className="leading-snug text-white/85">
+            O calendário é do jogo: uma rodada a cada 2 horas, das 8h às 22h, e as copas no horário de cada uma. Se você não
+            estiver online, o time entra com a última escalação salva.
+          </span>
+        </p>
+      )}
     </Section>
   );
 }
