@@ -311,6 +311,24 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
 - **Copa nova**: um `kind` em `CUP_KINDS` + `cup_config()`, `cup_prize()` e a lista de `join_cup()` no SQL, e
   republicar a `close-cup` (ela usa `CUP_KINDS` para montar a CPU — sem isso a chave da CPU sairia errada).
 
+## Estrutura do clube (implementado)
+
+- **Três estruturas** (nível 0–5, `clubs.facilities smallint[3]`; espelho em `lib/club/facilities.ts`):
+  Estádio (bilheteria, +10% por divisão) — custos 400/900/1.500/2.300/3.300, renda 8→40 por jogo; Lanchonete
+  (fixa) — 200/450/750/1.100/1.600, renda 4→20; Loja oficial (+20% por divisão) — 350/750/1.300/2.000/3.000,
+  renda 5→25. Nível 0 não rende: é preciso investir. Tudo no máximo: ~20 mil moedas; rende 85 por jogo em casa na
+  Várzea e 130 nas Lendas (9 jogos em casa por temporada) — se paga em ~26 temporadas na Várzea (meta de longo prazo).
+- **Só jogos da liga como mandante** (copa = campo neutro; amistoso não vale, para não combinar com amigo).
+  O servidor confere o mando pela tabela (`league_home_slots`, espelho de `doubleRoundRobin`, conferido nas 18
+  rodadas) e paga uma vez por jogo (`home_income`, PK clube+liga+rodada), 10 min depois do apito.
+- **Recebimento**: `collect_home_income()` ao abrir a sede (aviso "+N moedas") e no fim do jogo em casa
+  (`HomeIncomeCard` com bilheteria/lanchonete/loja); `upgrade_facility(k)` recebe o pendente no nível antigo antes
+  de subir; gatilho `clubs_pay_home_income` paga o pendente da liga antiga quando o clube troca de liga. Jogo com
+  estrutura zerada fica registrado com 0 (investir depois não paga jogo antigo).
+- **Aba Clube** (`ClubTab`): identidade (escudo, divisão, uniforme), moedas / renda por jogo / títulos, as três
+  obras com níveis e "rende hoje → próximo nível", últimos jogos em casa, história (temporadas, acessos, títulos,
+  melhor campanha) e conta. Arte opcional: `facility-<estadio|lanchonete|loja>` ou `-<nível>`.
+
 ## Amistosos entre amigos (implementado)
 
 - **Fluxo**: em `/amistosos` o técnico escolhe o horário (em 5 min, 15 min, 1 h, ou dia + hora de Brasília, de

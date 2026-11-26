@@ -75,10 +75,10 @@ export function useLeague({ autoJoin = true }: { autoJoin?: boolean } = {}) {
   const [season, setSeason] = useState<SeasonResult | null>(pendingSeason);
 
   const load = useCallback(
-    async (opts: { forceJoin?: boolean } = {}) => {
+    async (opts: { forceJoin?: boolean; fresh?: boolean } = {}) => {
       const s = await getSession();
       if (!s) return router.replace("/entrar");
-      let c = await getMyClub(s);
+      let c = await getMyClub(s, { fresh: opts.fresh });
       if (!c) return router.replace("/clube/novo");
       if (!c.squad) return router.replace("/peneira");
       setSession(s);

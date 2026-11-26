@@ -25,6 +25,8 @@ export type Club = {
   xp: number[] | null;
   /** Moedas disponíveis (as de lances em andamento já saíram daqui). */
   coins: number;
+  /** Nível do estádio, da lanchonete e da loja oficial (0–5) — só o servidor muda. */
+  facilities?: number[];
   /** Lotes do leilão arrematados (cartas extras do elenco). */
   won: WonLot[];
   /** Quando foi lido do banco (o cache vale 5 minutos). */
@@ -40,7 +42,7 @@ function readCache(uid: string): Club | null {
     const raw = localStorage.getItem(CLUB_CACHE(uid));
     const club = raw ? (JSON.parse(raw) as Club) : null;
     // cache de versão antiga (sem o campo squad) ou elenco ainda vazio: relê do banco
-    return club && typeof club.squad === "string" && "lineup" in club && "won" in club && Date.now() - (club.fetchedAt ?? 0) < CACHE_TTL ? club : null;
+    return club && typeof club.squad === "string" && "lineup" in club && "won" in club && "facilities" in club && Date.now() - (club.fetchedAt ?? 0) < CACHE_TTL ? club : null;
   } catch {
     return null;
   }
@@ -72,7 +74,7 @@ export async function getMyClub(session: Session, { fresh = false } = {}): Promi
   }
   const sb = supabase();
   const [club, lots] = await Promise.all([
-    sb.from("clubs").select("id,name,tag,crest,kit,squad,lineup,league_id,league_slot,joined_round,division,xp,coins").eq("id", uid).maybeSingle(),
+    sb.from("clubs").select("id,name,tag,crest,kit,squad,lineup,league_id,league_slot,joined_round,division,xp,coins,facilities").eq("id", uid).maybeSingle(),
     sb.from("auction_lots").select("round,idx,ends_at").eq("best_club", uid).lt("ends_at", new Date().toISOString()),
   ]);
   if (club.error) throw club.error;

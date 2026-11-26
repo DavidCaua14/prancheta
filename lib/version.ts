@@ -6,10 +6,9 @@ export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
  * de atualização obrigatória que os jogadores veem.
  */
 export const RELEASE_NOTES: string[] = [
-  "Leilão: carta arrematada dá lugar a outra na hora",
-  "Leilão: potencial de cada carta à vista — até onde chega de overall e de nível",
-  "Arrematou? A carta aparece numa animação com o valor pago",
-  "Aviso de atualização mais compacto, em qualquer tela",
+  "Novo: estrutura do clube — estádio, lanchonete e loja oficial rendem moedas nos jogos em casa",
+  "Aba Clube reorganizada: obras, renda dos jogos em casa e a história do clube",
+  "Leilão: carta arrematada dá lugar a outra na hora, com o potencial à vista",
 ];
 
 export type VersionPayload = {

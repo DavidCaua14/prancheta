@@ -22,7 +22,8 @@ import { clubCards } from "@/lib/cards/squad";
 import { FORMATIONS, strength } from "@/lib/tactics/formations";
 import { POSTURES, lineupFor } from "@/lib/tactics/lineup";
 import { CrestSvg } from "./CrestSvg";
-import { KitSvg } from "./KitSvg";
+import { ClubTab } from "./ClubTab";
+import { collectHomeIncome } from "@/lib/club/structure";
 
 type Tab = "inicio" | "elenco" | "jogos" | "leilao" | "clube";
 
@@ -94,11 +95,33 @@ function XpBar({ xp, pending, maxLevel }: { xp: number; pending: number; maxLeve
 /** Tela inicial do jogo (protótipo). */
 export function ClubHome({ mascot }: { mascot: ReactNode }) {
   const router = useRouter();
-  const { club, data: league, joining, season, dismissSeason } = useLeague();
+  const { club, data: league, joining, season, dismissSeason, reload } = useLeague();
   const now = useNow(1000);
   const [tab, setTab] = useState<Tab>("inicio");
+  // abre direto numa aba pelo link (ex.: /jogo?aba=clube)
+  useEffect(() => {
+    const a = new URLSearchParams(window.location.search).get("aba");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- lê a aba pedida na URL uma vez
+    if (a === "clube" || a === "elenco") setTab(a);
+  }, []);
   const [isNew, setIsNew] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+
+  // renda dos jogos em casa já encerrados (estádio, lanchonete, loja): o servidor confere e paga
+  const clubId = club?.squad ? club.id : null;
+  useEffect(() => {
+    if (!clubId) return;
+    let stop = false;
+    void collectHomeIncome().then(async (got) => {
+      if (stop || got <= 0) return;
+      setToast(`Renda dos jogos em casa: +${got.toLocaleString("pt-BR")} moedas!`);
+      await reload({ fresh: true });
+    });
+    return () => {
+      stop = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- uma vez por abertura da tela
+  }, [clubId]);
 
   // convite de amistoso aberto antes de entrar / montar o clube: volta para ele
   useEffect(() => {
@@ -388,24 +411,14 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
         {tab === "jogos" && <Soon title="Calendário" text="Rodadas da liga, copas e amistosos, com a partida ao vivo e a narração lance a lance." />}
 
         {tab === "clube" && (
-          <Panel className="flex flex-col items-center gap-4 py-8 text-center">
-            <CrestSvg crest={crest} tag={club.tag} className="h-36 w-32" title={`Escudo do ${club.name}`} />
-            <div>
-              <h2 className="t-display text-3xl">{club.name}</h2>
-              <p className="mt-1 font-mono font-bold tracking-[0.25em] text-[var(--sun)]">{club.tag}</p>
-            </div>
-            <KitSvg kit={kit} number={10} className="h-24 w-24" />
-            <button
-              type="button"
-              onClick={async () => {
-                await signOut();
-                router.replace("/");
-              }}
-              className="btn btn-ghost mt-2"
-            >
-              Sair da conta
-            </button>
-          </Panel>
+          <ClubTab
+            club={club}
+            onChanged={() => reload({ fresh: true })}
+            onSignOut={async () => {
+              await signOut();
+              router.replace("/");
+            }}
+          />
         )}
       </div>
 
