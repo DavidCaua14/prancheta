@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Baloo_2, Bungee } from "next/font/google";
+import { PresencePing } from "@/components/system/PresencePing";
 import { UpdateWatcher } from "@/components/system/UpdateWatcher";
 import "./globals.css";
 
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col overflow-x-hidden">
         {children}
         <UpdateWatcher />
+        <PresencePing />
       </body>
     </html>
   );

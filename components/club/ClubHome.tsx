@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { MascotTipInline } from "@/components/game/MascotTip";
@@ -9,6 +10,7 @@ import { ArtImg } from "@/components/ui/ArtImg";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { Logo } from "@/components/ui/Logo";
 import { signOut } from "@/lib/club/api";
+import { checkAdmin } from "@/lib/admin";
 import { decodeCrest, decodeKit } from "@/lib/club/identity";
 import { clockAt, clubMatchXp, fmtCountdown, fmtKickoff, matchAt, matchDone, standings } from "@/lib/league/data";
 import { levelFromXp } from "@/lib/cards/evolution";
@@ -106,6 +108,16 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
     if (a === "clube" || a === "elenco") setTab(a);
   }, []);
   const [isNew, setIsNew] = useState(false);
+  // botão do painel admin (o banco confere de novo em cada consulta do painel)
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    if (!club) return;
+    let stop = false;
+    void checkAdmin(club.id).then((v) => !stop && setIsAdmin(v));
+    return () => {
+      stop = true;
+    };
+  }, [club]);
   const [toast, setToast] = useState<string | null>(null);
 
   // renda dos jogos em casa já encerrados (estádio, lanchonete, loja): o servidor confere e paga
@@ -210,6 +222,16 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
               {leagueInfo?.pos ? ` · ${leagueInfo.pos}º lugar` : ""}
             </p>
           </div>
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-[3px] border-[var(--ink)] bg-[var(--hot)] text-white"
+              aria-label="Painel admin"
+              title="Painel admin"
+            >
+              <Icon name="shield" className="h-5 w-5" />
+            </Link>
+          )}
           <button
             type="button"
             onClick={() => router.push("/loja")}

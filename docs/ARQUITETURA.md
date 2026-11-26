@@ -554,3 +554,19 @@ friendlies(id, codigo, casa_id, fora_id, inicio_em, match_id)
 5. Tela de partida ao vivo usando o motor real.
 6. Leilão.
 7. Amistosos por link.
+
+## Painel administrativo (`/admin`)
+
+- **Quem entra**: contas cujo e-mail (confirmado) está em `admin_emails` (`0038_admin.sql`). A tabela não tem acesso pelo
+  app e o e-mail é cadastrado direto no banco (não fica no repositório): `insert into public.admin_emails values ('email');`.
+  Toda função `admin_*` confere `is_admin()` no banco — esconder o botão no app é só conforto.
+- **Presença**: `PresencePing` (no layout) chama `ping(tela)` a cada 60 s com a aba visível e logado, e ao trocar de
+  tela (no máximo 1 a cada 20 s). Guarda `presence` (última vez visto + tela; 1 linha por usuário) e `activity_days`
+  (1 linha por usuário/dia, para ativos por dia/7 d/30 d). Online = visto nos últimos 2 min.
+- **Abas**: visão geral (`admin_overview`: usuários, ativos, retenção, cadastros/ativos por dia, economia, atividade
+  em 24 h, clubes por divisão, saúde — ligas/copas atrasadas com botão de fechar, rodadas sem pontuação, tamanho do
+  banco), online (`admin_online`), usuários (`admin_users` com busca/ordem/paginação e ficha `admin_user`),
+  competições (`admin_competitions`) e registro (`admin_log_list`).
+- **Ações** (todas com motivo e gravadas em `admin_log`): dar/tirar moedas (`admin_grant_coins`, nunca fica negativo),
+  renomear clube (`admin_rename_club`), bloquear/desbloquear conta (`admin_ban`: `auth.users.banned_until`, derruba as
+  sessões; não bloqueia admin nem a si mesmo) e fechar liga/copa atrasada (Edge Functions de sempre + `admin_note`).
