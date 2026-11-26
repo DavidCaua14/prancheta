@@ -16,8 +16,31 @@ export type NarrationCtx = {
   away: string;
   score: [number, number];
   posture?: number;
+  /** o que mudou numa troca tática (só os campos alterados) */
+  tactic?: TacticNote;
   secondHalf?: boolean;
 };
+
+export type TacticNote = { posture?: number; marking?: number; passing?: number; line?: number; width?: number; tempo?: number };
+
+const MARKING_NAMES = ["marcação leve", "marcação normal", "marcação sob pressão"];
+const PASSING_NAMES = ["toque curto", "passe misto", "ligação direta"];
+const LINE_NAMES = ["linha recuada", "linha normal", "linha adiantada"];
+const WIDTH_NAMES = ["jogo pelo meio", "jogo misto", "jogo pelas pontas"];
+const TEMPO_NAMES = ["ritmo cadenciado", "ritmo normal", "ritmo acelerado"];
+
+/** "Tudo pra frente, linha adiantada e ritmo acelerado" */
+function tacticText(n: TacticNote): string {
+  const parts: string[] = [];
+  if (n.posture !== undefined) parts.push(POSTURE_NAMES[n.posture]);
+  if (n.marking !== undefined) parts.push(MARKING_NAMES[n.marking]);
+  if (n.passing !== undefined) parts.push(PASSING_NAMES[n.passing]);
+  if (n.line !== undefined) parts.push(LINE_NAMES[n.line]);
+  if (n.width !== undefined) parts.push(WIDTH_NAMES[n.width]);
+  if (n.tempo !== undefined) parts.push(TEMPO_NAMES[n.tempo]);
+  if (parts.length <= 1) return parts[0] ?? "";
+  return `${parts.slice(0, -1).join(", ")} e ${parts[parts.length - 1]}`;
+}
 
 const POSTURE_NAMES = ["Retranca", "Defensiva", "Equilibrada", "Ofensiva", "Tudo pra frente"];
 
@@ -85,8 +108,13 @@ export function narrate(r: () => number, c: NarrationCtx): string {
       return `Substituição no ${c.team}: sai ${o}, entra ${p}.`;
     case "injury":
       return pick(r, [`${p} sente uma lesão e pede para sair.`, `${p} cai no gramado, sentindo dores.`]);
-    case "tactic":
-      return `${c.teamName ?? c.team} muda a postura: ${POSTURE_NAMES[c.posture ?? 2]}.`;
+    case "tactic": {
+      const who = c.teamName ?? c.team;
+      const n = c.tactic;
+      // só a postura (ou mudança antiga sem detalhe): a frase de sempre
+      if (!n || (n.posture !== undefined && Object.keys(n).length === 1)) return `${who} muda a postura: ${POSTURE_NAMES[n?.posture ?? c.posture ?? 2]}.`;
+      return `${who} muda a tática: ${tacticText(n)}.`;
+    }
     case "halftime":
       return `Fim do primeiro tempo: ${placar}.`;
     case "fulltime": {

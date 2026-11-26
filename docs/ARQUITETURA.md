@@ -355,6 +355,12 @@ narração, velocidade 1x/2x/4x, pausa no intervalo, troca de postura e substitu
   `:LWT`; mudanças ao vivo `l0-2`, `w0-2`, `t0-2` (migração 0021).
 - **Testes de encaixe** (`tests/tactics.test.ts`): times montados com perfis claros — cada opção vence quando o
   elenco encaixa e perde quando não encaixa; num time comum nenhuma domina (diferença < 0,12 gol/jogo).
+- **Tática ao vivo (rascunho + Salvar)**: a folha de tática guarda um rascunho; "Salvar" envia só o que mudou,
+  numa única escrita, tudo valendo no mesmo minuto (agora + 4). A tela mostra o que vai valer (`tacticAt` em
+  `lib/tactics/live.ts`, com as mudanças agendadas): botão amarelo com o minuto no celular, aviso "Salvo, vale
+  aos N'" no desktop, e "em campo" marcando o que ainda está valendo. As etiquetas do quadro seguem a postura em
+  vigor de cada time. O motor junta as mudanças do mesmo time no mesmo minuto num lance só ("muda a tática:
+  Ofensiva, linha adiantada e ritmo acelerado"); a narração tem sorteio próprio, então o placar não muda.
 - **Narração (padrão do jogo)**: `Feed` (`components/match/parts.tsx`) recebe `teams` (sigla + escudo) e cada
   lance de um time mostra o escudo, o ícone do lance e a sigla; lances neutros deixam a coluna vazia. Liga, copas,
   amistosos, treino e laboratório usam o mesmo componente.

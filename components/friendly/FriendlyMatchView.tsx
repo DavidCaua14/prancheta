@@ -91,8 +91,8 @@ export function FriendlyMatchView() {
       changes={data.changes}
       title={`Amistoso · ${data.f.code}`}
       backHref="/amistosos"
-      onSend={async (tick, change) => {
-        const ok = await sendFriendlyChange(data, club.id, tick, change);
+      onSend={async (tick, list) => {
+        const ok = await sendFriendlyChange(data, club.id, tick, list);
         if (ok) setData(await refreshFriendlyChanges(data));
         return ok;
       }}

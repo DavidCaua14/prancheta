@@ -57,8 +57,11 @@ export async function refreshChanges(data: LeagueData, round: number): Promise<L
   return { ...data, changes: [...data.changes.filter((c) => c.round !== round), ...((rows ?? []) as ChangeRow[])] };
 }
 
-export async function sendChange(data: LeagueData, round: number, clubId: string, tick: number, change: string) {
-  const { error } = await supabase().from("match_changes").insert({ league_id: data.league.id, round, club_id: clubId, tick, change });
+/** Grava as mudanças do técnico (todas no mesmo minuto) numa única escrita. */
+export async function sendChange(data: LeagueData, round: number, clubId: string, tick: number, changes: string[]) {
+  const { error } = await supabase()
+    .from("match_changes")
+    .insert(changes.map((change) => ({ league_id: data.league.id, round, club_id: clubId, tick, change })));
   return !error;
 }
 

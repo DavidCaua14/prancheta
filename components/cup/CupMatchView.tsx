@@ -92,8 +92,8 @@ function CupMatch({ kind }: { kind: number }) {
           </div>
         )
       }
-      onSend={async (tick, change) => {
-        const ok = await sendCupChange(data, m.round, club.id, tick, change);
+      onSend={async (tick, list) => {
+        const ok = await sendCupChange(data, m.round, club.id, tick, list);
         if (ok) setData(await refreshCupChanges(data, m.round));
         return ok;
       }}

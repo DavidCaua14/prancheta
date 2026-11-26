@@ -25,6 +25,9 @@ import { tickClock } from "@/components/match/parts";
  * 6 s por minuto (~10 min por jogo); o treino é mais rápido: ~3 min no 1x.
  */
 export const SPEEDS = TRAINING_SPEEDS;
+type TrainingTactic = { posture: number; line: number; width: number; tempo: number };
+const TRAINING_KEYS = ["posture", "line", "width", "tempo"] as const;
+
 const COUNT_KEY = (id: string) => `prancheta:amistoso:${id}`;
 
 
@@ -55,6 +58,8 @@ export function MatchViewer() {
   const [sheet, setSheet] = useState<null | "tatica" | "subs">(null);
   const [subOut, setSubOut] = useState<number | null>(null);
   const [halfDone, setHalfDone] = useState(false);
+  // rascunho da tática: o técnico mexe em tudo e aplica ao salvar
+  const [draft, setDraft] = useState<TrainingTactic | null>(null);
   const [camera, toggleCamera] = useCamera();
 
   useEffect(() => {
@@ -176,6 +181,20 @@ export function MatchViewer() {
     const ch = [...changes].reverse().find((c) => c.kind === "tactic" && c[key] !== undefined && c.minute <= tick + 1);
     return ch && ch.kind === "tactic" ? (ch[key] ?? 1) : (lineup[key] ?? 1);
   };
+  const nowTactic: TrainingTactic = { posture, line: currentOf("line"), width: currentOf("width"), tempo: currentOf("tempo") };
+  const draftDiff = draft ? TRAINING_KEYS.filter((k) => draft[k] !== nowTactic[k]) : [];
+  function openTactics() {
+    setDraft({ ...nowTactic });
+    setSheet("tatica");
+  }
+  function saveTactics() {
+    if (draft && draftDiff.length) {
+      // uma mudança só, com tudo o que mudou: um lance na narração
+      addChange({ minute: tick + 1, team: 0, kind: "tactic", ...Object.fromEntries(draftDiff.map((k) => [k, draft[k]])) });
+    }
+    setSheet(null);
+    setPlaying(true);
+  }
   const formation = FORMATIONS[lineup.formation];
   const field = formation.slots.map((s, i) => ({ role: s.role, card: lineup.xi[i], out: false }));
   const usedBench = new Set<number>();
@@ -300,7 +319,7 @@ export function MatchViewer() {
               <p className="t-heading text-lg">Intervalo!</p>
               <p className="text-sm font-semibold">Hora de mexer no time: troque a postura ou faça substituições antes do segundo tempo.</p>
               <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1fr_1.3fr]">
-                <button type="button" onClick={() => setSheet("tatica")} className="btn btn-paper btn-sm w-full">
+                <button type="button" onClick={openTactics} className="btn btn-paper btn-sm w-full">
                   <Icon name="clipboard" className="h-4 w-4" />
                   Tática
                 </button>
@@ -379,7 +398,7 @@ export function MatchViewer() {
             </p>
             <p className="mt-1 text-sm text-white/70">Substituições: {subsDone}/5</p>
             <div className="mt-3 flex gap-2">
-              <button type="button" disabled={!canChange} onClick={() => setSheet("tatica")} className="btn btn-paper btn-sm flex-1 disabled:opacity-50">
+              <button type="button" disabled={!canChange} onClick={openTactics} className="btn btn-paper btn-sm flex-1 disabled:opacity-50">
                 <Icon name="clipboard" className="h-4 w-4" />
                 Tática
               </button>
@@ -430,7 +449,7 @@ export function MatchViewer() {
               ))}
             </div>
             <div className="flex flex-1 justify-center gap-2 lg:hidden">
-              <IconButton icon="clipboard" label="Tática" showLabel disabled={!canChange} onClick={() => setSheet("tatica")} />
+              <IconButton icon="clipboard" label="Tática" showLabel disabled={!canChange} onClick={openTactics} />
               <IconButton icon="swap" label="Substituir" showLabel disabled={!canChange || subsDone >= 5} onClick={() => setSheet("subs")} />
             </div>
             <span className="hidden flex-1 lg:block" />
@@ -458,22 +477,23 @@ export function MatchViewer() {
             role="dialog"
             aria-modal="true"
           >
-            {sheet === "tatica" ? (
+            {sheet === "tatica" && draft ? (
               <>
-                <p className="t-heading text-lg">Postura a partir de agora</p>
-                <div className="mt-3 grid gap-2">
+                <p className="t-heading text-lg">Postura</p>
+                <div className="mt-3 grid gap-2" role="radiogroup" aria-label="Postura">
                   {POSTURES.map((p, i) => (
                     <button
                       key={p.label}
                       type="button"
-                      onClick={() => {
-                        if (i !== posture) addChange({ minute: tick + 1, team: 0, kind: "tactic", posture: i });
-                        setSheet(null);
-                        setPlaying(true);
-                      }}
-                      className={`rounded-xl border-[3px] border-[var(--ink)] px-3 py-2 text-left ${i === posture ? "bg-[var(--sun)] text-[var(--ink)]" : "bg-white/10 hover:bg-white/20"}`}
+                      role="radio"
+                      aria-checked={i === draft.posture}
+                      onClick={() => setDraft({ ...draft, posture: i })}
+                      className={`rounded-xl border-[3px] border-[var(--ink)] px-3 py-2 text-left ${i === draft.posture ? "bg-[var(--sun)] text-[var(--ink)]" : "bg-white/10 hover:bg-white/20"}`}
                     >
-                      <span className="block font-extrabold">{p.label}</span>
+                      <span className="flex items-center gap-2 font-extrabold">
+                        {p.label}
+                        {i === posture && i !== draft.posture && <span className="rounded bg-white/15 px-1 text-[0.6rem] uppercase">em campo</span>}
+                      </span>
                       <span className="block text-xs opacity-75">{p.hint}</span>
                     </button>
                   ))}
@@ -484,32 +504,37 @@ export function MatchViewer() {
                     ["Jogo", "width", WIDTHS],
                     ["Ritmo", "tempo", TEMPOS],
                   ] as const
-                ).map(([label, key, options]) => {
-                  const current = currentOf(key);
-                  return (
-                    <div key={key} className="mt-4">
-                      <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-white/60">{label}</p>
-                      <div className="mt-1.5 grid grid-cols-3 gap-1 rounded-xl border-[3px] border-[var(--ink)] bg-black/25 p-1">
-                        {options.map((o, k) => (
-                          <button
-                            key={o.label}
-                            type="button"
-                            onClick={() => {
-                              if (k !== current) addChange({ minute: tick + 1, team: 0, kind: "tactic", [key]: k });
-                              setSheet(null);
-                              setPlaying(true);
-                            }}
-                            className={`min-h-9 rounded-lg px-1 text-xs font-extrabold ${k === current ? "bg-[var(--sun)] text-[var(--ink)]" : "text-white/80 hover:bg-white/10"}`}
-                          >
-                            {o.label}
-                          </button>
-                        ))}
-                      </div>
+                ).map(([label, key, options]) => (
+                  <div key={key} className="mt-4">
+                    <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-white/60">{label}</p>
+                    <div className="mt-1.5 grid grid-cols-3 gap-1 rounded-xl border-[3px] border-[var(--ink)] bg-black/25 p-1" role="radiogroup" aria-label={label}>
+                      {options.map((o, k) => (
+                        <button
+                          key={o.label}
+                          type="button"
+                          role="radio"
+                          aria-checked={k === draft[key]}
+                          onClick={() => setDraft({ ...draft, [key]: k })}
+                          className={`min-h-9 rounded-lg px-1 text-xs font-extrabold ${k === draft[key] ? "bg-[var(--sun)] text-[var(--ink)]" : k === nowTactic[key] ? "text-white ring-2 ring-inset ring-white/30" : "text-white/80 hover:bg-white/10"}`}
+                        >
+                          {o.label}
+                        </button>
+                      ))}
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
+                <div className="sticky -bottom-4 -mx-4 mt-4 flex gap-2 border-t-[3px] border-[var(--ink)] bg-[var(--night-2)] px-4 pb-4 pt-3">
+                  <button type="button" onClick={() => setSheet(null)} className="btn btn-paper flex-1">
+                    Cancelar
+                  </button>
+                  <button type="button" disabled={!draftDiff.length} onClick={saveTactics} className="btn btn-green flex-[2] disabled:opacity-50">
+                    <Icon name="check" className="h-5 w-5" />
+                    {draftDiff.length ? "Salvar" : "Nada mudou"}
+                    {draftDiff.length > 1 && <span className="t-num rounded bg-[var(--ink)] px-1.5 text-xs text-white" aria-label={`${draftDiff.length} mudanças`}>{draftDiff.length}</span>}
+                  </button>
+                </div>
               </>
-            ) : (
+            ) : sheet === "tatica" ? null : (
               <>
                 <p className="t-heading text-lg">Substituição ({subsDone}/5)</p>
                 <p className="mt-1 text-xs text-white/70">{subOut === null ? "Quem sai?" : "Quem entra?"}</p>
@@ -548,9 +573,11 @@ export function MatchViewer() {
                 </ul>
               </>
             )}
-            <button type="button" onClick={() => (setSheet(null), setSubOut(null))} className="btn btn-ghost mt-4 w-full">
-              Fechar
-            </button>
+            {sheet === "subs" && (
+              <button type="button" onClick={() => (setSheet(null), setSubOut(null))} className="btn btn-ghost mt-4 w-full">
+                Fechar
+              </button>
+            )}
           </div>
         </div>
       )}

@@ -170,3 +170,45 @@ test("jogador fora de posição atrapalha", () => {
   const swapped = headToHead(1200, { lineup: { xi } }, {}, 71);
   assert.ok(swapped.loss > normal.loss + 0.15, "goleiro na linha e atacante no gol deve perder bem mais");
 });
+
+test("várias mudanças táticas no mesmo minuto: um lance só, dizendo tudo o que mudou", () => {
+  const base: MatchInput = { seed: 77, home: makeTeam("aaa"), away: makeTeam("bbb") };
+  const one = simulate({ ...base, changes: [{ minute: 30, team: 0, kind: "tactic", posture: 4 }] });
+  const many = simulate({
+    ...base,
+    changes: [
+      { minute: 30, team: 0, kind: "tactic", posture: 4 },
+      { minute: 30, team: 0, kind: "tactic", line: 2 },
+      { minute: 30, team: 0, kind: "tactic", tempo: 2 },
+    ],
+  });
+  const t1 = one;
+  const tm = many;
+  const tac = (r: typeof t1) => r.events.filter((e) => e.type === "tactic" && e.team === 0 && e.tick === 30);
+  assert.equal(tac(t1).length, 1);
+  assert.match(tac(t1)[0].text, /muda a postura: Tudo pra frente/);
+  assert.equal(tac(tm).length, 1);
+  assert.match(tac(tm)[0].text, /muda a tática: Tudo pra frente, linha adiantada e ritmo acelerado/);
+  // juntar as mudanças numa só (como no treino) dá o mesmo jogo
+  const merged = simulate({ ...base, changes: [{ minute: 30, team: 0, kind: "tactic", posture: 4, line: 2, tempo: 2 }] });
+  assert.deepEqual(merged.score, tm.score);
+  assert.equal(merged.events.length, tm.events.length);
+});
+
+test("tática em vigor e agendada (liga/copa/amistoso)", async () => {
+  const { tacticAt } = await import("@/lib/tactics/live");
+  const lineup = makeTeam("ccc").lineup;
+  const rows = [
+    { round: 1, club_id: "x", tick: 20, change: "p4" },
+    { round: 1, club_id: "x", tick: 40, change: "l2" },
+    { round: 1, club_id: "x", tick: 40, change: "p1" },
+    { round: 1, club_id: "y", tick: 10, change: "t2" },
+    { round: 2, club_id: "x", tick: 5, change: "w0" },
+  ];
+  assert.deepEqual(tacticAt(rows, 1, "x", lineup, 10), { p: lineup.posture, l: lineup.line ?? 1, w: lineup.width ?? 1, t: lineup.tempo ?? 1 });
+  assert.equal(tacticAt(rows, 1, "x", lineup, 30).p, 4);
+  const planned = tacticAt(rows, 1, "x", lineup, Number.POSITIVE_INFINITY);
+  assert.equal(planned.p, 1);
+  assert.equal(planned.l, 2);
+  assert.equal(planned.t, lineup.tempo ?? 1);
+});

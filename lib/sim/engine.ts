@@ -15,7 +15,7 @@
 import { rng, type BaseCard, type Position } from "@/lib/cards/generate";
 import { FORMATIONS, fit, type Formation } from "@/lib/tactics/formations";
 import type { Lineup } from "@/lib/tactics/lineup";
-import { narrate } from "./narration";
+import { narrate, type TacticNote } from "./narration";
 
 export const ENGINE_VERSION = 1;
 
@@ -447,7 +447,7 @@ export function simulate(input: MatchInput): MatchResult {
     return m <= 90 ? { minute: m } : { minute: 90, extra: m - 90 };
   };
   const name = (t: 0 | 1, card: number) => teams[t].input.squad[card]?.name ?? "?";
-  const push = (type: EventType, team?: 0 | 1, player?: number, other?: number) => {
+  const push = (type: EventType, team?: 0 | 1, player?: number, other?: number, tactic?: TacticNote) => {
     const c = clock();
     const text = narrate(tr, {
       type,
@@ -459,6 +459,7 @@ export function simulate(input: MatchInput): MatchResult {
       away: teams[1].input.name,
       score,
       posture: team !== undefined ? teams[team].posture : undefined,
+      tactic,
       secondHalf: tick >= secondHalfTick,
     });
     events.push({ ...c, tick, type, team, player, other, text, score: [score[0], score[1]] });
@@ -484,21 +485,24 @@ export function simulate(input: MatchInput): MatchResult {
   }
 
   function applyChanges() {
+    // várias mudanças táticas do mesmo time no mesmo minuto = um lance só na narração
+    const notes: [TacticNote | null, TacticNote | null] = [null, null];
     while (changes.length && changes[0].minute <= tick) {
       const ch = changes.shift()!;
       const st = teams[ch.team];
       if (ch.kind === "tactic") {
-        if (ch.posture !== undefined) st.posture = clamp(ch.posture, 0, 4);
-        if (ch.marking !== undefined) st.marking = clamp(ch.marking, 0, 2);
-        if (ch.passing !== undefined) st.passing = clamp(ch.passing, 0, 2);
-        if (ch.line !== undefined) st.line = clamp(ch.line, 0, 2);
-        if (ch.width !== undefined) st.width = clamp(ch.width, 0, 2);
-        if (ch.tempo !== undefined) st.tempo = clamp(ch.tempo, 0, 2);
-        push("tactic", ch.team);
+        const n = (notes[ch.team] ??= {});
+        if (ch.posture !== undefined) n.posture = st.posture = clamp(ch.posture, 0, 4);
+        if (ch.marking !== undefined) n.marking = st.marking = clamp(ch.marking, 0, 2);
+        if (ch.passing !== undefined) n.passing = st.passing = clamp(ch.passing, 0, 2);
+        if (ch.line !== undefined) n.line = st.line = clamp(ch.line, 0, 2);
+        if (ch.width !== undefined) n.width = st.width = clamp(ch.width, 0, 2);
+        if (ch.tempo !== undefined) n.tempo = st.tempo = clamp(ch.tempo, 0, 2);
       } else {
         substitute(ch.team, ch.out, ch.in, "tactic");
       }
     }
+    for (const t of [0, 1] as const) if (notes[t]) push("tactic", t, undefined, undefined, notes[t]!);
   }
 
   /** Melhor reserva para uma vaga (prefere quem joga na posição). */

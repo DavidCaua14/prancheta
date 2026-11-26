@@ -6,6 +6,8 @@ export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
  * de atualização obrigatória que os jogadores veem.
  */
 export const RELEASE_NOTES: string[] = [
+  "Tática ao vivo: mude postura, linha, jogo e ritmo de uma vez e toque em Salvar",
+  "A tática salva já aparece na tela, com o minuto em que passa a valer",
   "Narração mais clara: cada lance mostra o escudo e a sigla do time que fez a jogada",
   "Novo: amistosos entre amigos — marque o horário, mande o link no grupo e jogue ao vivo",
   "Correção: clube que não mexe na escalação há dias agora joga com a escalação salva (não a automática)",

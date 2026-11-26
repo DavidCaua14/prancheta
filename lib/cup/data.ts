@@ -63,8 +63,10 @@ export async function refreshCupChanges(data: CupData, round: number): Promise<C
   return { ...data, changes: [...data.changes.filter((c) => c.round !== round), ...((rows ?? []) as ChangeRow[])] };
 }
 
-export async function sendCupChange(data: CupData, round: number, clubId: string, tick: number, change: string) {
-  const { error } = await supabase().from("cup_changes").insert({ cup_id: data.cup.id, round, club_id: clubId, tick, change });
+export async function sendCupChange(data: CupData, round: number, clubId: string, tick: number, changes: string[]) {
+  const { error } = await supabase()
+    .from("cup_changes")
+    .insert(changes.map((change) => ({ cup_id: data.cup.id, round, club_id: clubId, tick, change })));
   return !error;
 }
 

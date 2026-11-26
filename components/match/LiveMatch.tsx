@@ -7,7 +7,8 @@ import { buildPlan, scoreAtTime, visibleEvents } from "@/lib/sim/board";
 import { CameraButton, Feed, Scoreboard, type FeedTeam, StatsPanel, liveStats, tickClock } from "@/components/match/parts";
 import { Icon } from "@/components/ui/Icon";
 import { fitLevel, FORMATIONS } from "@/lib/tactics/formations";
-import { LINES, POSTURES, TEMPOS, WIDTHS } from "@/lib/tactics/lineup";
+import { POSTURES } from "@/lib/tactics/lineup";
+import { TACTIC_GROUPS, TACTIC_LETTERS, tacticAt, type TacticLetter } from "@/lib/tactics/live";
 import { TICK_SECONDS, fmtCountdown, fmtKickoff, matchDone, type ChangeRow, type LeagueMatch } from "@/lib/league/data";
 import { useNow } from "@/lib/league/useLeague";
 import { useCamera } from "@/lib/sim/useCamera";
@@ -29,8 +30,8 @@ export type LiveMatchProps = {
   /** linha de cima: "Série D · Rodada 3" / "Copa da Várzea · Quartas" */
   title: string;
   backHref: string;
-  /** envia a mudança para valer no minuto `tick`; true = gravou */
-  onSend: (tick: number, change: string) => Promise<boolean>;
+  /** envia as mudanças (todas valendo no minuto `tick`); true = gravou */
+  onSend: (tick: number, changes: string[]) => Promise<boolean>;
   /** placar final diferente de "FIM" (ex.: pênaltis) */
   finalStatus?: string;
   /** painel extra depois do apito final (ex.: disputa de pênaltis) */
@@ -43,6 +44,8 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
   const now = useNow(250);
   const [sheet, setSheet] = useState<null | "tatica" | "subs">(null);
   const [subOut, setSubOut] = useState<number | null>(null);
+  // rascunho da tática: o técnico mexe em tudo e só envia ao salvar
+  const [draft, setDraft] = useState<Record<TacticLetter, number> | null>(null);
   const [sending, setSending] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [camera, toggleCamera] = useCamera();
@@ -58,11 +61,6 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
   const homeSide = useMemo(() => ({ lineup: m.homeLineup, squad: m.home.squad, tag: m.home.tag }), [m.homeLineup, m.home.squad, m.home.tag]);
   const awaySide = useMemo(() => ({ lineup: m.awayLineup, squad: m.away.squad, tag: m.away.tag }), [m.awayLineup, m.away.squad, m.away.tag]);
   const plan = useMemo(() => buildPlan(m.result, homeSide, awaySide, m.kickoff), [m.result, homeSide, awaySide, m.kickoff]);
-  const labels = useMemo(
-    () =>
-      [m.homeLineup, m.awayLineup].map((l, i) => `${i === 0 ? m.home.tag : m.away.tag} · ${FORMATIONS[l.formation].name} · ${POSTURES[l.posture].label}`) as [string, string],
-    [m.homeLineup, m.awayLineup, m.home.tag, m.away.tag],
-  );
 
   const before = now < m.kickoff;
   const done = matchDone(m, now);
@@ -80,7 +78,6 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
   const field = me ? FORMATIONS[me.lineup.formation].slots.map((s, k) => ({ role: s.role, card: me.lineup.xi[k], out: false })) : [];
   const used = new Set<number>();
   let subsDone = 0;
-  let posture = me?.lineup.posture ?? 2;
   for (const e of visible) {
     if (e.team !== mySide) continue;
     if (e.type === "sub" && e.player !== undefined && e.other !== undefined) {
@@ -94,29 +91,39 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
       if (f) f.out = true;
     }
   }
-  const pending = changes.filter((c) => c.round === m.round && c.club_id === clubId && c.tick > tick);
-  for (const c of changes) if (c.round === m.round && c.club_id === clubId && c.tick <= tick && c.change[0] === "p") posture = Number(c.change[1]);
-  const pendingPosture = pending.find((c) => c.change[0] === "p");
-  // linha / jogo / ritmo em vigor agora (escalação + mudanças já valendo)
-  const nowOf = (letter: string, initial: number) => {
-    let v = initial;
-    for (const c of changes) if (c.round === m.round && c.club_id === clubId && c.tick <= tick && c.change[0] === letter) v = Number(c.change[1]);
-    return v;
-  };
-  const extras = me
-    ? ([
-        ["Linha defensiva", "l", LINES, nowOf("l", me.lineup.line ?? 1)],
-        ["Jogo", "w", WIDTHS, nowOf("w", me.lineup.width ?? 1)],
-        ["Ritmo", "t", TEMPOS, nowOf("t", me.lineup.tempo ?? 1)],
-      ] as const)
-    : [];
+  // tática: o que está valendo agora e o que vai valer (com as mudanças já salvas e agendadas)
+  const nowT = me ? tacticAt(changes, m.round, clubId, me.lineup, tick) : null;
+  const plannedT = me ? tacticAt(changes, m.round, clubId, me.lineup, Number.POSITIVE_INFINITY) : null;
+  const pendingTicks = changes.filter((c) => c.round === m.round && c.club_id === clubId && c.tick > tick && TACTIC_LETTERS.includes(c.change[0] as TacticLetter)).map((c) => c.tick);
+  const pendingAt = pendingTicks.length ? Math.max(...pendingTicks) : null;
+  const posture = plannedT?.p ?? 2;
+  const changedNames = (from: Record<TacticLetter, number>, to: Record<TacticLetter, number>) =>
+    TACTIC_LETTERS.filter((l) => from[l] !== to[l]).map((l) => (l === "p" ? POSTURES[to.p].label : `${TACTIC_GROUPS[l].short} ${TACTIC_GROUPS[l].options[to[l]].label.toLowerCase()}`));
+  const scheduled = nowT && plannedT && pendingAt !== null ? changedNames(nowT, plannedT) : [];
+  const draftDiff = draft && plannedT ? TACTIC_LETTERS.filter((l) => draft[l] !== plannedT[l]) : [];
+  // etiquetas do quadro: a postura que está valendo agora em cada time
+  const labels = [m.homeLineup, m.awayLineup].map((l, i) => {
+    const team = i === 0 ? m.home : m.away;
+    const p = tacticAt(changes, m.round, team.clubId, l, Math.max(0, tick)).p;
+    return `${team.tag} · ${FORMATIONS[l.formation].name} · ${POSTURES[p].label}`;
+  }) as [string, string];
   const bench = me ? me.team.squad.map((_, k) => k).filter((k) => !me.lineup.xi.includes(k) && !used.has(k)) : [];
   const canAct = live && mySide !== null && tick < m.result.length - CHANGE_DELAY_TICKS - 1;
 
-  async function act(change: string) {
+  function openTactics() {
+    if (plannedT) setDraft({ ...plannedT });
+    setSheet("tatica");
+  }
+
+  async function saveTactics() {
+    if (!draft || !draftDiff.length) return setSheet(null);
+    await act(draftDiff.map((l) => `${l}${draft[l]}`));
+  }
+
+  async function act(list: string[]) {
     setSending(true);
     const at = tick + CHANGE_DELAY_TICKS;
-    const ok = await onSend(at, change);
+    const ok = await onSend(at, list);
     if (ok) {
       setToast(`Ok! Vale a partir do minuto ${Math.min(90, at)}.`);
     } else {
@@ -207,11 +214,18 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
             <div className="hidden rounded-[20px] border-[3px] border-[var(--ink)] bg-[var(--night-2)] p-4 text-white shadow-[0_5px_0_var(--ink)] lg:block">
               <p className="t-heading">Seu time</p>
               <p className="mt-1 text-sm text-white/70">
-                {POSTURES[posture].label}
-                {pendingPosture ? ` (muda para ${POSTURES[Number(pendingPosture.change[1])].label} aos ${pendingPosture.tick}')` : ""} · Substituições: {subsDone}/5
+                {nowT ? POSTURES[nowT.p].label : ""} · Substituições: {subsDone}/5
               </p>
+              {scheduled.length > 0 && (
+                <p className="mt-2 flex gap-1.5 rounded-lg bg-[var(--sun)]/15 px-2 py-1.5 text-xs font-bold text-[var(--sun)]">
+                  <Icon name="clock" className="mt-px h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    Salvo, vale aos {Math.min(90, pendingAt!)}&apos;: {scheduled.join(", ")}
+                  </span>
+                </p>
+              )}
               <div className="mt-3 flex gap-2">
-                <button type="button" disabled={!canAct || sending} onClick={() => setSheet("tatica")} className="btn btn-paper btn-sm flex-1 disabled:opacity-50">
+                <button type="button" disabled={!canAct || sending} onClick={openTactics} className="btn btn-paper btn-sm flex-1 disabled:opacity-50">
                   <Icon name="clipboard" className="h-4 w-4" />
                   Tática
                 </button>
@@ -230,13 +244,21 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
           <div className="mx-auto flex max-w-lg gap-2">
             {mySide !== null && live ? (
               <>
-                <button type="button" disabled={!canAct || sending} onClick={() => setSheet("tatica")} className="btn btn-paper min-w-0 flex-1 !px-2 disabled:opacity-50">
-                  <Icon name="clipboard" className="h-5 w-5 shrink-0" />
-                  <span className="truncate">{POSTURES[posture].label}</span>
+                <button
+                  type="button"
+                  disabled={!canAct || sending}
+                  onClick={openTactics}
+                  aria-label={scheduled.length ? `Tática: ${POSTURES[posture].label}, vale aos ${Math.min(90, pendingAt!)} minutos` : `Tática: ${POSTURES[posture].label}`}
+                  className={`btn min-w-0 flex-[2] !gap-1.5 !px-2 !text-sm disabled:opacity-50 ${scheduled.length ? "bg-[var(--sun)] text-[var(--ink)]" : "btn-paper"}`}
+                >
+                  <Icon name={scheduled.length ? "clock" : "clipboard"} className={`h-5 w-5 shrink-0 ${scheduled.length ? "max-[359px]:hidden" : ""}`} />
+                  <span className="truncate max-[359px]:hidden">{POSTURES[posture].label}</span>
+                  <span className="truncate min-[360px]:hidden">{posture === 4 ? "Pra frente" : POSTURES[posture].label}</span>
+                  {scheduled.length > 0 && <span className="t-num shrink-0 rounded bg-[var(--ink)] px-1 text-[0.65rem] text-white">{Math.min(90, pendingAt!)}&apos;</span>}
                 </button>
-                <button type="button" disabled={!canAct || sending || subsDone >= 5} onClick={() => setSheet("subs")} className="btn btn-paper min-w-0 flex-1 !px-2 disabled:opacity-50">
+                <button type="button" disabled={!canAct || sending || subsDone >= 5} onClick={() => setSheet("subs")} aria-label={`Substituir (${subsDone} de 5)`} className="btn btn-paper min-w-0 flex-1 !px-2 disabled:opacity-50">
                   <Icon name="swap" className="h-5 w-5 shrink-0" />
-                  <span className="hidden truncate min-[360px]:inline">Substituir</span>
+                  <span className="hidden truncate min-[440px]:inline">Substituir</span>
                   <span className="t-num shrink-0 rounded bg-[var(--ink)] px-1 text-[0.65rem] text-white">{subsDone}/5</span>
                 </button>
               </>
@@ -252,43 +274,63 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
         <div className="fixed inset-0 z-40 flex items-end justify-center bg-[rgba(27,16,56,0.7)] sm:items-center" onClick={() => setSheet(null)}>
           <div className="anim-pop max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-t-[24px] border-[3px] border-[var(--ink)] bg-[var(--night-2)] p-4 text-white sm:rounded-[24px]" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
             <p className="text-xs font-bold text-white/60">A mudança vale cerca de {CHANGE_DELAY_TICKS} minutos de jogo depois (para chegar a todos).</p>
-            {sheet === "tatica" ? (
+            {sheet === "tatica" && draft && nowT ? (
               <>
                 <p className="t-heading mt-2 text-lg">Postura</p>
-                <div className="mt-3 grid gap-2">
+                <div className="mt-3 grid gap-2" role="radiogroup" aria-label="Postura">
                   {POSTURES.map((p, k) => (
                     <button
                       key={p.label}
                       type="button"
+                      role="radio"
+                      aria-checked={k === draft.p}
                       disabled={sending}
-                      onClick={() => (k === posture ? setSheet(null) : void act(`p${k}`))}
-                      className={`rounded-xl border-[3px] border-[var(--ink)] px-3 py-2 text-left ${k === posture ? "bg-[var(--sun)] text-[var(--ink)]" : "bg-white/10 hover:bg-white/20"}`}
+                      onClick={() => setDraft({ ...draft, p: k })}
+                      className={`rounded-xl border-[3px] border-[var(--ink)] px-3 py-2 text-left ${k === draft.p ? "bg-[var(--sun)] text-[var(--ink)]" : "bg-white/10 hover:bg-white/20"}`}
                     >
-                      <span className="block font-extrabold">{p.label}</span>
+                      <span className="flex items-center gap-2 font-extrabold">
+                        {p.label}
+                        {k === nowT.p && k !== draft.p && <span className="rounded bg-white/15 px-1 text-[0.6rem] uppercase">em campo</span>}
+                      </span>
                       <span className="block text-xs opacity-75">{p.hint}</span>
                     </button>
                   ))}
                 </div>
-                {extras.map(([label, letter, options, current]) => (
-                  <div key={letter} className="mt-4">
-                    <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-white/60">{label}</p>
-                    <div className="mt-1.5 grid grid-cols-3 gap-1 rounded-xl border-[3px] border-[var(--ink)] bg-black/25 p-1">
-                      {options.map((o, k) => (
-                        <button
-                          key={o.label}
-                          type="button"
-                          disabled={sending}
-                          onClick={() => (k === current ? undefined : void act(`${letter}${k}`))}
-                          className={`min-h-9 rounded-lg px-1 text-xs font-extrabold ${k === current ? "bg-[var(--sun)] text-[var(--ink)]" : "text-white/80 hover:bg-white/10"}`}
-                        >
-                          {o.label}
-                        </button>
-                      ))}
+                {(["l", "w", "t"] as const).map((letter) => {
+                  const g = TACTIC_GROUPS[letter];
+                  return (
+                    <div key={letter} className="mt-4">
+                      <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-white/60">{g.label}</p>
+                      <div className="mt-1.5 grid grid-cols-3 gap-1 rounded-xl border-[3px] border-[var(--ink)] bg-black/25 p-1" role="radiogroup" aria-label={g.label}>
+                        {g.options.map((o, k) => (
+                          <button
+                            key={o.label}
+                            type="button"
+                            role="radio"
+                            aria-checked={k === draft[letter]}
+                            disabled={sending}
+                            onClick={() => setDraft({ ...draft, [letter]: k })}
+                            className={`min-h-9 rounded-lg px-1 text-xs font-extrabold ${k === draft[letter] ? "bg-[var(--sun)] text-[var(--ink)]" : k === nowT[letter] ? "text-white ring-2 ring-inset ring-white/30" : "text-white/80 hover:bg-white/10"}`}
+                          >
+                            {o.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
+                <div className="sticky -bottom-4 -mx-4 mt-4 flex gap-2 border-t-[3px] border-[var(--ink)] bg-[var(--night-2)] px-4 pb-4 pt-3">
+                  <button type="button" onClick={() => setSheet(null)} className="btn btn-paper flex-1">
+                    Cancelar
+                  </button>
+                  <button type="button" disabled={sending || !draftDiff.length} onClick={() => void saveTactics()} className="btn btn-green flex-[2] disabled:opacity-50">
+                    <Icon name="check" className="h-5 w-5" />
+                    {sending ? "Salvando..." : draftDiff.length ? "Salvar" : "Nada mudou"}
+                    {draftDiff.length > 1 && <span className="t-num rounded bg-[var(--ink)] px-1.5 text-xs text-white" aria-label={`${draftDiff.length} mudanças`}>{draftDiff.length}</span>}
+                  </button>
+                </div>
               </>
-            ) : (
+            ) : sheet === "tatica" ? null : (
               <>
                 <p className="t-heading mt-2 text-lg">Substituição ({subsDone}/5)</p>
                 <p className="mt-1 text-xs text-white/70">{subOut === null ? "Quem sai?" : "Quem entra?"}</p>
@@ -304,7 +346,7 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
                         <button
                           type="button"
                           disabled={sending}
-                          onClick={() => (subOut === null ? setSubOut(card) : void act(subCode(subOut, card)))}
+                          onClick={() => (subOut === null ? setSubOut(card) : void act([subCode(subOut, card)]))}
                           className="flex w-full items-center gap-3 rounded-xl border-[3px] border-[var(--ink)] bg-white/10 px-3 py-2 text-left hover:bg-white/20"
                         >
                           <span className="t-num w-9 rounded bg-[var(--ink)] py-0.5 text-center text-[0.65rem]">{subOut === null ? role : c.position}</span>
@@ -321,16 +363,18 @@ export function LiveMatch({ clubId, m, changes, title, backHref, onSend, finalSt
                 </ul>
               </>
             )}
-            <button
-              type="button"
-              onClick={() => {
-                setSheet(null);
-                setSubOut(null);
-              }}
-              className="btn btn-ghost mt-4 w-full"
-            >
-              Fechar
-            </button>
+            {sheet === "subs" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSheet(null);
+                  setSubOut(null);
+                }}
+                className="btn btn-ghost mt-4 w-full"
+              >
+                Fechar
+              </button>
+            )}
           </div>
         </div>
       )}

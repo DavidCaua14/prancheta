@@ -128,7 +128,9 @@ export async function refreshFriendlyChanges(data: FriendlyData): Promise<Friend
   return { ...data, changes: ((rows ?? []) as { club_id: string; tick: number; change: string }[]).map((c) => ({ round: 1, ...c })), loadedAt: Date.now() };
 }
 
-export async function sendFriendlyChange(data: FriendlyData, clubId: string, tick: number, change: string) {
-  const { error } = await supabase().from("friendly_changes").insert({ friendly_id: data.f.id, club_id: clubId, tick, change });
+export async function sendFriendlyChange(data: FriendlyData, clubId: string, tick: number, changes: string[]) {
+  const { error } = await supabase()
+    .from("friendly_changes")
+    .insert(changes.map((change) => ({ friendly_id: data.f.id, club_id: clubId, tick, change })));
   return !error;
 }
