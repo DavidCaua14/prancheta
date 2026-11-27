@@ -388,8 +388,8 @@ export function MatchViewer() {
           />
         </section>
 
-        {/* lado: estatísticas e tática (desktop) */}
-        <aside className="hidden flex-col gap-4 lg:flex">
+        {/* estatísticas e seu time: ao lado no computador, abaixo da narração no celular */}
+        <aside className="flex min-w-0 flex-col gap-4">
           {statsPanel}
           <div className="rounded-[20px] border-[3px] border-[var(--ink)] bg-[var(--night-2)] p-4 text-white shadow-[0_5px_0_var(--ink)]">
             <p className="t-heading">Seu time</p>
@@ -397,6 +397,11 @@ export function MatchViewer() {
               {formation.name} · {POSTURES[posture].label} · {MARKINGS[lineup.marking].label} · {PASSES[lineup.passing].label}
             </p>
             <p className="mt-1 text-sm text-white/70">Substituições: {subsDone}/5</p>
+            {tick === 0 && !playing && (
+              <Link href="/escalacao" className="btn btn-paper btn-sm mt-3 w-full">
+                Ajustar escalação
+              </Link>
+            )}
             <div className="mt-3 flex gap-2">
               <button type="button" disabled={!canChange} onClick={openTactics} className="btn btn-paper btn-sm flex-1 disabled:opacity-50">
                 <Icon name="clipboard" className="h-4 w-4" />
@@ -409,7 +414,6 @@ export function MatchViewer() {
             </div>
           </div>
         </aside>
-        <div className="lg:hidden">{(ended || tick > 0) && statsPanel}</div>
       </div>
 
       {/* controles */}
