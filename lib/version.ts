@@ -6,7 +6,7 @@ export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
  * de atualização obrigatória que os jogadores veem.
  */
 export const RELEASE_NOTES: string[] = [
-  "Novo: Prancheta Temporadas, o modo carreira com clubes reais (protótipo)",
+  "Novo: Prancheta Temporadas, o modo carreira grátis com clubes reais, em site próprio",
   "Treino no celular mostra estatísticas e o seu time antes do apito; telas com erro mostram aviso em vez de ficar em branco",
   "Botão de voltar no Elenco e no Meu clube (e o voltar do celular agora volta para o Início)",
   "Presente: 5.000 moedas para todos os técnicos, para um lance forte no leilão",

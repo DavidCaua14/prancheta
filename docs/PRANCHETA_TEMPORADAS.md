@@ -10,12 +10,11 @@
 > que não esteja na seção 6 sem me perguntar. Reaproveite o motor, os componentes e o visual do Prancheta (seção 5.3).
 > A divulgação do Prancheta Online (seção 4) é parte obrigatória de cada tela, não um extra."*
 
-> **Protótipo no ar (Fase 0 visual):** `/temporadas` (apresentação) e `/temporadas/jogo` (carreira jogável: escolha
-> de clube real da Série D, grupo de 8 em turno e returno com o motor do Prancheta, reputação, caixa de entrada com
-> proposta de clube maior, fim de temporada e todos os espaços de divulgação do online). Salva só no aparelho
-> (`localStorage`), sem banco. Código em `lib/tp/proto/` e `components/tp/`. Escudos: `data-src/logos/br/` →
-> `node scripts/tp-build-logos.mjs` → `public/tp/logos/br/<slug>-128.webp|-48.webp`. As artes com escudo em branco usam
-> `CrestArt` e as posições medidas em `CREST_SLOTS` (`lib/tp/proto/clubs.ts`).
+> **Agora é um jogo separado:** repositório `DavidCaua14/prancheta-temporadas`, publicado em
+> https://prancheta-temporadas.vercel.app (tela inicial com escudos oficiais e login visual). O protótipo que morava
+> no online (`/temporadas`) foi removido; esses endereços redirecionam para o site novo. O online aponta para lá por
+> `lib/links.ts` (`temporadasLink(slot)`, com `?ref=online&slot=...`); o Temporadas aponta para o online com
+> `?ref=tp&slot=...`.
 
 **Sumário**
 

@@ -10,6 +10,7 @@ import { DivisionBadge, TrophyIcon } from "@/components/ui/ToonIcons";
 import { MatchShowcase } from "./MatchShowcase";
 import { SAMPLE_CARDS } from "./sample-cards";
 import { CrestArt } from "@/components/tp/CrestArt";
+import { temporadasLink } from "@/lib/links";
 
 /* ------------------------------------------------------------------ */
 /* Base de layout                                                      */
@@ -423,7 +424,7 @@ export function Temporadas() {
             Treine sozinho com clubes reais: assuma um time da Série D, ganhe reputação e receba propostas dos grandes. Grátis, no
             navegador, com o mesmo motor de partidas do online.
           </p>
-          <a href="/temporadas" className="btn btn-green btn-lg mt-6">
+          <a href={temporadasLink("landing")} className="btn btn-green btn-lg mt-6">
             Conhecer o modo carreira
           </a>
         </div>

@@ -1,14 +1,14 @@
 /* eslint-disable @next/next/no-img-element -- escudos já otimizados em WebP */
-import Link from "next/link";
 import { ArtImg } from "@/components/ui/ArtImg";
 import { Icon } from "@/components/ui/Icon";
 import { crestSrc } from "@/lib/tp/proto/clubs";
+import { temporadasLink } from "@/lib/links";
 
 /** Atalho na sede do online: o modo carreira com clubes reais. */
 export function TemporadasTeaser() {
   return (
-    <Link
-      href="/temporadas"
+    <a
+      href={temporadasLink("sede")}
       className="flex items-center gap-3 rounded-2xl border-[3px] border-[var(--ink)] bg-[var(--paper)] p-3 text-[var(--ink)] shadow-[0_4px_0_var(--ink)] transition-transform active:translate-y-1 active:shadow-[0_1px_0_var(--ink)]"
     >
       <ArtImg name="icon-temporadas" className="h-12 w-12 shrink-0 object-contain" fallback={<Icon name="clipboard" className="h-10 w-10 shrink-0" />} />
@@ -25,6 +25,6 @@ export function TemporadasTeaser() {
         ))}
       </span>
       <Icon name="chevron-right" className="h-5 w-5 shrink-0" />
-    </Link>
+    </a>
   );
 }

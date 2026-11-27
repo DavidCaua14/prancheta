@@ -52,6 +52,14 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_APP_VERSION: APP_VERSION,
     NEXT_PUBLIC_BUILD_YEAR: String(new Date().getFullYear()),
   },
+  // o protótipo do Temporadas que morava aqui virou um site próprio
+  async redirects() {
+    const to = process.env.NEXT_PUBLIC_TEMPORADAS_URL ?? "https://prancheta-temporadas.vercel.app";
+    return [
+      { source: "/temporadas", destination: `${to}/?ref=online&slot=redirect`, permanent: false },
+      { source: "/temporadas/:path*", destination: `${to}/?ref=online&slot=redirect`, permanent: false },
+    ];
+  },
   async headers() {
     return [
       {
