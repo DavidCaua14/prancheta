@@ -148,8 +148,9 @@ O componente único `components/tp/promo/PromoSlot.tsx` recebe o código do espa
   período de validade, peso no sorteio. Trocar uma campanha é só editar esse arquivo e publicar.
 - A escolha usa uma semente do aparelho + data, para não repetir a mesma peça seguida.
 - Contadores de frequência e "recolhido" ficam no IndexedDB do aparelho (nada no banco).
-- **PERGUNTAR AO DONO** as ilustrações das peças. Seguir o padrão do projeto: a IA escreve os prompts de imagem no
-  estilo do Prancheta, o dono gera as imagens e a IA integra.
+- Ilustrações das peças: prompts prontos em `docs/PROMPTS-DIVULGACAO.md` (grupo A, só escudos inventados, como no
+  online). As peças do Temporadas que aparecem no online (grupo B) têm **escudos em branco** na arte, e o componente
+  `Crest` encaixa o escudo real por cima, nas posições indicadas no arquivo.
 
 ### 4.4 Para onde o botão leva e como medir
 
