@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { MascotTipInline } from "@/components/game/MascotTip";
 import { GameCard } from "@/components/cards/GameCard";
 import { MiniPitch } from "@/components/cards/MiniPitch";
@@ -38,6 +38,23 @@ const NAV: { id: Tab; label: string; icon: string; fallback: IconName }[] = [
   { id: "leilao", label: "Leilão", icon: "icon-leilao", fallback: "gavel" },
   { id: "clube", label: "Clube", icon: "icon-clube", fallback: "shield" },
 ];
+
+/** Topo das abas Elenco e Clube: botão de voltar para o Início. */
+function BackBar({ title, onBack, className = "" }: { title: string; onBack: () => void; className?: string }) {
+  return (
+    <div className={`flex items-center gap-3 text-white ${className}`}>
+      <button
+        type="button"
+        onClick={onBack}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-[3px] border-[var(--ink)] bg-white/10"
+        aria-label="Voltar para o início"
+      >
+        <Icon name="back" className="h-5 w-5" />
+      </button>
+      <p className="t-heading text-xl">{title}</p>
+    </div>
+  );
+}
 
 /** Ícone com reserva: arte própria, depois arte alternativa, depois ícone SVG. */
 function NavIcon({ icon, alt, fallback, className }: { icon: string; alt?: string; fallback: IconName; className: string }) {
@@ -101,12 +118,25 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
   const router = useRouter();
   const { club, data: league, joining, season, dismissSeason, reload } = useLeague();
   const now = useNow(1000);
-  const [tab, setTab] = useState<Tab>("inicio");
-  // abre direto numa aba pelo link (ex.: /jogo?aba=clube)
+  const [tab, setTabState] = useState<Tab>("inicio");
+  // aba na URL (/jogo?aba=elenco): abrir pelo link, e o "voltar" do celular/navegador volta para o Início
   useEffect(() => {
-    const a = new URLSearchParams(window.location.search).get("aba");
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- lê a aba pedida na URL uma vez
-    if (a === "clube" || a === "elenco") setTab(a);
+    const read = () => {
+      const a = new URLSearchParams(window.location.search).get("aba");
+      setTabState(a === "clube" || a === "elenco" ? a : "inicio");
+    };
+    read();
+    window.addEventListener("popstate", read);
+    return () => window.removeEventListener("popstate", read);
+  }, []);
+  const setTab = useCallback((t: Tab) => {
+    setTabState(t);
+    window.scrollTo({ top: 0 });
+    const url = t === "inicio" ? "/jogo" : `/jogo?aba=${t}`;
+    if (window.location.pathname + window.location.search === url) return;
+    // Início é a base: sair de uma aba volta no histórico (se ela foi aberta daqui), senão substitui
+    if (t === "inicio" && window.history.state?.pranchetaTab) window.history.back();
+    else window.history.pushState({ ...window.history.state, pranchetaTab: t !== "inicio" }, "", url);
   }, []);
   const [isNew, setIsNew] = useState(false);
   // botão do painel admin (o banco confere de novo em cada consulta do painel)
@@ -407,6 +437,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
 
         {tab === "elenco" && (
           <div className="flex flex-col gap-4">
+            <BackBar title="Elenco" onBack={() => setTab("inicio")} />
             <Panel className="flex items-start gap-3">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-[3px] border-[var(--ink)] bg-[var(--sun)] text-[var(--ink)]">
                 <Icon name="bolt" className="h-6 w-6" />
@@ -452,6 +483,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
 
         {tab === "jogos" && <Soon title="Calendário" text="Rodadas da liga, copas e amistosos, com a partida ao vivo e a narração lance a lance." />}
 
+        {tab === "clube" && <BackBar title="Meu clube" onBack={() => setTab("inicio")} className="mb-4" />}
         {tab === "clube" && (
           <ClubTab
             club={club}
