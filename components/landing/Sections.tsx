@@ -9,6 +9,7 @@ import { TierGem } from "@/components/ui/TierGem";
 import { DivisionBadge, TrophyIcon } from "@/components/ui/ToonIcons";
 import { MatchShowcase } from "./MatchShowcase";
 import { SAMPLE_CARDS } from "./sample-cards";
+import { CrestArt } from "@/components/tp/CrestArt";
 
 /* ------------------------------------------------------------------ */
 /* Base de layout                                                      */
@@ -401,6 +402,36 @@ export function Friends() {
           </div>
           <p className="mt-3 text-center text-sm font-semibold opacity-60">Sábado, 21h · Estádio dos Tubarões</p>
         </div>
+      </div>
+    </Section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+/** Divulgação do Prancheta Temporadas (modo carreira com clubes reais). */
+export function Temporadas() {
+  return (
+    <Section id="temporadas" tone="band">
+      <div className="grid items-center gap-10 md:grid-cols-2">
+        <div className="order-2 min-w-0 text-center md:order-1 md:text-left">
+          <span className="tag bg-[var(--sun)]">Novo · modo carreira</span>
+          <h2 className="t-display mt-4 text-3xl sm:text-5xl">
+            Prancheta <span className="text-[var(--sun)]">Temporadas</span>
+          </h2>
+          <p className="mt-4 text-lg leading-relaxed text-white/85">
+            Treine sozinho com clubes reais: assuma um time da Série D, ganhe reputação e receba propostas dos grandes. Grátis, no
+            navegador, com o mesmo motor de partidas do online.
+          </p>
+          <a href="/temporadas" className="btn btn-green btn-lg mt-6">
+            Conhecer o modo carreira
+          </a>
+        </div>
+        <CrestArt
+          art="promo-tp-hero"
+          clubs={["aguia-de-maraba", "vila-nova", "flamengo"]}
+          className="order-1 overflow-hidden rounded-[24px] border-[3px] border-[var(--ink)] shadow-[0_6px_0_var(--ink)] md:order-2"
+        />
       </div>
     </Section>
   );

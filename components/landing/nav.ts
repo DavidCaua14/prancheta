@@ -4,5 +4,6 @@ export const NAV = [
   { href: "#ligas", label: "Ligas e copas" },
   { href: "#leilao", label: "Leilão" },
   { href: "#amigos", label: "Amistosos" },
+  { href: "#temporadas", label: "Temporadas" },
   { href: "#faq", label: "Dúvidas" },
 ];

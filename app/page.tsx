@@ -9,6 +9,7 @@ import {
   LeaguesAndCups,
   LiveMatch,
   Perks,
+  Temporadas,
 } from "@/components/landing/Sections";
 import { Faq, FinalCta, SiteFooter } from "@/components/landing/Closing";
 
@@ -26,6 +27,7 @@ export default function Home() {
         <Auction />
         <ClubLife />
         <Friends />
+        <Temporadas />
         <Faq />
         <FinalCta />
       </main>

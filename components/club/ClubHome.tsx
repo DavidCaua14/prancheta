@@ -26,6 +26,7 @@ import { POSTURES, lineupFor } from "@/lib/tactics/lineup";
 import { CrestSvg } from "./CrestSvg";
 import { ClubTab } from "./ClubTab";
 import { RankingTeaser } from "@/components/ranking/RankingTeaser";
+import { TemporadasTeaser } from "@/components/tp/TemporadasTeaser";
 import { claimGifts, collectHomeIncome } from "@/lib/club/structure";
 import { GiftReveal } from "@/components/club/GiftReveal";
 
@@ -410,6 +411,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
                 ))}
               </div>
               <RankingTeaser />
+              <TemporadasTeaser />
             </div>
 
             {/* time titular */}
