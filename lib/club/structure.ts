@@ -54,3 +54,21 @@ export async function seasonHistory(clubId: string): Promise<SeasonRow[]> {
     .limit(30);
   return (data ?? []) as SeasonRow[];
 }
+
+const GIFT_SEEN = (clubId: string) => `prancheta:presente:${clubId}`;
+
+/**
+ * Presentes do clube (hoje: 5.000 moedas de boas-vindas, uma vez). O banco
+ * confere e credita; o aparelho lembra que já perguntou para não chamar de novo.
+ */
+export async function claimGifts(clubId: string): Promise<number> {
+  try {
+    if (localStorage.getItem(GIFT_SEEN(clubId)) === "1") return 0;
+  } catch {}
+  const { data, error } = await supabase().rpc("claim_gifts");
+  if (error) return 0;
+  try {
+    localStorage.setItem(GIFT_SEEN(clubId), "1");
+  } catch {}
+  return (data as number) ?? 0;
+}

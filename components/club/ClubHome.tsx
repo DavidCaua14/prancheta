@@ -26,7 +26,8 @@ import { POSTURES, lineupFor } from "@/lib/tactics/lineup";
 import { CrestSvg } from "./CrestSvg";
 import { ClubTab } from "./ClubTab";
 import { RankingTeaser } from "@/components/ranking/RankingTeaser";
-import { collectHomeIncome } from "@/lib/club/structure";
+import { claimGifts, collectHomeIncome } from "@/lib/club/structure";
+import { GiftReveal } from "@/components/club/GiftReveal";
 
 type Tab = "inicio" | "elenco" | "jogos" | "leilao" | "clube";
 
@@ -136,6 +137,22 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- uma vez por abertura da tela
   }, [clubId]);
 
+  // presente de boas-vindas (5.000 moedas, uma vez por clube): o banco credita e a sede comemora
+  const [gift, setGift] = useState<number | null>(null);
+  useEffect(() => {
+    if (!clubId) return;
+    let stop = false;
+    void claimGifts(clubId).then(async (got) => {
+      if (stop || got <= 0) return;
+      setGift(got);
+      await reload({ fresh: true });
+    });
+    return () => {
+      stop = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- uma vez por clube
+  }, [clubId]);
+
   // convite de amistoso aberto antes de entrar / montar o clube: volta para ele
   useEffect(() => {
     if (!club?.squad) return;
@@ -207,6 +224,7 @@ export function ClubHome({ mascot }: { mascot: ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col">
       {season && <SeasonSummary season={season} clubName={club.name} onClose={dismissSeason} />}
+      {gift && !season && <GiftReveal amount={gift} clubName={club.name} onClose={() => setGift(null)} />}
       {/* barra de status */}
       <header className="sticky top-0 z-30 border-b-[3px] border-[var(--ink)] bg-[var(--night-2)]">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-3 sm:px-6">

@@ -577,3 +577,12 @@ friendlies(id, codigo, casa_id, fora_id, inicio_em, match_id)
 - **Ações** (todas com motivo e gravadas em `admin_log`): dar/tirar moedas (`admin_grant_coins`, nunca fica negativo),
   renomear clube (`admin_rename_club`), bloquear/desbloquear conta (`admin_ban`: `auth.users.banned_until`, derruba as
   sessões; não bloqueia admin nem a si mesmo) e fechar liga/copa atrasada (Edge Functions de sempre + `admin_note`).
+
+## Presentes (`0039_welcome_gift.sql`)
+
+- `clubs.gifts` (bits; 1 = boas-vindas de 5.000 moedas, `WELCOME_GIFT` em `lib/economy.ts`). Como `coins`, o app não
+  tem permissão de alterar a coluna. `claim_gifts()` credita uma única vez, só para clube com elenco montado.
+- A sede (`ClubHome`) chama `claimGifts` uma vez por clube (o aparelho lembra que já perguntou) e, se recebeu, mostra
+  `GiftReveal` (raios, moedas caindo, contador até +5.000) e relê o clube. Vale para quem já tinha clube (na próxima
+  visita) e para todo clube novo ao chegar na sede depois da peneira.
+- Novo presente no futuro: outro bit (2, 4, …) e outro valor, no mesmo padrão.

@@ -15,6 +15,12 @@
  * Especial na hora.
  */
 
+/**
+ * Presente de boas-vindas (uma vez por clube, existente ou novo): o lance numa
+ * carta boa. Espelho de claim_gifts (0039_welcome_gift.sql).
+ */
+export const WELCOME_GIFT = 5000;
+
 /** Moedas com que todo clube começa (dá para algumas cartas Base no 1º dia). */
 export const START_COINS = 500;
 
